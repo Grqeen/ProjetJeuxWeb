@@ -1,8 +1,10 @@
 import Player from "./Player.js";
 import Obstacle from "./Obstacle.js";
-import ObjetSouris from "./ObjetSouris.js";
-import { rectsOverlap } from "./collisions.js";
+//import ObjetSouris from "./ObjetSouris.js";
+import { rectsOverlap, testCollisionFin } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
+import fin from "./fin.js";
+
 export default class Game {
     objetsGraphiques = [];
 
@@ -22,8 +24,8 @@ export default class Game {
         this.objetsGraphiques.push(this.player);
 
         // Un objert qui suite la souris, juste pour tester
-        this.objetSouris = new ObjetSouris(200, 200, 25, 25, "orange");
-        this.objetsGraphiques.push(this.objetSouris);
+        //this.objetSouris = new ObjetSouris(200, 200, 25, 25, "pink");
+        //this.objetsGraphiques.push(this.objetSouris);
 
 
         // On cree deux obstacles
@@ -31,6 +33,13 @@ export default class Game {
         this.objetsGraphiques.push(obstacle1);
         let obstacle2 = new Obstacle(500, 500, 100, 100, "blue");
         this.objetsGraphiques.push(obstacle2);
+        let obstacle3 = new Obstacle(900, 300, 40, 600, "yellow");
+        this.objetsGraphiques.push(obstacle3);
+        let obstacle4 = new Obstacle(750, 500, 100, 100, "purple");
+        this.objetsGraphiques.push(obstacle4);
+
+        this.fin = new fin(1100, 50, 50, 50, "green");
+        this.objetsGraphiques.push(this.fin);
 
         // On ajoute la sortie
         // TODO
@@ -82,12 +91,13 @@ export default class Game {
         // on met à jouer la position de objetSouris avec la position de la souris
         // Pour un objet qui "suit" la souris mais avec un temps de retard, voir l'exemple
         // du projet "charQuiTire" dans le dossier COURS
-        this.objetSouris.x = this.inputStates.mouseX;
-        this.objetSouris.y = this.inputStates.mouseY;
+        //this.objetSouris.x = this.inputStates.mouseX;
+        //this.objetSouris.y = this.inputStates.mouseY;
 
         // On regarde si le joueur a atteint la sortie
         // TODO
 
+        testCollisionFin(this.player, this.objetsGraphiques);
     }
 
     movePlayer() {
@@ -172,5 +182,4 @@ export default class Game {
             }
         });
     }
-
 }
