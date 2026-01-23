@@ -1,8 +1,10 @@
 import Player from "./Player.js";
 import Obstacle from "./Obstacle.js";
-import ObjetSouris from "./ObjetSouris.js";
-import { rectsOverlap } from "./collisions.js";
+//import ObjetSouris from "./ObjetSouris.js";
+import { rectsOverlap, testCollisionFin } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
+import fin from "./fin.js";
+
 export default class Game {
     objetsGraphiques = [];
 
@@ -34,6 +36,13 @@ export default class Game {
         this.objetsGraphiques.push(obstacle1);
         let obstacle2 = new Obstacle(500, 500, 100, 100, "blue");
         this.objetsGraphiques.push(obstacle2);
+        let obstacle3 = new Obstacle(900, 300, 40, 600, "yellow");
+        this.objetsGraphiques.push(obstacle3);
+        let obstacle4 = new Obstacle(750, 500, 100, 100, "purple");
+        this.objetsGraphiques.push(obstacle4);
+
+        this.fin = new fin(1100, 50, 50, 50, "green");
+        this.objetsGraphiques.push(this.fin);
 
         // On ajoute la sortie
         // TODO
@@ -96,6 +105,7 @@ export default class Game {
         if(this.scoreElement) {
             this.scoreElement.innerText = this.score;
         }
+        testCollisionFin(this.player, this.objetsGraphiques);
     }
 
     movePlayer() {
@@ -187,5 +197,4 @@ export default class Game {
             }
         });
     }
-
 }
