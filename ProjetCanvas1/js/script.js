@@ -7,7 +7,6 @@ window.onload = init;
 async function init() {
    // On recupère le canvas
    let canvas = document.querySelector("#myCanvas");
-   let miniCanvas = document.querySelector("#miniCanvas");
 
    // On gère le redimensionnement pour que le canvas prenne tout l'écran
    function resizeCanvas() {
@@ -15,9 +14,6 @@ async function init() {
 
        canvas.width = window.innerWidth - sidebarWidth;
        canvas.height = window.innerHeight;
-
-       miniCanvas.width = sidebarWidth;
-       miniCanvas.height = window.innerHeight;
    }
    // Appel initial
    resizeCanvas();

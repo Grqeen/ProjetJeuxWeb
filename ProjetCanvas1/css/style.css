@@ -18,9 +18,3 @@ body{
     display: block;
 }
 
-#miniCanvas{
-    display: block; 
-    background-color: green; 
-    border-left: 2px solid white;
-}
-
