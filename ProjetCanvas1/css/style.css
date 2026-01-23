@@ -18,3 +18,27 @@ body{
     display: block;
 }
 
+#gameMenu {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 15px;
+    border: 2px solid black;
+    z-index: 10; 
+}
+
+#gameMenu h1 {
+    margin-top: 0;
+}
+
+#gameMenu button {
+    display: block;
+    width: 100px;
+    margin: 10px auto;
+    padding: 10px;
+    cursor: pointer;
+}

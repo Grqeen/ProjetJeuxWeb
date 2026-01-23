@@ -22,8 +22,8 @@ export default class Game {
         this.objetsGraphiques.push(this.player);
 
         // Un objert qui suite la souris, juste pour tester
-        this.objetSouris = new ObjetSouris(200, 200, 25, 25, "orange");
-        this.objetsGraphiques.push(this.objetSouris);
+        //this.objetSouris = new ObjetSouris(200, 200, 25, 25, "orange");
+        //this.objetsGraphiques.push(this.objetSouris);
 
 
         // On cree deux obstacles
