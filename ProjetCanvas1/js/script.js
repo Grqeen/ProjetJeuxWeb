@@ -20,8 +20,13 @@ async function init() {
    // Appel quand la fenêtre change de taille
    window.addEventListener('resize', resizeCanvas);
 
+   // On récupère l'élément HTML du score
+   let scoreElement = document.querySelector("#score");
+   // On récupère l'élément input de vitesse
+   let speedInputElement = document.querySelector("#playerSpeedRange");
+
    // On cree une instance du jeu
-    let game = new Game(canvas);
+    let game = new Game(canvas, scoreElement, speedInputElement);
     // ici on utilise await car la méthode init est asynchrone
     // typiquement dans init on charge des images, des sons, etc.
     await game.init();

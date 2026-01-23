@@ -6,8 +6,11 @@ import { initListeners } from "./ecouteurs.js";
 export default class Game {
     objetsGraphiques = [];
 
-    constructor(canvas) {
+    constructor(canvas, scoreElement, speedInputElement) {
         this.canvas = canvas;
+        this.scoreElement = scoreElement; // L'élément HTML pour afficher le score
+        this.speedInputElement = speedInputElement; // L'input range pour la vitesse
+        this.score = 0; // Le score actuel
         // etat du clavier
         this.inputStates = {
             mouseX: 0,
@@ -22,8 +25,8 @@ export default class Game {
         this.objetsGraphiques.push(this.player);
 
         // Un objert qui suite la souris, juste pour tester
-        this.objetSouris = new ObjetSouris(200, 200, 25, 25, "orange");
-        this.objetsGraphiques.push(this.objetSouris);
+        //this.objetSouris = new ObjetSouris(200, 200, 25, 25, "orange");
+        //this.objetsGraphiques.push(this.objetSouris);
 
 
         // On cree deux obstacles
@@ -36,7 +39,7 @@ export default class Game {
         // TODO
 
         // On initialise les écouteurs de touches, souris, etc.
-        initListeners(this.inputStates, this.canvas);
+        initListeners(this.inputStates, this.canvas, this.speedInputElement);
 
         console.log("Game initialisé");
     }
@@ -82,31 +85,41 @@ export default class Game {
         // on met à jouer la position de objetSouris avec la position de la souris
         // Pour un objet qui "suit" la souris mais avec un temps de retard, voir l'exemple
         // du projet "charQuiTire" dans le dossier COURS
-        this.objetSouris.x = this.inputStates.mouseX;
-        this.objetSouris.y = this.inputStates.mouseY;
+        // this.objetSouris.x = this.inputStates.mouseX;
+        // this.objetSouris.y = this.inputStates.mouseY;
 
         // On regarde si le joueur a atteint la sortie
         // TODO
 
+        // Mise à jour du score dans le HTML
+        // (On pourrait optimiser en ne le faisant que si le score change)
+        if(this.scoreElement) {
+            this.scoreElement.innerText = this.score;
+        }
     }
 
     movePlayer() {
         this.player.vitesseX = 0;
         this.player.vitesseY = 0;
+
+        // On récupère la vitesse depuis l'input HTML
+        // On convertit en nombre avec Number() car .value renvoie une chaîne de caractères
+        // Valeur par défaut 3 si l'input n'existe pas
+        let vitesse = this.speedInputElement ? Number(this.speedInputElement.value) : 3;
         
         if(this.inputStates.ArrowRight) {
-            this.player.vitesseX = 3;
+            this.player.vitesseX = vitesse;
         } 
         if(this.inputStates.ArrowLeft) {
-            this.player.vitesseX = -3;
+            this.player.vitesseX = -vitesse;
         } 
 
         if(this.inputStates.ArrowUp) {
-            this.player.vitesseY = -3;
+            this.player.vitesseY = -vitesse;
         } 
 
         if(this.inputStates.ArrowDown) {
-            this.player.vitesseY = 3;
+            this.player.vitesseY = vitesse;
         } 
 
         this.player.move();
@@ -164,6 +177,8 @@ export default class Game {
                     // par exemple en le repoussant dans la direction opposée à celle de l'obstacle...
                     // Là par défaut on le renvoie en x=10 y=10 et on l'arrête
                     console.log("Collision avec obstacle");
+                    // Exemple : on perd des points ou on reset le score
+                    this.score = 0;
                     this.player.x = 10;
                     this.player.y = 10;
                     this.player.vitesseX = 0;

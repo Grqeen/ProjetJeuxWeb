@@ -1,4 +1,4 @@
-function initListeners(inputStates, canvas) {
+function initListeners(inputStates, canvas, speedInputElement) {
     window.onkeydown = (event) => {
         console.log("Touche pressée : " + event.key);
         if(event.key === "ArrowRight") {
@@ -35,6 +35,16 @@ function initListeners(inputStates, canvas) {
         // get proper x and y for the mouse in the canvas
         inputStates.mouseX = event.clientX - canvas.getBoundingClientRect().left;
         inputStates.mouseY = event.clientY - canvas.getBoundingClientRect().top;
+    }
+
+    // Gestion du conflit slider / flèches
+    if (speedInputElement) {
+        speedInputElement.addEventListener("keydown", (e) => {
+            if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                e.preventDefault(); 
+                speedInputElement.blur(); 
+            }
+        });
     }
 }
 
