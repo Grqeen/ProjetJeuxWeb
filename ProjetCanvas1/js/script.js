@@ -7,6 +7,22 @@ window.onload = init;
 async function init() {
    // On recupère le canvas
    let canvas = document.querySelector("#myCanvas");
+   let miniCanvas = document.querySelector("#miniCanvas");
+
+   // On gère le redimensionnement pour que le canvas prenne tout l'écran
+   function resizeCanvas() {
+       let sidebarWidth = 450; // Largeur du petit canvas à droite
+
+       canvas.width = window.innerWidth - sidebarWidth;
+       canvas.height = window.innerHeight;
+
+       miniCanvas.width = sidebarWidth;
+       miniCanvas.height = window.innerHeight;
+   }
+   // Appel initial
+   resizeCanvas();
+   // Appel quand la fenêtre change de taille
+   window.addEventListener('resize', resizeCanvas);
 
    // On cree une instance du jeu
     let game = new Game(canvas);
@@ -17,4 +33,3 @@ async function init() {
     // on peut démarrer le jeu
     game.start();
 }
-
