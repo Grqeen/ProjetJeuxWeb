@@ -42,3 +42,57 @@ body{
     padding: 10px;
     cursor: pointer;
 }
+/* --- 1. Le style des touches (Option 1 précédente) --- */
+kbd {
+  display: flex;             /* Pour bien centrer la flèche dans le carré */
+  justify-content: center;
+  align-items: center;
+  width: 40px;               /* Largeur fixe pour faire des carrés */
+  height: 40px;              /* Hauteur fixe */
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
+  background-color: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-shadow: 0 4px 0 #aaa;  /* Effet 3D */
+  cursor: pointer;           /* Curseur main */
+  user-select: none;         /* Empêche de sélectionner le texte */
+}
+
+kbd:active {
+  box-shadow: none;
+  transform: translateY(4px);
+}
+
+/* --- 2. La disposition en grille (Le "T inversé") --- */
+.keyboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 45px); /* 3 colonnes de 45px */
+  grid-template-rows: repeat(2, 45px);    /* 2 lignes de 45px */
+  gap: 5px;                               /* Espace entre les touches */
+  margin-top: 10px;
+  width: fit-content;                     /* La boîte s'adapte au contenu */
+}
+
+/* Placement précis des touches dans la grille */
+.key-up {
+  grid-column: 2; /* Colonne du milieu */
+  grid-row: 1;    /* Première ligne */
+}
+
+.key-left {
+  grid-column: 1; /* Colonne de gauche */
+  grid-row: 2;    /* Deuxième ligne */
+}
+
+.key-down {
+  grid-column: 2; /* Colonne du milieu */
+  grid-row: 2;    /* Deuxième ligne */
+}
+
+.key-right {
+  grid-column: 3; /* Colonne de droite */
+  grid-row: 2;    /* Deuxième ligne */
+}

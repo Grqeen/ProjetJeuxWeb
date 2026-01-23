@@ -28,11 +28,16 @@ export default class Player extends ObjectGraphique {
         //this.ctx.scale(0.5, 0.5);
 
         // tete du monstre
-        ctx.fillStyle = "pink";
+        ctx.fillStyle = "green";
         ctx.fillRect(0, 0, this.w, this.h);
         // yeux
-        drawCircleImmediat(ctx, 20, 20, 10, "red");
-        drawCircleImmediat(ctx, 60, 20, 10, "red");
+        drawCircleImmediat(ctx, 20, 20, 10, "white");
+        drawCircleImmediat(ctx, 60, 20, 10, "white");
+        drawCircleImmediat(ctx, 20, 20, 5, "black");
+        drawCircleImmediat(ctx, 60, 20, 5, "black");
+        // bouche
+        ctx.fillStyle = "black";
+        ctx.fillRect(20, 60, 40, 10);
 
         // Les bras
         //this.drawBrasGauche();
