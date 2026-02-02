@@ -1,9 +1,10 @@
 import Player from "./Player.js";
 import Obstacle from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
-import { rectsOverlap, testCollisionFin } from "./collisions.js";
+import { rectsOverlap, testCollisionFin, rectTriangleOverlap } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
 import fin from "./fin.js";
+import bumper from "./bumper.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -32,20 +33,25 @@ export default class Game {
 
 
         // On cree deux obstacles
+        //rectangle obstacles
         let obstacle1 = new Obstacle(300, 0, 40, 600, "red");
         this.objetsGraphiques.push(obstacle1);
+        let obstacle3 = new Obstacle(900, 300, 40, 600, "yellow");
+        this.objetsGraphiques.push(obstacle3);  
+
+        //carre obstacles
         let obstacle2 = new Obstacle(500, 500, 100, 100, "blue");
         this.objetsGraphiques.push(obstacle2);
-        let obstacle3 = new Obstacle(900, 300, 40, 600, "yellow");
-        this.objetsGraphiques.push(obstacle3);
         let obstacle4 = new Obstacle(750, 500, 100, 100, "purple");
         this.objetsGraphiques.push(obstacle4);
 
+        // bumper
+        this.bumper1 = new bumper(550, 340, 50, 50, "orange");
+        this.objetsGraphiques.push(this.bumper1);
+
+        //Sortie de niveau
         this.fin = new fin(1100, 50, 50, 50, "green");
         this.objetsGraphiques.push(this.fin);
-
-        // On ajoute la sortie
-        // TODO
 
         // On initialise les écouteurs de touches, souris, etc.
         initListeners(this.inputStates, this.canvas, this.speedInputElement);
@@ -142,7 +148,10 @@ export default class Game {
         this.testCollisionPlayerBordsEcran();
 
         // Teste collision avec les obstacles
-        this.testCollisionPlayerObstacles();
+        //this.testCollisionPlayerObstacles();
+
+        // Gestion améliorée des collisions avec les obstacles
+        this.handleCollisionObstacle();
        
     }
 
@@ -193,6 +202,65 @@ export default class Game {
                     this.player.y = 10;
                     this.player.vitesseX = 0;
                     this.player.vitesseY = 0;
+                }
+            }
+        });
+    }
+
+    handleCollisionObstacle() {
+        this.objetsGraphiques.forEach(obstacle => {
+            if (obstacle instanceof Obstacle) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                    // Calcul des coordonnées des bords du joueur (x, y sont au centre)
+                    let playerLeft = this.player.x - this.player.w / 2;
+                    let playerRight = this.player.x + this.player.w / 2;
+                    let playerTop = this.player.y - this.player.h / 2;
+                    let playerBottom = this.player.y + this.player.h / 2;
+
+                    // Calcul des coordonnées des bords de l'obstacle (x, y sont en haut à gauche)
+                    let obstacleLeft = obstacle.x;
+                    let obstacleRight = obstacle.x + obstacle.w;
+                    let obstacleTop = obstacle.y;
+                    let obstacleBottom = obstacle.y + obstacle.h;
+
+                    // Calcul de l'enfoncement (overlap) sur chaque côté
+                    let overlapLeft = playerRight - obstacleLeft;
+                    let overlapRight = obstacleRight - playerLeft;
+                    let overlapTop = playerBottom - obstacleTop;
+                    let overlapBottom = obstacleBottom - playerTop;
+
+                    // On cherche le plus petit enfoncement pour savoir de quel côté corriger
+                    // (C'est le côté par lequel on est entré le moins profondément)
+                    let minOverlap = Math.min(overlapLeft, overlapRight, overlapTop, overlapBottom);
+
+                    if (minOverlap === overlapLeft) {
+                        // Collision par la gauche de l'obstacle (le joueur allait vers la droite)
+                        this.player.x = obstacleLeft - this.player.w / 2;
+                        this.player.vitesseX = 0;
+                    } else if (minOverlap === overlapRight) {
+                        // Collision par la droite de l'obstacle
+                        this.player.x = obstacleRight + this.player.w / 2;
+                        this.player.vitesseX = 0;
+                    } else if (minOverlap === overlapTop) {
+                        // Collision par le haut de l'obstacle
+                        this.player.y = obstacleTop - this.player.h / 2;
+                        this.player.vitesseY = 0;
+                    } else if (minOverlap === overlapBottom) {
+                        // Collision par le bas de l'obstacle
+                        this.player.y = obstacleBottom + this.player.h / 2;
+                        this.player.vitesseY = 0;
+                    }
+                }
+            } else if (obstacle instanceof bumper) {
+                // Test collision Rectangle (Joueur) vs Triangle (Bumper)
+                if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                    console.log("Collision avec bumper");
+                    // Effet de rebond basique
+                    this.player.vitesseX = -this.player.vitesseX;
+                    this.player.vitesseY = -this.player.vitesseY;
+                    // On déplace légèrement le joueur pour éviter qu'il ne reste collé
+                    this.player.x += this.player.vitesseX * 25;
+                    this.player.y += this.player.vitesseY * 25;
                 }
             }
         });

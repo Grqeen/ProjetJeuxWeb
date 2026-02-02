@@ -6,7 +6,7 @@ export default class Player extends ObjectGraphique {
         super(x, y, 100, 100);
         this.vitesseX = 0;
         this.vitesseY = 0;
-        this.couleur = "pink";
+        this.couleur = "green";
         this.angle = 0;
     }
 

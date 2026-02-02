@@ -29,6 +29,71 @@ function circRectsOverlap(x0, y0, w0, h0, cx, cy, r) {
     return (((cx - testX) * (cx - testX) + (cy - testY) * (cy - testY)) < r * r);
 }
 
+//Collision between square and triangle
+function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th) {
+    // 1. Test AABB (Bounding Box) pour une sortie rapide
+    if (!rectsOverlap(rx, ry, rw, rh, tx, ty, tw, th)) {
+        return false;
+    }
+
+    // 2. SAT (Separating Axis Theorem)
+    // On vérifie si un espace sépare les deux formes sur les axes perpendiculaires aux côtés du triangle.
+    
+    // Sommets du triangle
+    let t1 = { x: tx + tw / 2, y: ty };      // Haut
+    let t2 = { x: tx + tw, y: ty + th };     // Bas Droite
+    let t3 = { x: tx, y: ty + th };          // Bas Gauche
+
+    // Sommets du rectangle
+    let rPoints = [
+        { x: rx, y: ry },
+        { x: rx + rw, y: ry },
+        { x: rx + rw, y: ry + rh },
+        { x: rx, y: ry + rh }
+    ];
+
+    let tPoints = [t1, t2, t3];
+
+    // Axes à tester : Normales des côtés inclinés du triangle.
+    // (Les axes X et Y sont déjà couverts par le test AABB)
+    
+    // Axe 1 : Normale du côté droit (t1 -> t2)
+    // Vecteur côté : (tw/2, th) -> Normale : (-th, tw/2)
+    let axis1 = { x: -th, y: tw / 2 };
+
+    // Axe 2 : Normale du côté gauche (t3 -> t1)
+    // Vecteur côté : (tw/2, -th) -> Normale : (th, tw/2)
+    let axis2 = { x: th, y: tw / 2 };
+
+    let axes = [axis1, axis2];
+
+    for (let axis of axes) {
+        // Projection du triangle
+        let minT = Infinity, maxT = -Infinity;
+        for (let p of tPoints) {
+            let proj = p.x * axis.x + p.y * axis.y;
+            minT = Math.min(minT, proj);
+            maxT = Math.max(maxT, proj);
+        }
+
+        // Projection du rectangle
+        let minR = Infinity, maxR = -Infinity;
+        for (let p of rPoints) {
+            let proj = p.x * axis.x + p.y * axis.y;
+            minR = Math.min(minR, proj);
+            maxR = Math.max(maxR, proj);
+        }
+
+        // S'il y a un espace entre les projections, il n'y a pas de collision
+        if (maxT < minR || maxR < minT) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+
 // Teste si le joueur a ateint la fin du niveau
 function testCollisionFin(player, objetsGraphiques) {
     objetsGraphiques.forEach(obj => {
@@ -45,4 +110,4 @@ function testCollisionFin(player, objetsGraphiques) {
     });
 }
 
-export { circleCollide, rectsOverlap, circRectsOverlap, testCollisionFin };
+export { circleCollide, rectsOverlap, circRectsOverlap, testCollisionFin, rectTriangleOverlap };
