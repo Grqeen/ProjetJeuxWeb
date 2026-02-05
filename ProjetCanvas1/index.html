@@ -1,84 +1,67 @@
 <html lang="fr">
 
 <head>
-    <title>Blob Escape</title>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="css/style.css">
-    <script src="js/script.js" type="module"></script>
+  <title>Blob Escape</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/script.js" type="module"></script>
 </head>
 
 <body>
-    <div id="gameMenu">
-        <h1>Blob Escape</h1>
-        <button id="startButton">Start</button>
-        <button id="LevelsButton">Levels</button>
-        <button id="exitButton">Exit</button>
-    </div>
-    <div id="menuStart">
-        <canvas id="myCanvas"></canvas>
-    </div>
+  <div id="gameMenu">
+    <h1>Blob Escape</h1>
+    <button id="startButton">Start</button>
+    <button id="LevelsButton">Levels</button>
+    <button id="exitButton">Exit</button>
+  </div>
+  <div id="menuStart">
+    <canvas id="myCanvas"></canvas>
+  </div>
 
 </body>
 
 </html>
-  <head>
-    <title>Projet Canvas</title>
-    <meta charset="utf-8" />
-    <link rel="stylesheet" href="css/style.css" />
-    <script src="js/script.js" type="module"></script>
-  </head>
-  <body>
-    <div class="headerCanvas">
-      <canvas id="myCanvas"></canvas>
-      <div
-        id="sidebar"
-        style="
-          position: absolute;
-          right: 0;
-          top: 0;
-          width: 450px;
-          height: 100vh;
-          background-color: #f0f0f0;
-          padding: 20px;
-          box-sizing: border-box;
-          font-family: sans-serif;
-        "
-      >
-        <h1>Temps : <span id="timer">0</span></h1>
-        <h1>Score : <span id="score">0</span></h1>
-        <h1>Niveau : <span id="level">1</span></h1>
-        <hr />
-        <h2>Contrôles :</h2>
-        <div class="controls-container">
-          <p>Utilisez les flèches directionnelles pour bouger :</p>
 
-          <div class="keyboard-grid">
-            <kbd class="key-up">↑</kbd>
-            <kbd class="key-left">←</kbd>
-            <kbd class="key-down">↓</kbd>
-            <kbd class="key-right">→</kbd>
-          </div>
+<head>
+  <title>Projet Canvas</title>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/script.js" type="module"></script>
+</head>
+
+<body>
+  <div class="headerCanvas">
+    <canvas id="myCanvas"></canvas>
+    <div id="sidebar">
+      <h1>Temps : <span id="timer">0</span></h1>
+      <h1>Score : <span id="score">0</span></h1>
+      <h1>Niveau : <span id="level">1</span></h1>
+      <hr />
+      <h2>Contrôles :</h2>
+      <div class="controls-container">
+        <p>Utilisez les flèches directionnelles pour bouger :</p>
+
+        <div class="keyboard-grid">
+          <kbd class="key-up">↑</kbd>
+          <kbd class="key-left">←</kbd>
+          <kbd class="key-down">↓</kbd>
+          <kbd class="key-right">→</kbd>
         </div>
-        <p>
-          Évitez les obstacles rouges et collectez les étoiles vertes pour
-          augmenter votre score.
-        </p>
-        <p>Si vous touchez un obstacle, vous perdez un point de vie et recommencez le niveau.</p>
-        <p>Une fois arrivé à 0 points de vie, vous perdez la partie.</p>
-        
-        <p>Le jeu devient plus difficile à chaque niveau.</p>
-        <hr />
-        <h2>Paramètres du jeu :</h2>
-        <label for="playerSpeedRange">Vitesse du joueur :</label>
-        <input
-          type="range"
-          id="playerSpeedRange"
-          name="playerSpeedRange"
-          min="5"
-          max="10"
-          step="1"
-        />
       </div>
+      <p>
+        Évitez les obstacles rouges et collectez les étoiles vertes pour
+        augmenter votre score.
+      </p>
+      <p>Si vous touchez un obstacle, vous perdez un point de vie et recommencez le niveau.</p>
+      <p>Une fois arrivé à 0 points de vie, vous perdez la partie.</p>
+
+      <p>Le jeu devient plus difficile à chaque niveau.</p>
+      <hr />
+      <h2>Paramètres du jeu :</h2>
+      <label for="playerSpeedRange">Vitesse du joueur :</label>
+      <input type="range" id="playerSpeedRange" name="playerSpeedRange" min="5" max="10" step="1" />
     </div>
-  </body>
+  </div>
+</body>
+
 </html>

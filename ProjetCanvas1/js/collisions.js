@@ -96,7 +96,7 @@ function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th) {
 
 // Teste si le joueur a ateint la fin du niveau
 function testCollisionFin(player, objetsGraphiques) {
-    objetsGraphiques.forEach(obj => {
+    for (let obj of objetsGraphiques) {
         if (obj instanceof fin) {
             // Le joueur est un rectangle, la fin est un cercle
             // On utilise la fonction de collision cercle/rectangle
@@ -104,10 +104,11 @@ function testCollisionFin(player, objetsGraphiques) {
                 player.x - player.w / 2, player.y - player.h / 2, player.w, player.h,
                 obj.x + obj.w / 2, obj.y + obj.h / 2, obj.w / 2
             )) {
-                console.log("fin du niveau");
+                return true;
             }
         }
-    });
+    }
+    return false;
 }
 
 export { circleCollide, rectsOverlap, circRectsOverlap, testCollisionFin, rectTriangleOverlap };
