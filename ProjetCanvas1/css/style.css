@@ -44,7 +44,7 @@ body{
 }
 /* --- 1. Le style des touches (Option 1 précédente) --- */
 kbd {
-  display: flex;             /* Pour bien centrer la flèche dans le carré */
+  display: flex;             
   justify-content: center;
   align-items: center;
   width: 40px;               /* Largeur fixe pour faire des carrés */
