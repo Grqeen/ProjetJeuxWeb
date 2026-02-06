@@ -5,6 +5,7 @@ import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
 import Levels from "./levels.js";
+import fin from "./fin.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -100,7 +101,7 @@ export default class Game {
         // this.objetSouris.y = this.inputStates.mouseY;
 
         // On regarde si le joueur a atteint la sortie
-        if (testCollisionFin(this.player, this.objetsGraphiques)) {
+        if (this.testCollisionFin()) {
             this.nextLevel();
         }
 
@@ -292,13 +293,13 @@ export default class Game {
 }
 
 // Teste si le joueur a ateint la fin du niveau
-testCollisionFin(player, objetsGraphiques) {
-    for (let obj of objetsGraphiques) {
+testCollisionFin() {
+    for (let obj of this.objetsGraphiques) {
         if (obj instanceof fin) {
             // Le joueur est un rectangle, la fin est un cercle
             // On utilise la fonction de collision cercle/rectangle
             if (circRectsOverlap(
-                player.x - player.w / 2, player.y - player.h / 2, player.w, player.h,
+                    this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h,
                 obj.x + obj.w / 2, obj.y + obj.h / 2, obj.w / 2
             )) {
                 return true;

@@ -2,6 +2,7 @@ import Player from "./Player.js";
 import Obstacle from "./Obstacle.js";
 import fin from "./fin.js";
 import bumper from "./bumper.js";
+import speedPotion from "./speedPotion.js";
 
 export default class Levels {
     constructor(game) {
@@ -32,6 +33,11 @@ export default class Levels {
             // Bumper
             this.game.bumper1 = new bumper(550, 340, 50, 50, "orange");
             this.game.objetsGraphiques.push(this.game.bumper1);
+
+            // Potion de vitesse
+            this.speedPotion1 = new speedPotion(250, 100, 25, 25, "cyan", 5, 3000);
+            this.game.objetsGraphiques.push(this.speedPotion1);
+
 
             // Sortie
             this.game.fin = new fin(1100, 50, 50, 50, "green");
