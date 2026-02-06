@@ -1,5 +1,3 @@
-import fin from "./fin.js";
-
 // Collisions between two circles
 function circleCollide(x1, y1, r1, x2, y2, r2) {
     var dx = x1 - x2;
@@ -93,22 +91,4 @@ function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th) {
     return true;
 }
 
-
-// Teste si le joueur a ateint la fin du niveau
-function testCollisionFin(player, objetsGraphiques) {
-    for (let obj of objetsGraphiques) {
-        if (obj instanceof fin) {
-            // Le joueur est un rectangle, la fin est un cercle
-            // On utilise la fonction de collision cercle/rectangle
-            if (circRectsOverlap(
-                player.x - player.w / 2, player.y - player.h / 2, player.w, player.h,
-                obj.x + obj.w / 2, obj.y + obj.h / 2, obj.w / 2
-            )) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-export { circleCollide, rectsOverlap, circRectsOverlap, testCollisionFin, rectTriangleOverlap };
+export { circleCollide, rectsOverlap, circRectsOverlap, rectTriangleOverlap };
