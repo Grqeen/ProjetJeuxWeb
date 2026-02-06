@@ -1,6 +1,6 @@
 import Obstacle, { RotatingObstacle } from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
-import { rectsOverlap, testCollisionFin, rectTriangleOverlap, rectRotatedRectOverlap } from "./collisions.js";
+import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
