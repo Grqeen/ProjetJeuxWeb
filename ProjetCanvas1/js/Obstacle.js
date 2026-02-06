@@ -12,3 +12,24 @@ export default class Obstacle extends ObjectGraphique {
         ctx.restore();
     }
 }
+
+export class RotatingObstacle extends ObjectGraphique {
+    constructor(x, y, w, h, couleur, angleSpeed, initialAngle = 0) {
+        super(x, y, w, h, couleur);
+        this.angle = initialAngle;
+        this.angleSpeed = angleSpeed;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+        ctx.fillStyle = this.couleur;
+        ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+        ctx.restore();
+    }
+
+    move() {
+        this.angle += this.angleSpeed;
+    }
+}
