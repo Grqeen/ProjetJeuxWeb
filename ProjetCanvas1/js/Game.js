@@ -1,11 +1,10 @@
-import Player from "./Player.js";
 import Obstacle from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
 import { rectsOverlap, circRectsOverlap, rectTriangleOverlap} from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
-import fin from "./fin.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
+import Levels from "./levels.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -15,6 +14,7 @@ export default class Game {
         this.scoreElement = scoreElement; // L'élément HTML pour afficher le score
         this.speedInputElement = speedInputElement; // L'input range pour la vitesse
         this.score = 0; // Le score actuel
+        this.levelElement = null; // L'élément HTML pour afficher le niveau
         // etat du clavier
         this.inputStates = {
             mouseX: 0,
@@ -24,39 +24,15 @@ export default class Game {
         // Gestion du boost de vitesse
         this.speedBoostEndTime = 0;
         this.activeSpeedBoost = 0;
+        this.running = false;
+        this.onFinish = null; // Callback appelé quand le jeu est fini
     }
 
     async init(canvas) {
         this.ctx = this.canvas.getContext("2d");
 
-        this.player = new Player(100, 100);
-        this.objetsGraphiques.push(this.player);
-
-        // Un objert qui suite la souris, juste pour tester
-        //this.objetSouris = new ObjetSouris(200, 200, 25, 25, "orange");
-        //this.objetsGraphiques.push(this.objetSouris);
-
-
-        // On cree deux obstacles
-        //rectangle obstacles
-        let obstacle1 = new Obstacle(300, 0, 40, 600, "red");
-        this.objetsGraphiques.push(obstacle1);
-        let obstacle3 = new Obstacle(900, 300, 40, 600, "yellow");
-        this.objetsGraphiques.push(obstacle3);  
-
-        //carre obstacles
-        let obstacle2 = new Obstacle(500, 500, 100, 100, "blue");
-        this.objetsGraphiques.push(obstacle2);
-        let obstacle4 = new Obstacle(750, 500, 100, 100, "purple");
-        this.objetsGraphiques.push(obstacle4);
-
-        // bumper
-        this.bumper1 = new bumper(550, 340, 50, 50, "orange");
-        this.objetsGraphiques.push(this.bumper1);
-
-        //Sortie de niveau
-        this.fin = new fin(1100, 50, 50, 50, "green");
-        this.objetsGraphiques.push(this.fin);
+        // Initialisation du gestionnaire de niveaux
+        this.levels = new Levels(this);
 
         //items
         // On met une vitesse raisonnable (ex: 5) car 200 est trop rapide par frame
@@ -69,14 +45,24 @@ export default class Game {
         console.log("Game initialisé");
     }
 
-    start() {
-        console.log("Game démarré");
+    start(levelNumber = 1) {
+        // Charge le niveau demandé
+        this.levels.load(levelNumber);
+        this.currentLevel = levelNumber;
+
+        if (this.levelElement) {
+            this.levelElement.innerText = levelNumber;
+        }
+        
+        console.log("Game démarré niveau " + levelNumber);
+        this.running = true;
 
         // On démarre une animation à 60 images par seconde
         requestAnimationFrame(this.mainAnimationLoop.bind(this));
     }
 
     mainAnimationLoop() {
+        if (!this.running) return;
         // 1 - on efface le canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -114,7 +100,9 @@ export default class Game {
         // this.objetSouris.y = this.inputStates.mouseY;
 
         // On regarde si le joueur a atteint la sortie
-        // TODO
+        if (testCollisionFin(this.player, this.objetsGraphiques)) {
+            this.nextLevel();
+        }
 
         // Mise à jour du score dans le HTML
         // (On pourrait optimiser en ne le faisant que si le score change)
@@ -304,18 +292,34 @@ export default class Game {
 }
 
 // Teste si le joueur a ateint la fin du niveau
-testCollisionFin() {
-    this.objetsGraphiques.forEach(obj => {
+testCollisionFin(player, objetsGraphiques) {
+    for (let obj of objetsGraphiques) {
         if (obj instanceof fin) {
             // Le joueur est un rectangle, la fin est un cercle
             // On utilise la fonction de collision cercle/rectangle
             if (circRectsOverlap(
-                this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h,
+                player.x - player.w / 2, player.y - player.h / 2, player.w, player.h,
                 obj.x + obj.w / 2, obj.y + obj.h / 2, obj.w / 2
             )) {
-                console.log("fin du niveau");
+                return true;
             }
         }
-    });
+    }
+    return false;
 }
+
+    nextLevel() {
+        // On incrémente le niveau
+        this.currentLevel++;
+        // On essaie de charger le niveau suivant
+        this.levels.load(this.currentLevel);
+
+        // Si le tableau d'objets est vide, c'est que le niveau n'existe pas
+        if (this.objetsGraphiques.length === 0) {
+            this.running = false; // On arrête la boucle de jeu
+            if (this.onFinish) this.onFinish(); // On appelle le callback de fin
+        } else {
+            if (this.levelElement) this.levelElement.innerText = this.currentLevel;
+        }
+    }
 }
