@@ -66,10 +66,7 @@ async function init() {
 
     // Gestion du bouton Exit
     exitBtn.onclick = () => {
-        if (confirm("Voulez-vous vraiment quitter ?")) {
-            window.close();
-            window.location.href = "about:blank";
-        }
+        alert("coming soon");
     };
 
     // Gestion du bouton Levels
