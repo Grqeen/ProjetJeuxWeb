@@ -3,7 +3,9 @@ import Obstacle, { RotatingObstacle } from "./Obstacle.js";
 import { rectsOverlap, testCollisionFin, rectTriangleOverlap, rectRotatedRectOverlap } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
+import speedPotion from "./speedPotion.js";
 import Levels from "./levels.js";
+import fin from "./fin.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -19,6 +21,10 @@ export default class Game {
             mouseX: 0,
             mouseY: 0,
         };
+
+        // Gestion du boost de vitesse
+        this.speedBoostEndTime = 0;
+        this.activeSpeedBoost = 0;
         this.running = false;
         this.onFinish = null; // Callback appelé quand le jeu est fini
     }
@@ -28,6 +34,11 @@ export default class Game {
 
         // Initialisation du gestionnaire de niveaux
         this.levels = new Levels(this);
+
+        //items
+        // On met une vitesse raisonnable (ex: 5) car 200 est trop rapide par frame
+        this.speedPotion1 = new speedPotion(250, 100, 25, 25, "cyan", 5, 3000);
+        this.objetsGraphiques.push(this.speedPotion1);
 
         // On initialise les écouteurs de touches, souris, etc.
         initListeners(this.inputStates, this.canvas, this.speedInputElement);
@@ -97,7 +108,7 @@ export default class Game {
         // this.objetSouris.y = this.inputStates.mouseY;
 
         // On regarde si le joueur a atteint la sortie
-        if (testCollisionFin(this.player, this.objetsGraphiques)) {
+        if (this.testCollisionFin()) {
             this.nextLevel();
         }
 
@@ -115,8 +126,14 @@ export default class Game {
         // On récupère la vitesse depuis l'input HTML
         // On convertit en nombre avec Number() car .value renvoie une chaîne de caractères
         // Valeur par défaut 3 si l'input n'existe pas
-        let vitesse = this.speedInputElement ? Number(this.speedInputElement.value) : 3;
+        let defaultSpeed = 3;
+        let vitesse = this.speedInputElement ? Number(this.speedInputElement.value) : defaultSpeed;
         
+        // Si le boost est actif (temps actuel < temps de fin du boost)
+        if (Date.now() < this.speedBoostEndTime) {
+            vitesse += this.activeSpeedBoost;
+        }
+
         if(this.inputStates.ArrowRight) {
             this.player.vitesseX = vitesse;
         } 
@@ -146,7 +163,11 @@ export default class Game {
 
         // Gestion améliorée des collisions avec les obstacles
         this.handleCollisionObstacle();
-       
+
+        this.testCollisionItems();
+
+        this.testCollisionFin();
+
     }
 
     testCollisionPlayerBordsEcran() {
@@ -271,6 +292,41 @@ export default class Game {
             }
         });
     }
+
+    testCollisionItems() {
+    // On parcourt le tableau à l'envers pour pouvoir supprimer des éléments sans casser la boucle
+    for (let i = this.objetsGraphiques.length - 1; i >= 0; i--) {
+        let obj = this.objetsGraphiques[i];
+        if (obj instanceof speedPotion) {
+            if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                console.log("Collision avec SpeedPotion : Vitesse augmentée !");
+                
+                // On active le boost
+                this.activeSpeedBoost = obj.vitesse;
+                this.speedBoostEndTime = Date.now() + obj.temps;
+
+                this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+            }
+        }
+    }
+}
+
+// Teste si le joueur a ateint la fin du niveau
+testCollisionFin() {
+    for (let obj of this.objetsGraphiques) {
+        if (obj instanceof fin) {
+            // Le joueur est un rectangle, la fin est un cercle
+            // On utilise la fonction de collision cercle/rectangle
+            if (circRectsOverlap(
+                    this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h,
+                obj.x + obj.w / 2, obj.y + obj.h / 2, obj.w / 2
+            )) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
 
     nextLevel() {
         // On incrémente le niveau

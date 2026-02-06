@@ -1,5 +1,3 @@
-import fin from "./fin.js";
-
 // Collisions between two circles
 function circleCollide(x1, y1, r1, x2, y2, r2) {
     var dx = x1 - x2;
