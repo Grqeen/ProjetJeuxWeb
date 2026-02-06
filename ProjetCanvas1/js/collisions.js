@@ -111,4 +111,72 @@ function testCollisionFin(player, objetsGraphiques) {
     return false;
 }
 
-export { circleCollide, rectsOverlap, circRectsOverlap, testCollisionFin, rectTriangleOverlap };
+// Collision entre un rectangle aligné (AABB - Joueur) et un rectangle rotatif (OBB)
+function rectRotatedRectOverlap(rx, ry, rw, rh, ox, oy, ow, oh, angle) {
+    // rx, ry : coin haut-gauche du joueur
+    // ox, oy : centre de l'obstacle rotatif
+    // ow, oh : dimensions de l'obstacle
+    // angle : rotation en radians
+
+    // 1. Points du joueur (AABB)
+    let rPoints = [
+        { x: rx, y: ry },
+        { x: rx + rw, y: ry },
+        { x: rx + rw, y: ry + rh },
+        { x: rx, y: ry + rh }
+    ];
+
+    // 2. Points de l'obstacle (OBB)
+    let cos = Math.cos(angle);
+    let sin = Math.sin(angle);
+    let hw = ow / 2;
+    let hh = oh / 2;
+
+    // Calcul des 4 coins de l'obstacle après rotation et translation
+    let oPoints = [
+        { x: -hw, y: -hh },
+        { x: hw, y: -hh },
+        { x: hw, y: hh },
+        { x: -hw, y: hh }
+    ].map(p => ({
+        x: ox + (p.x * cos - p.y * sin),
+        y: oy + (p.x * sin + p.y * cos)
+    }));
+
+    // 3. Axes à tester (SAT - Separating Axis Theorem)
+    // Axes du joueur (AABB) : (1,0), (0,1)
+    // Axes de l'obstacle : vecteurs unitaires de ses côtés (cos, sin) et (-sin, cos)
+    let axes = [
+        { x: 1, y: 0 },
+        { x: 0, y: 1 },
+        { x: cos, y: sin },
+        { x: -sin, y: cos }
+    ];
+
+    for (let axis of axes) {
+        // Projection du joueur
+        let minR = Infinity, maxR = -Infinity;
+        for (let p of rPoints) {
+            let proj = p.x * axis.x + p.y * axis.y;
+            minR = Math.min(minR, proj);
+            maxR = Math.max(maxR, proj);
+        }
+
+        // Projection de l'obstacle
+        let minO = Infinity, maxO = -Infinity;
+        for (let p of oPoints) {
+            let proj = p.x * axis.x + p.y * axis.y;
+            minO = Math.min(minO, proj);
+            maxO = Math.max(maxO, proj);
+        }
+
+        // Si un espace est trouvé entre les projections, pas de collision
+        if (maxR < minO || maxO < minR) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+export { circleCollide, rectsOverlap, circRectsOverlap, testCollisionFin, rectTriangleOverlap, rectRotatedRectOverlap };

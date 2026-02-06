@@ -1,5 +1,5 @@
 import Player from "./Player.js";
-import Obstacle from "./Obstacle.js";
+import Obstacle, { RotatingObstacle } from "./Obstacle.js";
 import fin from "./fin.js";
 import bumper from "./bumper.js";
 
@@ -37,16 +37,54 @@ export default class Levels {
             this.game.fin = new fin(1100, 50, 50, 50, "green");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 2) {
-            // --- NIVEAU 2 ---
-            this.game.player = new Player(50, 50);
+            // --- NIVEAU 2 : DESIGN EXACT + AJUSTEMENTS ---
+            this.game.player = new Player(350, 50);
             this.game.objetsGraphiques.push(this.game.player);
 
-            // Exemple d'obstacles pour le niveau 2
-            this.game.objetsGraphiques.push(new Obstacle(200, 100, 50, 400, "brown"));
-            this.game.objetsGraphiques.push(new Obstacle(500, 300, 300, 50, "black"));
-            
-            // Sortie
-            this.game.fin = new fin(800, 500, 50, 50, "red");
+            const addRotatingCross = (x, y, size, speed) => {
+                this.game.objetsGraphiques.push(new RotatingObstacle(x, y, size, 20, "black", speed, 0));
+                this.game.objetsGraphiques.push(new RotatingObstacle(x, y, size, 20, "black", speed, Math.PI / 2));
+            };
+
+            // 1. Les deux premières croix : descendues et agrandies (Size 300)
+            // Elles bloquent presque tout l'écran, forçant le passage au centre
+            addRotatingCross(180, 300, 250, 0.02); 
+            addRotatingCross(450, 300, 250, -0.02);
+
+            // 2. La structure en "U" au centre
+            let uX = 650;
+            let uY = 0;
+            let uW = 300;
+            let uH = 450;
+            let thick = 30;
+            this.game.objetsGraphiques.push(new Obstacle(uX, uY, thick, uH, "black")); // Gauche
+            this.game.objetsGraphiques.push(new Obstacle(uX + uW - thick, uY, thick, uH, "black")); // Droite
+            this.game.objetsGraphiques.push(new Obstacle(uX, uY + uH - thick, uW, thick, "black")); // Fond du U
+
+            // 3. La croix du milieu agrandie (Size 300)
+            addRotatingCross(uX + uW/2, 700, 400, -0.015);
+
+            // 4. La dernière croix agrandie pour bloquer l'espace (Size 400)
+            // Placée pour qu'elle frôle le mur du U et le bord de l'écran
+            addRotatingCross(1100, 250, 290, -0.01);
+
+            // 5. Mur vertical de droite
+            let wallRightX = 1250;
+            let wallRightY = 400;
+            let wallRightH = 550;
+            this.game.objetsGraphiques.push(new Obstacle(wallRightX, wallRightY, 35, wallRightH, "black"));
+
+            // 6. Barre horizontale du bas reliée au mur vertical (Y ajusté à 950)
+            let wallBottomX = 700;
+            let wallBottomY = 920; 
+            let wallBottomW = wallRightX - wallBottomX + 35; // Calcule la largeur pour toucher le mur de droite
+            this.game.objetsGraphiques.push(new Obstacle(wallBottomX, wallBottomY, wallBottomW, 35, "black"));
+
+            // 7. La petite barre "pied" qui relie la barre du bas à la terre (le bas du canvas)
+            this.game.objetsGraphiques.push(new Obstacle(wallBottomX, wallBottomY + 35, 35, 200, "black"));
+
+            // 8. La sortie (Cercle rouge)
+            this.game.fin = new fin(wallRightX + 100, wallBottomY - 70, 60, 60, "red");
             this.game.objetsGraphiques.push(this.game.fin);
         }
     }

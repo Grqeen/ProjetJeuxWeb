@@ -1,6 +1,6 @@
-import Obstacle from "./Obstacle.js";
+import Obstacle, { RotatingObstacle } from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
-import { rectsOverlap, testCollisionFin, rectTriangleOverlap } from "./collisions.js";
+import { rectsOverlap, testCollisionFin, rectTriangleOverlap, rectRotatedRectOverlap } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
 import Levels from "./levels.js";
@@ -82,6 +82,13 @@ export default class Game {
         
         // Déplacement du joueur. 
         this.movePlayer();
+
+        // Mise à jour des objets animés (sauf le joueur qui est géré par movePlayer)
+        this.objetsGraphiques.forEach(obj => {
+            if (obj !== this.player && obj.move) {
+                obj.move();
+            }
+        });
 
         // on met à jouer la position de objetSouris avec la position de la souris
         // Pour un objet qui "suit" la souris mais avec un temps de retard, voir l'exemple
@@ -248,6 +255,18 @@ export default class Game {
                     // On déplace légèrement le joueur pour éviter qu'il ne reste collé
                     this.player.x += this.player.vitesseX * 25;
                     this.player.y += this.player.vitesseY * 25;
+                }
+            } else if (obstacle instanceof RotatingObstacle) {
+                if (rectRotatedRectOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.angle)) {
+                    console.log("Collision avec obstacle rotatif");
+                    // On repousse le joueur vers l'extérieur du centre de rotation
+                    let dx = this.player.x - obstacle.x;
+                    let dy = this.player.y - obstacle.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0) {
+                        this.player.x += (dx / dist) * 10;
+                        this.player.y += (dy / dist) * 10;
+                    }
                 }
             }
         });
