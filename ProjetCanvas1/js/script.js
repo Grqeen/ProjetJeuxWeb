@@ -12,6 +12,43 @@ async function init() {
     let levelsBtn = document.querySelector("#LevelsButton");
     let sidebar = document.querySelector("#sidebar");
 
+    // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
+    let menuTextContainer = document.createElement("div");
+    menuTextContainer.id = "menuTextContainer";
+    
+    // On déplace les éléments existants du menu dans le conteneur de texte
+    while (menu.firstChild) {
+        menuTextContainer.appendChild(menu.firstChild);
+    }
+    menu.appendChild(menuTextContainer);
+
+    // Ajout de l'image (blob) sur la droite
+    let blobImage = document.createElement("img");
+    let gifSource = "assets/images/blobMenu.gif";
+    blobImage.src = gifSource;
+    blobImage.id = "blobMenuImage";
+    menu.appendChild(blobImage);
+
+    // Génération de la version statique (pause)
+    let staticSource = "";
+    let tempImg = new Image();
+    tempImg.src = gifSource;
+    tempImg.onload = () => {
+        let c = document.createElement("canvas");
+        c.width = tempImg.width;
+        c.height = tempImg.height;
+        c.getContext("2d").drawImage(tempImg, 0, 0);
+        staticSource = c.toDataURL();
+        blobImage.src = staticSource; // On met en pause par défaut
+    };
+
+    blobImage.onmouseenter = () => {
+        blobImage.src = gifSource;
+    };
+    blobImage.onmouseleave = () => {
+        if (staticSource) blobImage.src = staticSource;
+    };
+
     // Création dynamique du menu des niveaux
     let levelsMenu = document.createElement("div");
     levelsMenu.id = "levelsMenu";
@@ -23,6 +60,11 @@ async function init() {
         <button id="btnBack">Retour</button>
     `;
     document.body.appendChild(levelsMenu);
+
+    // Création de l'arrière-plan du menu
+    let menuBackground = document.createElement("div");
+    menuBackground.id = "menuBackground";
+    document.body.appendChild(menuBackground);
 
     // Création du message de victoire
     let winMessage = document.createElement("div");
@@ -52,6 +94,7 @@ async function init() {
     game.onFinish = () => {
         menu.style.display = "block";
         sidebar.style.display = "none";
+        menuBackground.style.display = "block";
         winMessage.style.display = "block";
         resizeCanvas();
     };
@@ -59,6 +102,7 @@ async function init() {
     startBtn.onclick = () => {
         winMessage.style.display = "none"; // On cache le message si on relance
         menu.style.display = "none";
+        menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(1); // Lance le niveau 1 par défaut
@@ -80,6 +124,7 @@ async function init() {
     document.querySelector("#btnLevel1").onclick = () => {
         winMessage.style.display = "none";
         levelsMenu.style.display = "none";
+        menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(1);
@@ -87,6 +132,7 @@ async function init() {
     document.querySelector("#btnLevel2").onclick = () => {
         levelsMenu.style.display = "none";
         winMessage.style.display = "none";
+        menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(2);
