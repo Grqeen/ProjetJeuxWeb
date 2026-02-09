@@ -74,8 +74,9 @@ export default class Game {
 
     mainAnimationLoop() {
         if (!this.running) return;
-        // 1 - on efface le canvas
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // 1 - on efface le canvas avec une couleur de fond (gris clair) pour délimiter le niveau
+        this.ctx.fillStyle = "#d0d0d0"; 
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 2 - on dessine les objets à animer dans le jeu
         // ici on dessine le monstre
@@ -285,12 +286,18 @@ export default class Game {
                 // Test collision Rectangle (Joueur) vs Triangle (Bumper)
                 if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     console.log("Collision avec bumper");
-                    // Effet de rebond basique
+
+                    // On inverse la direction
                     this.player.vitesseX = -this.player.vitesseX;
                     this.player.vitesseY = -this.player.vitesseY;
-                    // On déplace légèrement le joueur pour éviter qu'il ne reste collé
-                    this.player.x += this.player.vitesseX * 25;
-                    this.player.y += this.player.vitesseY * 25;
+
+                    // --- AJUSTEMENT DE LA FORCE ---
+                    // Si on est au niveau 3, on utilise une force de 60, sinon la force normale de 25
+                    let forceRebond = (this.currentLevel === 3) ? 40 : 25; 
+
+                    // On applique la répulsion
+                    this.player.x += this.player.vitesseX * forceRebond;
+                    this.player.y += this.player.vitesseY * forceRebond;
                 }
             } else if (obstacle instanceof RotatingObstacle) {
                 if (rectRotatedRectOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.angle)) {
