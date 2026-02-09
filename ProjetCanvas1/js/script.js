@@ -12,6 +12,43 @@ async function init() {
     let levelsBtn = document.querySelector("#LevelsButton");
     let sidebar = document.querySelector("#sidebar");
 
+    // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
+    let menuTextContainer = document.createElement("div");
+    menuTextContainer.id = "menuTextContainer";
+    
+    // On déplace les éléments existants du menu dans le conteneur de texte
+    while (menu.firstChild) {
+        menuTextContainer.appendChild(menu.firstChild);
+    }
+    menu.appendChild(menuTextContainer);
+
+    // Ajout de l'image (blob) sur la droite
+    let blobImage = document.createElement("img");
+    let gifSource = "assets/images/blobMenu.gif";
+    blobImage.src = gifSource;
+    blobImage.id = "blobMenuImage";
+    menu.appendChild(blobImage);
+
+    // Génération de la version statique (pause)
+    let staticSource = "";
+    let tempImg = new Image();
+    tempImg.src = gifSource;
+    tempImg.onload = () => {
+        let c = document.createElement("canvas");
+        c.width = tempImg.width;
+        c.height = tempImg.height;
+        c.getContext("2d").drawImage(tempImg, 0, 0);
+        staticSource = c.toDataURL();
+        blobImage.src = staticSource; // On met en pause par défaut
+    };
+
+    blobImage.onmouseenter = () => {
+        blobImage.src = gifSource;
+    };
+    blobImage.onmouseleave = () => {
+        if (staticSource) blobImage.src = staticSource;
+    };
+
     // Création dynamique du menu des niveaux
     let levelsMenu = document.createElement("div");
     levelsMenu.id = "levelsMenu";
@@ -24,6 +61,11 @@ async function init() {
     `;
     document.body.appendChild(levelsMenu);
 
+    // Création de l'arrière-plan du menu
+    let menuBackground = document.createElement("div");
+    menuBackground.id = "menuBackground";
+    document.body.appendChild(menuBackground);
+
     // Création du message de victoire
     let winMessage = document.createElement("div");
     winMessage.id = "winMessage";
@@ -31,33 +73,15 @@ async function init() {
     winMessage.style.display = "none";
     document.body.appendChild(winMessage);
 
-    // --- RÉSOLUTION VIRTUELLE ---
-    // On définit une taille interne fixe pour le jeu.
-    // Tous les calculs de position (x, y) se feront dans cet espace de 1600x1000.
-    const GAME_WIDTH = 1600;
-    const GAME_HEIGHT = 1000;
-    canvas.width = GAME_WIDTH;
-    canvas.height = GAME_HEIGHT;
-
     function resizeCanvas() {
         let sidebarWidth = 450;
         let sidebarWidthStartMenu = 0;
-        let availableWidth;
-
         if (menu.style.display !== "none" || levelsMenu.style.display !== "none") {
-            availableWidth = window.innerWidth - sidebarWidthStartMenu;
+            canvas.width = window.innerWidth - sidebarWidthStartMenu;
         } else {
-            availableWidth = window.innerWidth - sidebarWidth;
+            canvas.width = window.innerWidth - sidebarWidth;
         }
-        
-        let availableHeight = window.innerHeight;
-
-        // On calcule le ratio pour que le canvas rentre dans l'écran sans déformation
-        let scale = Math.min(availableWidth / GAME_WIDTH, availableHeight / GAME_HEIGHT);
-
-        // On applique la taille d'affichage via CSS (zoom)
-        canvas.style.width = `${GAME_WIDTH * scale}px`;
-        canvas.style.height = `${GAME_HEIGHT * scale}px`;
+        canvas.height = window.innerHeight;
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -70,6 +94,7 @@ async function init() {
     game.onFinish = () => {
         menu.style.display = "block";
         sidebar.style.display = "none";
+        menuBackground.style.display = "block";
         winMessage.style.display = "block";
         resizeCanvas();
     };
@@ -77,6 +102,7 @@ async function init() {
     startBtn.onclick = () => {
         winMessage.style.display = "none"; // On cache le message si on relance
         menu.style.display = "none";
+        menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(1); // Lance le niveau 1 par défaut
@@ -98,6 +124,7 @@ async function init() {
     document.querySelector("#btnLevel1").onclick = () => {
         winMessage.style.display = "none";
         levelsMenu.style.display = "none";
+        menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(1);
@@ -105,6 +132,7 @@ async function init() {
     document.querySelector("#btnLevel2").onclick = () => {
         levelsMenu.style.display = "none";
         winMessage.style.display = "none";
+        menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(2);
