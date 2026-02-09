@@ -75,8 +75,7 @@ export default class Game {
     mainAnimationLoop() {
         if (!this.running) return;
         // 1 - on efface le canvas avec une couleur de fond (gris clair) pour délimiter le niveau
-        this.ctx.fillStyle = "#d0d0d0"; 
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 2 - on dessine les objets à animer dans le jeu
         // ici on dessine le monstre
