@@ -33,6 +33,10 @@ export default class Game {
         this.playerSpeed = 5;
         this.rotationMultiplier = 1;
         this.bumperForce = 25;
+        
+        // Gestion du recul (Knockback)
+        this.knockbackX = 0;
+        this.knockbackY = 0;
 
         // Gestion du boost de vitesse
         this.speedBoostEndTime = 0;
@@ -71,6 +75,10 @@ export default class Game {
         
         console.log("Game démarré niveau " + levelNumber);
         
+        // Reset du knockback
+        this.knockbackX = 0;
+        this.knockbackY = 0;
+
         // Reset du timer au lancement du niveau
         this.startTime = Date.now();
 
@@ -148,8 +156,8 @@ export default class Game {
     }
 
     movePlayer() {
-        this.player.vitesseX = 0;
-        this.player.vitesseY = 0;
+        let inputVx = 0;
+        let inputVy = 0;
 
         // Vitesse de base du joueur
         let vitesse = this.playerSpeed;
@@ -159,22 +167,22 @@ export default class Game {
             vitesse += this.activeSpeedBoost;
         }
 
-        if(this.inputStates.ArrowRight) {
-            this.player.vitesseX = vitesse;
-        } 
-        if(this.inputStates.ArrowLeft) {
-            this.player.vitesseX = -vitesse;
-        } 
+        if(this.inputStates.ArrowRight) inputVx = vitesse;
+        if(this.inputStates.ArrowLeft) inputVx = -vitesse;
+        if(this.inputStates.ArrowUp) inputVy = -vitesse;
+        if(this.inputStates.ArrowDown) inputVy = vitesse;
 
-        if(this.inputStates.ArrowUp) {
-            this.player.vitesseY = -vitesse;
-        } 
-
-        if(this.inputStates.ArrowDown) {
-            this.player.vitesseY = vitesse;
-        } 
+        // On ajoute le knockback à la vitesse
+        this.player.vitesseX = inputVx + this.knockbackX;
+        this.player.vitesseY = inputVy + this.knockbackY;
 
         this.player.move();
+
+        // Friction sur le knockback
+        this.knockbackX *= 0.9;
+        this.knockbackY *= 0.9;
+        if (Math.abs(this.knockbackX) < 0.1) this.knockbackX = 0;
+        if (Math.abs(this.knockbackY) < 0.1) this.knockbackY = 0;
 
         this.testCollisionsPlayer();
     }
@@ -297,16 +305,29 @@ export default class Game {
                 if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     console.log("Collision avec bumper");
 
-                    // On inverse la direction
-                    this.player.vitesseX = -this.player.vitesseX;
-                    this.player.vitesseY = -this.player.vitesseY;
+                    // 1. On annule le mouvement pour sortir du bumper (éviter de rester coincé)
+                    this.player.x -= this.player.vitesseX;
+                    this.player.y -= this.player.vitesseY;
 
-                    // --- AJUSTEMENT DE LA FORCE ---
-                    let forceRebond = this.bumperForce; 
+                    // 2. Calcul de la direction du rebond
+                    let vx = this.player.vitesseX;
+                    let vy = this.player.vitesseY;
+                    let mag = Math.sqrt(vx * vx + vy * vy);
+                    let forceRebond = this.bumperForce;
 
-                    // On applique la répulsion
-                    this.player.x += this.player.vitesseX * forceRebond;
-                    this.player.y += this.player.vitesseY * forceRebond;
+                    if (mag > 0.1) {
+                        this.knockbackX = -(vx / mag) * forceRebond;
+                        this.knockbackY = -(vy / mag) * forceRebond;
+                    } else {
+                        // Si immobile, on repousse depuis le centre du bumper
+                        let dx = this.player.x - (obstacle.x + obstacle.w/2);
+                        let dy = this.player.y - (obstacle.y + obstacle.h/2);
+                        let dist = Math.sqrt(dx*dx + dy*dy);
+                        if(dist > 0) {
+                            this.knockbackX = (dx/dist) * forceRebond;
+                            this.knockbackY = (dy/dist) * forceRebond;
+                        }
+                    }
                 }
             } else if (obstacle instanceof RotatingObstacle) {
                 if (rectRotatedRectOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.angle)) {
