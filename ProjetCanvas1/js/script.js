@@ -74,6 +74,92 @@ async function init() {
     winMessage.style.display = "none";
     document.body.appendChild(winMessage);
 
+    // --- CONFIGURATION VIDÉO ---
+    let videoContainer = document.createElement("div");
+    Object.assign(videoContainer.style, {
+        display: "none",
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "black",
+        zIndex: "2000",
+        alignItems: "center",
+        justifyContent: "center"
+    });
+    
+    let videoPlayer = document.createElement("video");
+    videoPlayer.src = "assets/video/Blob Escape Lore.mp4"; 
+    videoPlayer.style.width = "100%";
+    videoPlayer.style.height = "100%";
+    videoPlayer.style.objectFit = "cover";
+    
+    // Création du bouton SKIP
+    let skipButton = document.createElement("button");
+    skipButton.innerText = "SKIP >>";
+    Object.assign(skipButton.style, {
+        position: "absolute",
+        bottom: "30px",
+        right: "30px",
+        zIndex: "2001",
+        fontSize: "40px",
+        fontFamily: "'Lilita One', cursive",
+        color: "white",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        textShadow: "3px 3px 0 #000",
+        transition: "all 0.3s ease"
+    });
+
+    // Effets de survol (identiques au menu)
+    skipButton.onmouseenter = () => {
+        skipButton.style.transform = "scale(1.1) rotate(-3deg)";
+        skipButton.style.color = "#ffcc00";
+        skipButton.style.textShadow = "3px 3px 0 #b8860b";
+    };
+    skipButton.onmouseleave = () => {
+        skipButton.style.transform = "scale(1) rotate(0deg)";
+        skipButton.style.color = "white";
+        skipButton.style.textShadow = "3px 3px 0 #000";
+    };
+
+    videoContainer.appendChild(videoPlayer);
+    videoContainer.appendChild(skipButton);
+    document.body.appendChild(videoContainer);
+
+    function playVideo(callback) {
+        menu.style.display = "none";
+        menuBackground.style.display = "none";
+        levelsMenu.style.display = "none";
+        winMessage.style.display = "none";
+        if (sidebar) sidebar.style.display = "none";
+
+        videoContainer.style.display = "flex";
+        videoPlayer.currentTime = 0;
+        videoPlayer.play().catch(e => console.log("Erreur lecture vidéo", e));
+
+        const endVideo = () => {
+            videoPlayer.pause();
+            videoContainer.style.display = "none";
+            // Nettoyage des événements
+            videoPlayer.onended = null;
+            videoPlayer.onclick = null;
+            skipButton.onclick = null;
+            if (callback) callback();
+        };
+
+        videoPlayer.onended = endVideo;
+        
+        // Clic pour passer la vidéo (Bouton ou Vidéo)
+        videoPlayer.onclick = endVideo;
+        skipButton.onclick = (e) => {
+            e.stopPropagation();
+            endVideo();
+        };
+    }
+
     function resizeCanvas() {
         // 1. On fixe une taille INTERNE constante (Pratique "Pro")
         // Tes coordonnées dans levels.js ne bougeront plus jamais !
@@ -109,16 +195,21 @@ async function init() {
 
     startBtn.onclick = () => {
         winMessage.style.display = "none"; // On cache le message si on relance
-        menu.style.display = "none";
-        menuBackground.style.display = "none";
-        if (sidebar) sidebar.style.display = "block";
-        resizeCanvas();
-        game.start(1); // Lance le niveau 1 par défaut
+        
+        playVideo(() => {
+            if (sidebar) sidebar.style.display = "block";
+            resizeCanvas();
+            game.start(1); // Lance le niveau 1 par défaut
+        });
     };
 
-    // Gestion du bouton Exit
+    // Gestion du bouton Histoire (anciennement Exit)
     exitBtn.onclick = () => {
-        alert("coming soon");
+        playVideo(() => {
+            menu.style.display = "flex";
+            menuBackground.style.display = "block";
+            resizeCanvas();
+        });
     };
 
     // Gestion du bouton Levels
