@@ -98,7 +98,7 @@ async function init() {
     });
     
     let videoPlayer = document.createElement("video");
-    videoPlayer.src = "assets/video/Blob Escape Lore.mp4"; 
+    videoPlayer.src = "assets/video/Blob_Escape_Lore.mp4"; 
     videoPlayer.style.width = "100%";
     videoPlayer.style.height = "100%";
     videoPlayer.style.objectFit = "cover";
@@ -141,7 +141,7 @@ async function init() {
         menu.style.display = "none";
         menuBackground.style.display = "none";
         levelsMenu.style.display = "none";
-        winMessage.style.display = "none";
+        winMenu.style.display = "none";
         if (sidebar) sidebar.style.display = "none";
 
         videoContainer.style.display = "flex";
@@ -203,13 +203,6 @@ async function init() {
 
     startBtn.onclick = () => {
         winMenu.style.display = "none"; // On cache le menu si on relance
-        menu.style.display = "none";
-        menuBackground.style.display = "none";
-        if (sidebar) sidebar.style.display = "block";
-        resizeCanvas();
-        game.start(1); // Lance le niveau 1 par défaut
-        winMessage.style.display = "none"; // On cache le message si on relance
-        
         playVideo(() => {
             if (sidebar) sidebar.style.display = "block";
             resizeCanvas();
@@ -252,7 +245,7 @@ async function init() {
     };
     document.querySelector("#btnLevel3").onclick = () => {
         levelsMenu.style.display = "none";
-        winMessage.style.display = "none";
+        winMenu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
