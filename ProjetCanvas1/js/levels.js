@@ -21,7 +21,7 @@ export default class Levels {
             // Obstacles
             let obstacle1 = new Obstacle(300, 0, 40, 600, "red");
             this.game.objetsGraphiques.push(obstacle1);
-            let obstacle3 = new Obstacle(900, 300, 40, 600, "yellow");
+            let obstacle3 = new Obstacle(900, 300, 40, 700, "yellow");
             this.game.objetsGraphiques.push(obstacle3);
 
             // Carrés
@@ -50,8 +50,8 @@ export default class Levels {
 
             // Obstacles de type "Croix" (simplifiés comme le niveau 1)
             // Croix 1
-            this.game.objetsGraphiques.push(new RotatingObstacle(400, 300, 250, 20, "black", 0.02, 0));
-            this.game.objetsGraphiques.push(new RotatingObstacle(400, 300, 250, 20, "black", 0.02, Math.PI / 2));
+            this.game.objetsGraphiques.push(new RotatingObstacle(320, 470, 250, 20, "black", 0.02, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(320, 470, 250, 20, "black", 0.02, Math.PI / 2));
 
             // Croix 2
             this.game.objetsGraphiques.push(new RotatingObstacle(800, 600, 250, 20, "black", -0.02, 0));
