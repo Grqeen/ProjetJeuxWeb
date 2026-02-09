@@ -79,9 +79,9 @@ export default class Levels {
             this.game.objetsGraphiques.push(new Obstacle(0, 750, 330, 250, "black"));
 
             // 2. Murs restants de l'arène
-            this.game.objetsGraphiques.push(new Obstacle(300, 0, 1000, 30, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(300, 970, 1000, 30, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1300, 0, 30, 1000, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(300, 0, 1100, 30, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(300, 970, 1100, 30, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1300, 0, 100, 1000, "black"));
             this.game.objetsGraphiques.push(new Obstacle(650, 350, 300, 300, "black"));
 
             // 3. Croix rotative
