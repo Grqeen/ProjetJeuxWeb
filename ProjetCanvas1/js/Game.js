@@ -361,7 +361,6 @@ export default class Game {
                         }
                     });
                     // On remet les keypads
-                    //this.objetsGraphiques.push(new keypad(obj.x, obj.y, obj.w, obj.h, obj.couleur, obj.temps, obj.id));
                     this.objetsGraphiques.forEach(o => {
                         if (o instanceof keypad && o.id === obj.id) {
                             o.visible = true;
