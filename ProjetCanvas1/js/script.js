@@ -99,7 +99,7 @@ async function init() {
 
     // Configuration du callback de fin de jeu
     game.onFinish = () => {
-        menu.style.display = "block";
+        menu.style.display = "flex";
         sidebar.style.display = "none";
         menuBackground.style.display = "block";
         winMessage.style.display = "block";
@@ -146,7 +146,7 @@ async function init() {
     };
     document.querySelector("#btnBack").onclick = () => {
         levelsMenu.style.display = "none";
-        menu.style.display = "block";
+        menu.style.display = "flex";
         resizeCanvas();
     };
 }
