@@ -29,6 +29,11 @@ export default class Game {
             ArrowDown: false
         };
 
+        // Modificateurs de jeu
+        this.playerSpeed = 5;
+        this.rotationMultiplier = 1;
+        this.bumperForce = 25;
+
         // Gestion du boost de vitesse
         this.speedBoostEndTime = 0;
         this.activeSpeedBoost = 0;
@@ -58,6 +63,7 @@ export default class Game {
         // Charge le niveau demandé
         this.levels.load(levelNumber);
         this.currentLevel = levelNumber;
+        this.applyRotationMultiplier(); // Applique le multiplicateur aux nouveaux obstacles
 
         if (this.levelElement) {
             this.levelElement.innerText = levelNumber;
@@ -146,7 +152,7 @@ export default class Game {
         this.player.vitesseY = 0;
 
         // Vitesse de base du joueur
-        let vitesse = 5;
+        let vitesse = this.playerSpeed;
         
         // Si le boost est actif (temps actuel < temps de fin du boost)
         if (Date.now() < this.speedBoostEndTime) {
@@ -296,8 +302,7 @@ export default class Game {
                     this.player.vitesseY = -this.player.vitesseY;
 
                     // --- AJUSTEMENT DE LA FORCE ---
-                    // Si on est au niveau 3, on utilise une force de 60, sinon la force normale de 25
-                    let forceRebond = (this.currentLevel === 3) ? 40 : 25; 
+                    let forceRebond = this.bumperForce; 
 
                     // On applique la répulsion
                     this.player.x += this.player.vitesseX * forceRebond;
@@ -416,5 +421,13 @@ testCollisionFin() {
 
             if (this.levelElement) this.levelElement.innerText = this.currentLevel;
         }
+    }
+
+    applyRotationMultiplier() {
+        this.objetsGraphiques.forEach(obj => {
+            if (obj instanceof RotatingObstacle) {
+                obj.angleSpeed = obj.initialAngleSpeed * this.rotationMultiplier;
+            }
+        });
     }
 }

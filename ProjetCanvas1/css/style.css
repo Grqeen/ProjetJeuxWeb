@@ -171,6 +171,31 @@ kbd:active, kbd.active {
   display: none;
 }
 
+/* --- Styles Modificateurs --- */
+.mod-group {
+  margin-bottom: 15px;
+}
+
+.mod-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.mod-inputs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mod-inputs input[type="number"] {
+  width: 60px;
+  padding: 5px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
 /* --- Styles Timer & Leaderboard --- */
 #timerContainer {
   margin-top: 30px;
@@ -194,41 +219,6 @@ kbd:active, kbd.active {
   border-radius: 10px;
   display: inline-block;
   min-width: 120px;
-}
-
-#leaderboardContainer {
-  margin-top: 30px;
-}
-
-#leaderboardContainer h3 {
-  font-family: 'Lilita One', cursive;
-  color: #333;
-  text-align: center;
-  font-size: 24px;
-}
-
-#leaderboardTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-family: sans-serif;
-  background: white;
-  border-radius: 5px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-#leaderboardTable th {
-  background: #333;
-  color: #ffcc00;
-  padding: 8px;
-  font-family: 'Lilita One', cursive;
-}
-
-#leaderboardTable td {
-  padding: 8px;
-  text-align: center;
-  border-bottom: 1px solid #eee;
-  font-weight: bold;
 }
 
 /* --- Styles Leaderboard Menu Principal --- */

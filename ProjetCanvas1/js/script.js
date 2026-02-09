@@ -18,6 +18,34 @@ async function init() {
     // --- RECONSTRUCTION DE LA SIDEBAR (Déplacé au début pour l'init du jeu) ---
     if (sidebar) {
         sidebar.innerHTML = `
+            <div id="modifiersContainer" style="margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 20px;">
+                <h2 style="font-family: 'Lilita One', cursive; color: #333; font-size: 30px; text-align: center;">Modificateurs</h2>
+                
+                <div class="mod-group">
+                    <label>Vitesse Joueur</label>
+                    <div class="mod-inputs">
+                        <input type="range" id="speedRange" min="1" max="20" value="5">
+                        <input type="number" id="speedInput" value="5" min="1" max="20">
+                    </div>
+                </div>
+
+                <div class="mod-group">
+                    <label>Vitesse Rotation (x)</label>
+                    <div class="mod-inputs">
+                        <input type="range" id="rotRange" min="0" max="5" step="0.1" value="1">
+                        <input type="number" id="rotInput" value="1" step="0.1" min="0" max="5">
+                    </div>
+                </div>
+
+                <div class="mod-group">
+                    <label>Force Bumper</label>
+                    <div class="mod-inputs">
+                        <input type="range" id="bumpRange" min="0" max="100" value="25">
+                        <input type="number" id="bumpInput" value="25" min="0" max="100">
+                    </div>
+                </div>
+            </div>
+
             <div style="text-align: center; margin-bottom: 20px;">
                 <h2 style="font-family: 'Lilita One', cursive; color: #333; font-size: 30px;">Contrôles</h2>
             </div>
@@ -34,16 +62,6 @@ async function init() {
                 <div class="timer-label">TEMPS</div>
                 <div id="timerValue">00:00</div>
             </div>
-
-            <div id="leaderboardContainer">
-                <h3>Temps par niveau</h3>
-                <table id="leaderboardTable">
-                    <thead>
-                        <tr><th>Niveau</th><th>Temps</th></tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
         `;
     }
     let restartBtn = document.querySelector("#restartBtn");
@@ -53,6 +71,24 @@ async function init() {
     game.levelElement = document.querySelector("#level");
     game.timerElement = document.querySelector("#timerValue");
     await game.init();
+
+    // --- GESTION DES MODIFICATEURS ---
+    const setupModifier = (rangeId, inputId, onChange) => {
+        let range = document.querySelector(rangeId);
+        let input = document.querySelector(inputId);
+        if(range && input) {
+            range.oninput = () => { input.value = range.value; onChange(parseFloat(range.value)); };
+            input.oninput = () => { range.value = input.value; onChange(parseFloat(input.value)); };
+        }
+    };
+
+    setupModifier("#speedRange", "#speedInput", (val) => game.playerSpeed = val);
+    setupModifier("#rotRange", "#rotInput", (val) => {
+        game.rotationMultiplier = val;
+        game.applyRotationMultiplier();
+    });
+    setupModifier("#bumpRange", "#bumpInput", (val) => game.bumperForce = val);
+    // ---------------------------------
 
     // Détection automatique du nombre de niveaux
     let maxLevels = 0;
@@ -91,10 +127,6 @@ async function init() {
             html += `<tr style="border-top: 2px solid #ffcc00; font-weight: bold;"><td>TOTAL</td><td>${totalDisplay}</td></tr>`;
             return html;
         };
-
-        // 1. Mise à jour du leaderboard de la Sidebar
-        let sidebarTable = document.querySelector("#leaderboardTable tbody");
-        if (sidebarTable) sidebarTable.innerHTML = generateRows();
 
         // 2. Mise à jour du leaderboard du Menu Principal
         let menuTable = document.querySelector("#menuLeaderboardTable tbody");
