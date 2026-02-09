@@ -40,7 +40,7 @@ export default class Levels {
 
 
             // Sortie
-            this.game.fin = new fin(1100, 50, 50, 50, "green");
+            this.game.fin = new fin(1100, 50, 100, 100, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 2) {
             // --- NIVEAU 2 : Version simplifiée et compacte ---
@@ -67,7 +67,7 @@ export default class Levels {
             this.game.objetsGraphiques.push(new Obstacle(900, 920, 230, 35, "black"));
 
             // Sortie (Cercle rouge) - Placée à 1250 pour être visible sur tous les écrans
-            this.game.fin = new fin(1250, 850, 60, 60, "red");
+            this.game.fin = new fin(1250, 850, 100, 100, "red", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 3) {
             // --- NIVEAU 3 : L'Arène Finale (Coins Nettoyés) ---

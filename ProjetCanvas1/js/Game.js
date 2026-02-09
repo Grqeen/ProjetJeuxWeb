@@ -10,16 +10,19 @@ import fin from "./fin.js";
 export default class Game {
     objetsGraphiques = [];
 
-    constructor(canvas, scoreElement, speedInputElement) {
+    constructor(canvas, scoreElement) {
         this.canvas = canvas;
         this.scoreElement = scoreElement; // L'élément HTML pour afficher le score
-        this.speedInputElement = speedInputElement; // L'input range pour la vitesse
         this.score = 0; // Le score actuel
         this.levelElement = null; // L'élément HTML pour afficher le niveau
         // etat du clavier
         this.inputStates = {
             mouseX: 0,
             mouseY: 0,
+            ArrowRight: false,
+            ArrowLeft: false,
+            ArrowUp: false,
+            ArrowDown: false
         };
 
         // Gestion du boost de vitesse
@@ -41,7 +44,13 @@ export default class Game {
         this.objetsGraphiques.push(this.speedPotion1);
 
         // On initialise les écouteurs de touches, souris, etc.
-        initListeners(this.inputStates, this.canvas, this.speedInputElement);
+        initListeners(this.inputStates, this.canvas);
+
+        // Récupération des éléments du DOM pour les touches virtuelles
+        this.keyUp = document.querySelector(".key-up");
+        this.keyDown = document.querySelector(".key-down");
+        this.keyLeft = document.querySelector(".key-left");
+        this.keyRight = document.querySelector(".key-right");
 
         console.log("Game initialisé");
     }
@@ -56,10 +65,11 @@ export default class Game {
         }
         
         console.log("Game démarré niveau " + levelNumber);
-        this.running = true;
-
-        // On démarre une animation à 60 images par seconde
-        requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        
+        if (!this.running) {
+            this.running = true;
+            requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        }
     }
 
     mainAnimationLoop() {
@@ -118,17 +128,22 @@ export default class Game {
         if(this.scoreElement) {
             this.scoreElement.innerText = this.score;
         }
+
+        // Mise à jour visuelle des touches du clavier virtuel
+        // On ajoute ou enlève la classe "active" en fonction de l'état des touches
+        // Le toggle(classe, condition) ajoute la classe si condition est vraie, l'enlève sinon
+        if (this.keyUp) this.keyUp.classList.toggle("active", !!this.inputStates.ArrowUp);
+        if (this.keyDown) this.keyDown.classList.toggle("active", !!this.inputStates.ArrowDown);
+        if (this.keyLeft) this.keyLeft.classList.toggle("active", !!this.inputStates.ArrowLeft);
+        if (this.keyRight) this.keyRight.classList.toggle("active", !!this.inputStates.ArrowRight);
     }
 
     movePlayer() {
         this.player.vitesseX = 0;
         this.player.vitesseY = 0;
 
-        // On récupère la vitesse depuis l'input HTML
-        // On convertit en nombre avec Number() car .value renvoie une chaîne de caractères
-        // Valeur par défaut 3 si l'input n'existe pas
-        let defaultSpeed = 3;
-        let vitesse = this.speedInputElement ? Number(this.speedInputElement.value) : defaultSpeed;
+        // Vitesse de base du joueur
+        let vitesse = 5;
         
         // Si le boost est actif (temps actuel < temps de fin du boost)
         if (Date.now() < this.speedBoostEndTime) {

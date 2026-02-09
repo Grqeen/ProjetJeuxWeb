@@ -5,12 +5,16 @@ import Game from "./Game.js";
 window.onload = init;
 
 async function init() {
+    // Force le scroll en haut au chargement (fix pour le bug de rafraîchissement)
+    window.scrollTo(0, 0);
+
     let canvas = document.querySelector("#myCanvas");
     let menu = document.querySelector("#gameMenu");
     let startBtn = document.querySelector("#startButton");
     let exitBtn = document.querySelector("#exitButton");
     let levelsBtn = document.querySelector("#LevelsButton");
     let sidebar = document.querySelector("#sidebar");
+    let restartBtn = document.querySelector("#restartBtn");
 
     // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
     let menuTextContainer = document.createElement("div");
@@ -67,12 +71,16 @@ async function init() {
     menuBackground.id = "menuBackground";
     document.body.appendChild(menuBackground);
 
-    // Création du message de victoire
-    let winMessage = document.createElement("div");
-    winMessage.id = "winMessage";
-    winMessage.innerHTML = "BIEN JOUÉ !<br>VOUS AVEZ FINI !";
-    winMessage.style.display = "none";
-    document.body.appendChild(winMessage);
+    // Création du menu de victoire
+    let winMenu = document.createElement("div");
+    winMenu.id = "winMenu";
+    winMenu.style.display = "none";
+    winMenu.innerHTML = `
+        <h1>BRAVO !</h1>
+        <button id="btnWinRestart">Rejouer</button>
+        <button id="btnWinHome">Menu Principal</button>
+    `;
+    document.body.appendChild(winMenu);
 
     // --- CONFIGURATION VIDÉO ---
     let videoContainer = document.createElement("div");
@@ -186,14 +194,20 @@ async function init() {
 
     // Configuration du callback de fin de jeu
     game.onFinish = () => {
-        menu.style.display = "flex";
+        menu.style.display = "none";
         sidebar.style.display = "none";
         menuBackground.style.display = "block";
-        winMessage.style.display = "block";
+        winMenu.style.display = "block";
         resizeCanvas();
     };
 
     startBtn.onclick = () => {
+        winMenu.style.display = "none"; // On cache le menu si on relance
+        menu.style.display = "none";
+        menuBackground.style.display = "none";
+        if (sidebar) sidebar.style.display = "block";
+        resizeCanvas();
+        game.start(1); // Lance le niveau 1 par défaut
         winMessage.style.display = "none"; // On cache le message si on relance
         
         playVideo(() => {
@@ -221,7 +235,7 @@ async function init() {
 
     // Gestion des boutons du menu Niveaux
     document.querySelector("#btnLevel1").onclick = () => {
-        winMessage.style.display = "none";
+        winMenu.style.display = "none";
         levelsMenu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
@@ -230,7 +244,7 @@ async function init() {
     };
     document.querySelector("#btnLevel2").onclick = () => {
         levelsMenu.style.display = "none";
-        winMessage.style.display = "none";
+        winMenu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
@@ -248,5 +262,25 @@ async function init() {
         levelsMenu.style.display = "none";
         menu.style.display = "flex";
         resizeCanvas();
+    };
+
+    // Gestion des boutons du menu de victoire
+    document.querySelector("#btnWinRestart").onclick = () => {
+        winMenu.style.display = "none";
+        menuBackground.style.display = "none";
+        if (sidebar) sidebar.style.display = "block";
+        resizeCanvas();
+        game.start(1);
+    };
+    document.querySelector("#btnWinHome").onclick = () => {
+        winMenu.style.display = "none";
+        menu.style.display = "flex";
+        resizeCanvas();
+    };
+
+    // Gestion du bouton Recommencer (Sidebar)
+    restartBtn.onclick = () => {
+        restartBtn.blur(); // Enlève le focus pour ne pas gêner les contrôles clavier
+        game.start(game.currentLevel);
     };
 }
