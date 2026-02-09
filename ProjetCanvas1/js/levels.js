@@ -3,6 +3,9 @@ import Obstacle, { RotatingObstacle } from "./Obstacle.js";
 import fin from "./fin.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
+import sizePotion from "./sizepotion.js";
+import fadingDoor from "./fadingDoor.js";
+import keypad from "./keypad.js";
 
 export default class Levels {
     constructor(game) {
@@ -24,6 +27,16 @@ export default class Levels {
             let obstacle3 = new Obstacle(900, 300, 40, 700, "yellow");
             this.game.objetsGraphiques.push(obstacle3);
 
+            //fadding door + keypad
+            let fadingDoor1 = new fadingDoor(700, 0, 40, 600, "Pink", 3000, 1);
+            this.game.objetsGraphiques.push(fadingDoor1);
+            let fadingDoor2 = new fadingDoor(900, 0, 40, 600, "Pink", 3000, 2);
+            this.game.objetsGraphiques.push(fadingDoor2);
+            this.game.keypad1 = new keypad(250, 200, 25, 25, "pink", 3000, 1);
+            this.game.objetsGraphiques.push(this.game.keypad1);
+            this.game.keypad2 = new keypad(350, 400, 25, 25, "pink", 3000, 2);
+            this.game.objetsGraphiques.push(this.game.keypad2);
+
             // Carrés
             let obstacle2 = new Obstacle(500, 500, 100, 100, "blue");
             this.game.objetsGraphiques.push(obstacle2);
@@ -34,9 +47,13 @@ export default class Levels {
             this.game.bumper1 = new bumper(550, 340, 50, 50, "orange");
             this.game.objetsGraphiques.push(this.game.bumper1);
 
-            // Potion de vitesse
+            // Potion de vitesse 
             this.speedPotion1 = new speedPotion(250, 100, 25, 25, "cyan", 5, 3000);
             this.game.objetsGraphiques.push(this.speedPotion1);
+
+            // Potion de taille
+            this.sizePotion1 = new sizePotion(650, 50, 25, 25, "magenta", -40, 50);
+            this.game.objetsGraphiques.push(this.sizePotion1);
 
 
             // Sortie

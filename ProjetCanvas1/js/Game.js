@@ -4,7 +4,10 @@ import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOve
 import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
+import sizePotion from "./sizepotion.js";
 import Levels from "./levels.js";
+import keypad from "./keypad.js";
+import fadingDoor from "./fadingDoor.js";
 import fin from "./fin.js";
 
 export default class Game {
@@ -37,11 +40,6 @@ export default class Game {
 
         // Initialisation du gestionnaire de niveaux
         this.levels = new Levels(this);
-
-        //items
-        // On met une vitesse raisonnable (ex: 5) car 200 est trop rapide par frame
-        this.speedPotion1 = new speedPotion(250, 100, 25, 25, "cyan", 5, 3000);
-        this.objetsGraphiques.push(this.speedPotion1);
 
         // On initialise les écouteurs de touches, souris, etc.
         initListeners(this.inputStates, this.canvas);
@@ -240,6 +238,9 @@ export default class Game {
     handleCollisionObstacle() {
         this.objetsGraphiques.forEach(obstacle => {
             if (obstacle instanceof Obstacle) {
+                // Si l'obstacle est une porte invisible, on ne gère pas la collision
+                if (obstacle instanceof fadingDoor && !obstacle.visible) return;
+
                 if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     // Calcul des coordonnées des bords du joueur (x, y sont au centre)
                     let playerLeft = this.player.x - this.player.w / 2;
@@ -327,6 +328,46 @@ export default class Game {
                 this.speedBoostEndTime = Date.now() + obj.temps;
 
                 this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+            }
+        }
+        if (obj instanceof sizePotion) {
+            if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                console.log("Collision avec SizePotion : Taille modifier !");
+
+                // on change la taille du joueur
+                this.player.w += obj.tailleW;
+                this.player.h += obj.tailleH;
+                this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+            }
+        }
+        if (obj instanceof keypad) {
+            if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                console.log("Collision avec keypad : Porte associée " + obj.id + " activée !");
+                // On cherche la porte associée à ce keypad
+                this.objetsGraphiques.forEach(o => {
+                    if (o instanceof fadingDoor && o.id === obj.id) {
+                        o.visible = false; // On rend la porte invisible (on pourrait aussi la retirer du tableau)
+                        console.log("Porte " + o.id + " désactivée !");
+                    }
+                });
+                this.objetsGraphiques.splice(i, 1);  // On retire le keypad ramassé
+                // faire en sorte que le bouton et la porte reaparaissent après un certain temps
+                setTimeout(() => {
+                    // On réactive la porte
+                    this.objetsGraphiques.forEach(o => {
+                        if (o instanceof fadingDoor && o.id === obj.id) {
+                            o.visible = true;
+                            console.log("Porte " + o.id + " réactivée !");
+                        }
+                    });
+                    // On remet les keypads
+                    this.objetsGraphiques.forEach(o => {
+                        if (o instanceof keypad && o.id === obj.id) {
+                            o.visible = true;
+                            console.log("Keypad " + o.id + " réactivé !");
+                        }
+                    });
+                }, obj.temps);
             }
         }
     }
