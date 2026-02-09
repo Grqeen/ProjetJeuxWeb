@@ -74,14 +74,21 @@ async function init() {
     document.body.appendChild(winMessage);
 
     function resizeCanvas() {
+        // 1. On fixe une taille INTERNE constante (Pratique "Pro")
+        // Tes coordonnées dans levels.js ne bougeront plus jamais !
+        canvas.width = 1400; 
+        canvas.height = 1000;
+
         let sidebarWidth = 450;
-        let sidebarWidthStartMenu = 0;
-        if (menu.style.display !== "none" || levelsMenu.style.display !== "none") {
-            canvas.width = window.innerWidth - sidebarWidthStartMenu;
-        } else {
-            canvas.width = window.innerWidth - sidebarWidth;
-        }
-        canvas.height = window.innerHeight;
+        // On calcule l'espace disponible
+        let availableWidth = window.innerWidth - (sidebar.style.display !== "none" ? sidebarWidth : 0);
+        
+        // 2. On utilise le CSS pour "étirer" ou "réduire" l'image sans couper le jeu
+        canvas.style.width = availableWidth + "px";
+        canvas.style.height = window.innerHeight + "px";
+        
+        // Garde les proportions (évite d'écraser le dessin)
+        canvas.style.objectFit = "contain"; 
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
