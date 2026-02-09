@@ -24,7 +24,7 @@ export default class Levels {
             // Obstacles
             let obstacle1 = new Obstacle(300, 0, 40, 600, "red");
             this.game.objetsGraphiques.push(obstacle1);
-            let obstacle3 = new Obstacle(900, 300, 40, 600, "yellow");
+            let obstacle3 = new Obstacle(900, 300, 40, 700, "yellow");
             this.game.objetsGraphiques.push(obstacle3);
 
             //fadding door + keypad
@@ -57,57 +57,88 @@ export default class Levels {
 
 
             // Sortie
-            this.game.fin = new fin(1100, 50, 50, 50, "green");
+            this.game.fin = new fin(1100, 50, 100, 100, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 2) {
-            // --- NIVEAU 2 : DESIGN EXACT + AJUSTEMENTS ---
-            this.game.player = new Player(350, 50);
+            // --- NIVEAU 2 : Version simplifiée et compacte ---
+            // On place le joueur au début (à gauche)
+            this.game.player = new Player(100, 100);
             this.game.objetsGraphiques.push(this.game.player);
 
-            const addRotatingCross = (x, y, size, speed) => {
-                this.game.objetsGraphiques.push(new RotatingObstacle(x, y, size, 20, "black", speed, 0));
-                this.game.objetsGraphiques.push(new RotatingObstacle(x, y, size, 20, "black", speed, Math.PI / 2));
-            };
+            // Obstacles de type "Croix" (simplifiés comme le niveau 1)
+            // Croix 1
+            this.game.objetsGraphiques.push(new RotatingObstacle(320, 470, 250, 20, "black", 0.02, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(320, 470, 250, 20, "black", 0.02, Math.PI / 2));
 
-            // 1. Les deux premières croix : descendues et agrandies (Size 300)
-            // Elles bloquent presque tout l'écran, forçant le passage au centre
-            addRotatingCross(180, 300, 250, 0.02); 
-            addRotatingCross(450, 300, 250, -0.02);
+            // Croix 2
+            this.game.objetsGraphiques.push(new RotatingObstacle(800, 600, 250, 20, "black", -0.02, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(800, 600, 250, 20, "black", -0.02, Math.PI / 2));
 
-            // 2. La structure en "U" au centre
-            let uX = 650;
-            let uY = 0;
-            let uW = 300;
-            let uH = 450;
-            let thick = 30;
-            this.game.objetsGraphiques.push(new Obstacle(uX, uY, thick, uH, "black")); // Gauche
-            this.game.objetsGraphiques.push(new Obstacle(uX + uW - thick, uY, thick, uH, "black")); // Droite
-            this.game.objetsGraphiques.push(new Obstacle(uX, uY + uH - thick, uW, thick, "black")); // Fond du U
+            // Mur central (Le "U" simplifié)
+            this.game.objetsGraphiques.push(new Obstacle(550, 0, 30, 400, "black")); // Mur haut
+            this.game.objetsGraphiques.push(new Obstacle(550, 600, 30, 400, "black")); // Mur bas
 
-            // 3. La croix du milieu agrandie (Size 300)
-            addRotatingCross(uX + uW/2, 700, 400, -0.015);
+            // Obstacle de fin (Mur de protection avant la sortie)
+            let wallRightX = 1100;
+            this.game.objetsGraphiques.push(new Obstacle(wallRightX, 400, 30, 600, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(900, 920, 230, 35, "black"));
 
-            // 4. La dernière croix agrandie pour bloquer l'espace (Size 400)
-            // Placée pour qu'elle frôle le mur du U et le bord de l'écran
-            addRotatingCross(1100, 250, 290, -0.01);
+            // Sortie (Cercle rouge) - Placée à 1250 pour être visible sur tous les écrans
+            this.game.fin = new fin(1250, 850, 100, 100, "red", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 3) {
+            // --- NIVEAU 3 : L'Arène Finale (Coins Nettoyés) ---
+            this.game.player = new Player(50, 500);
+            this.game.objetsGraphiques.push(this.game.player);
 
-            // 5. Mur vertical de droite
-            let wallRightX = 1250;
-            let wallRightY = 400;
-            let wallRightH = 550;
-            this.game.objetsGraphiques.push(new Obstacle(wallRightX, wallRightY, 35, wallRightH, "black"));
+            // 1. Remplissage des coins de la map (Murs noirs solides)
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 330, 280, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(0, 750, 330, 250, "black"));
 
-            // 6. Barre horizontale du bas reliée au mur vertical (Y ajusté à 950)
-            let wallBottomX = 700;
-            let wallBottomY = 920; 
-            let wallBottomW = wallRightX - wallBottomX + 35; // Calcule la largeur pour toucher le mur de droite
-            this.game.objetsGraphiques.push(new Obstacle(wallBottomX, wallBottomY, wallBottomW, 35, "black"));
+            // 2. Murs restants de l'arène
+            this.game.objetsGraphiques.push(new Obstacle(300, 0, 1000, 30, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(300, 970, 1000, 30, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1300, 0, 30, 1000, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(650, 350, 300, 300, "black"));
 
-            // 7. La petite barre "pied" qui relie la barre du bas à la terre (le bas du canvas)
-            this.game.objetsGraphiques.push(new Obstacle(wallBottomX, wallBottomY + 35, 35, 200, "black"));
+            // 3. Croix rotative
+            this.game.objetsGraphiques.push(new RotatingObstacle(250, 500, 140, 15, "red", 0.04, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(250, 500, 140, 15, "red", 0.04, Math.PI / 2));
 
-            // 8. La sortie (Cercle rouge)
-            this.game.fin = new fin(wallRightX + 100, wallBottomY - 70, 60, 60, "red");
+            // 4. BUMPERS DES MURS (Ajustés pour ne pas toucher les coins)
+            // Mur Haut : on commence après le mur gauche et on finit avant le mur droite
+            for (let x = 380; x < 1250; x += 50) {
+                this.game.objetsGraphiques.push(new bumper(x, 30, 50, 50, "orange"));
+            }
+            // Mur Bas : idem
+            for (let x = 380; x < 1250; x += 50) {
+                this.game.objetsGraphiques.push(new bumper(x, 920, 50, 50, "orange"));
+            }
+            // Mur Droite : on commence après le coin haut et on finit avant le coin bas
+            for (let y = 80; y < 920; y += 50) {
+                this.game.objetsGraphiques.push(new bumper(1250, y, 50, 50, "orange"));
+            }
+            // Mur Gauche Haut
+            for (let y = 80; y < 250; y += 50) {
+                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange"));
+            }
+            // Mur Gauche Bas
+            for (let y = 780; y < 920; y += 50) {
+                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange"));
+            }
+
+            // 5. BUMPERS DU CARRÉ CENTRAL (Même logique pour éviter les chevauchements)
+            for (let x = 700; x < 900; x += 50) { // Haut et Bas (raccourcis)
+                this.game.objetsGraphiques.push(new bumper(x, 300, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(x, 650, 50, 50, "orange"));
+            }
+            for (let y = 350; y < 650; y += 50) { // Gauche et Droite
+                this.game.objetsGraphiques.push(new bumper(600, y, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(950, y, 50, 50, "orange"));
+            }
+
+            // 6. Sortie
+            this.game.fin = new fin(1150, 475, 80, 80, "red");
             this.game.objetsGraphiques.push(this.game.fin);
         }
     }

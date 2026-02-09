@@ -5,12 +5,16 @@ import Game from "./Game.js";
 window.onload = init;
 
 async function init() {
+    // Force le scroll en haut au chargement (fix pour le bug de rafraîchissement)
+    window.scrollTo(0, 0);
+
     let canvas = document.querySelector("#myCanvas");
     let menu = document.querySelector("#gameMenu");
     let startBtn = document.querySelector("#startButton");
     let exitBtn = document.querySelector("#exitButton");
     let levelsBtn = document.querySelector("#LevelsButton");
     let sidebar = document.querySelector("#sidebar");
+    let restartBtn = document.querySelector("#restartBtn");
 
     // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
     let menuTextContainer = document.createElement("div");
@@ -57,6 +61,7 @@ async function init() {
         <h1>Niveaux</h1>
         <button id="btnLevel1">Niveau 1</button>
         <button id="btnLevel2">Niveau 2</button>
+        <button id="btnLevel3">Niveau 3</button>
         <button id="btnBack">Retour</button>
     `;
     document.body.appendChild(levelsMenu);
@@ -66,22 +71,119 @@ async function init() {
     menuBackground.id = "menuBackground";
     document.body.appendChild(menuBackground);
 
-    // Création du message de victoire
-    let winMessage = document.createElement("div");
-    winMessage.id = "winMessage";
-    winMessage.innerHTML = "BIEN JOUÉ !<br>VOUS AVEZ FINI !";
-    winMessage.style.display = "none";
-    document.body.appendChild(winMessage);
+    // Création du menu de victoire
+    let winMenu = document.createElement("div");
+    winMenu.id = "winMenu";
+    winMenu.style.display = "none";
+    winMenu.innerHTML = `
+        <h1>BRAVO !</h1>
+        <button id="btnWinRestart">Rejouer</button>
+        <button id="btnWinHome">Menu Principal</button>
+    `;
+    document.body.appendChild(winMenu);
+
+    // --- CONFIGURATION VIDÉO ---
+    let videoContainer = document.createElement("div");
+    Object.assign(videoContainer.style, {
+        display: "none",
+        position: "fixed",
+        top: "0",
+        left: "0",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "black",
+        zIndex: "2000",
+        alignItems: "center",
+        justifyContent: "center"
+    });
+    
+    let videoPlayer = document.createElement("video");
+    videoPlayer.src = "assets/video/Blob Escape Lore.mp4"; 
+    videoPlayer.style.width = "100%";
+    videoPlayer.style.height = "100%";
+    videoPlayer.style.objectFit = "cover";
+    
+    // Création du bouton SKIP
+    let skipButton = document.createElement("button");
+    skipButton.innerText = "SKIP >>";
+    Object.assign(skipButton.style, {
+        position: "absolute",
+        bottom: "30px",
+        right: "30px",
+        zIndex: "2001",
+        fontSize: "40px",
+        fontFamily: "'Lilita One', cursive",
+        color: "white",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        textShadow: "3px 3px 0 #000",
+        transition: "all 0.3s ease"
+    });
+
+    // Effets de survol (identiques au menu)
+    skipButton.onmouseenter = () => {
+        skipButton.style.transform = "scale(1.1) rotate(-3deg)";
+        skipButton.style.color = "#ffcc00";
+        skipButton.style.textShadow = "3px 3px 0 #b8860b";
+    };
+    skipButton.onmouseleave = () => {
+        skipButton.style.transform = "scale(1) rotate(0deg)";
+        skipButton.style.color = "white";
+        skipButton.style.textShadow = "3px 3px 0 #000";
+    };
+
+    videoContainer.appendChild(videoPlayer);
+    videoContainer.appendChild(skipButton);
+    document.body.appendChild(videoContainer);
+
+    function playVideo(callback) {
+        menu.style.display = "none";
+        menuBackground.style.display = "none";
+        levelsMenu.style.display = "none";
+        winMessage.style.display = "none";
+        if (sidebar) sidebar.style.display = "none";
+
+        videoContainer.style.display = "flex";
+        videoPlayer.currentTime = 0;
+        videoPlayer.play().catch(e => console.log("Erreur lecture vidéo", e));
+
+        const endVideo = () => {
+            videoPlayer.pause();
+            videoContainer.style.display = "none";
+            // Nettoyage des événements
+            videoPlayer.onended = null;
+            videoPlayer.onclick = null;
+            skipButton.onclick = null;
+            if (callback) callback();
+        };
+
+        videoPlayer.onended = endVideo;
+        
+        // Clic pour passer la vidéo (Bouton ou Vidéo)
+        videoPlayer.onclick = endVideo;
+        skipButton.onclick = (e) => {
+            e.stopPropagation();
+            endVideo();
+        };
+    }
 
     function resizeCanvas() {
+        // 1. On fixe une taille INTERNE constante (Pratique "Pro")
+        // Tes coordonnées dans levels.js ne bougeront plus jamais !
+        canvas.width = 1400; 
+        canvas.height = 1000;
+
         let sidebarWidth = 450;
-        let sidebarWidthStartMenu = 0;
-        if (menu.style.display !== "none" || levelsMenu.style.display !== "none") {
-            canvas.width = window.innerWidth - sidebarWidthStartMenu;
-        } else {
-            canvas.width = window.innerWidth - sidebarWidth;
-        }
-        canvas.height = window.innerHeight;
+        // On calcule l'espace disponible
+        let availableWidth = window.innerWidth - (sidebar.style.display !== "none" ? sidebarWidth : 0);
+        
+        // 2. On utilise le CSS pour "étirer" ou "réduire" l'image sans couper le jeu
+        canvas.style.width = availableWidth + "px";
+        canvas.style.height = window.innerHeight + "px";
+        
+        // Garde les proportions (évite d'écraser le dessin)
+        canvas.style.objectFit = "contain"; 
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
@@ -92,25 +194,36 @@ async function init() {
 
     // Configuration du callback de fin de jeu
     game.onFinish = () => {
-        menu.style.display = "block";
+        menu.style.display = "none";
         sidebar.style.display = "none";
         menuBackground.style.display = "block";
-        winMessage.style.display = "block";
+        winMenu.style.display = "block";
         resizeCanvas();
     };
 
     startBtn.onclick = () => {
-        winMessage.style.display = "none"; // On cache le message si on relance
+        winMenu.style.display = "none"; // On cache le menu si on relance
         menu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(1); // Lance le niveau 1 par défaut
+        winMessage.style.display = "none"; // On cache le message si on relance
+        
+        playVideo(() => {
+            if (sidebar) sidebar.style.display = "block";
+            resizeCanvas();
+            game.start(1); // Lance le niveau 1 par défaut
+        });
     };
 
-    // Gestion du bouton Exit
+    // Gestion du bouton Histoire (anciennement Exit)
     exitBtn.onclick = () => {
-        alert("coming soon");
+        playVideo(() => {
+            menu.style.display = "flex";
+            menuBackground.style.display = "block";
+            resizeCanvas();
+        });
     };
 
     // Gestion du bouton Levels
@@ -122,7 +235,7 @@ async function init() {
 
     // Gestion des boutons du menu Niveaux
     document.querySelector("#btnLevel1").onclick = () => {
-        winMessage.style.display = "none";
+        winMenu.style.display = "none";
         levelsMenu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
@@ -131,15 +244,43 @@ async function init() {
     };
     document.querySelector("#btnLevel2").onclick = () => {
         levelsMenu.style.display = "none";
-        winMessage.style.display = "none";
+        winMenu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(2);
     };
+    document.querySelector("#btnLevel3").onclick = () => {
+        levelsMenu.style.display = "none";
+        winMessage.style.display = "none";
+        menuBackground.style.display = "none";
+        if (sidebar) sidebar.style.display = "block";
+        resizeCanvas();
+        game.start(3);
+    };
     document.querySelector("#btnBack").onclick = () => {
         levelsMenu.style.display = "none";
-        menu.style.display = "block";
+        menu.style.display = "flex";
         resizeCanvas();
+    };
+
+    // Gestion des boutons du menu de victoire
+    document.querySelector("#btnWinRestart").onclick = () => {
+        winMenu.style.display = "none";
+        menuBackground.style.display = "none";
+        if (sidebar) sidebar.style.display = "block";
+        resizeCanvas();
+        game.start(1);
+    };
+    document.querySelector("#btnWinHome").onclick = () => {
+        winMenu.style.display = "none";
+        menu.style.display = "flex";
+        resizeCanvas();
+    };
+
+    // Gestion du bouton Recommencer (Sidebar)
+    restartBtn.onclick = () => {
+        restartBtn.blur(); // Enlève le focus pour ne pas gêner les contrôles clavier
+        game.start(game.currentLevel);
     };
 }

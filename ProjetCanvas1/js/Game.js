@@ -13,16 +13,19 @@ import fin from "./fin.js";
 export default class Game {
     objetsGraphiques = [];
 
-    constructor(canvas, scoreElement, speedInputElement) {
+    constructor(canvas, scoreElement) {
         this.canvas = canvas;
         this.scoreElement = scoreElement; // L'élément HTML pour afficher le score
-        this.speedInputElement = speedInputElement; // L'input range pour la vitesse
         this.score = 0; // Le score actuel
         this.levelElement = null; // L'élément HTML pour afficher le niveau
         // etat du clavier
         this.inputStates = {
             mouseX: 0,
             mouseY: 0,
+            ArrowRight: false,
+            ArrowLeft: false,
+            ArrowUp: false,
+            ArrowDown: false
         };
 
         // Gestion du boost de vitesse
@@ -39,7 +42,13 @@ export default class Game {
         this.levels = new Levels(this);
 
         // On initialise les écouteurs de touches, souris, etc.
-        initListeners(this.inputStates, this.canvas, this.speedInputElement);
+        initListeners(this.inputStates, this.canvas);
+
+        // Récupération des éléments du DOM pour les touches virtuelles
+        this.keyUp = document.querySelector(".key-up");
+        this.keyDown = document.querySelector(".key-down");
+        this.keyLeft = document.querySelector(".key-left");
+        this.keyRight = document.querySelector(".key-right");
 
         console.log("Game initialisé");
     }
@@ -54,16 +63,18 @@ export default class Game {
         }
         
         console.log("Game démarré niveau " + levelNumber);
-        this.running = true;
-
-        // On démarre une animation à 60 images par seconde
-        requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        
+        if (!this.running) {
+            this.running = true;
+            requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        }
     }
 
     mainAnimationLoop() {
         if (!this.running) return;
-        // 1 - on efface le canvas
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        // 1 - on efface le canvas avec une couleur de fond (gris clair) pour délimiter le niveau
+        this.ctx.fillStyle = "#d0d0d0"; 
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 2 - on dessine les objets à animer dans le jeu
         // ici on dessine le monstre
@@ -115,17 +126,22 @@ export default class Game {
         if(this.scoreElement) {
             this.scoreElement.innerText = this.score;
         }
+
+        // Mise à jour visuelle des touches du clavier virtuel
+        // On ajoute ou enlève la classe "active" en fonction de l'état des touches
+        // Le toggle(classe, condition) ajoute la classe si condition est vraie, l'enlève sinon
+        if (this.keyUp) this.keyUp.classList.toggle("active", !!this.inputStates.ArrowUp);
+        if (this.keyDown) this.keyDown.classList.toggle("active", !!this.inputStates.ArrowDown);
+        if (this.keyLeft) this.keyLeft.classList.toggle("active", !!this.inputStates.ArrowLeft);
+        if (this.keyRight) this.keyRight.classList.toggle("active", !!this.inputStates.ArrowRight);
     }
 
     movePlayer() {
         this.player.vitesseX = 0;
         this.player.vitesseY = 0;
 
-        // On récupère la vitesse depuis l'input HTML
-        // On convertit en nombre avec Number() car .value renvoie une chaîne de caractères
-        // Valeur par défaut 3 si l'input n'existe pas
-        let defaultSpeed = 3;
-        let vitesse = this.speedInputElement ? Number(this.speedInputElement.value) : defaultSpeed;
+        // Vitesse de base du joueur
+        let vitesse = 5;
         
         // Si le boost est actif (temps actuel < temps de fin du boost)
         if (Date.now() < this.speedBoostEndTime) {
@@ -271,12 +287,18 @@ export default class Game {
                 // Test collision Rectangle (Joueur) vs Triangle (Bumper)
                 if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     console.log("Collision avec bumper");
-                    // Effet de rebond basique
+
+                    // On inverse la direction
                     this.player.vitesseX = -this.player.vitesseX;
                     this.player.vitesseY = -this.player.vitesseY;
-                    // On déplace légèrement le joueur pour éviter qu'il ne reste collé
-                    this.player.x += this.player.vitesseX * 25;
-                    this.player.y += this.player.vitesseY * 25;
+
+                    // --- AJUSTEMENT DE LA FORCE ---
+                    // Si on est au niveau 3, on utilise une force de 60, sinon la force normale de 25
+                    let forceRebond = (this.currentLevel === 3) ? 40 : 25; 
+
+                    // On applique la répulsion
+                    this.player.x += this.player.vitesseX * forceRebond;
+                    this.player.y += this.player.vitesseY * forceRebond;
                 }
             } else if (obstacle instanceof RotatingObstacle) {
                 if (rectRotatedRectOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.angle)) {
