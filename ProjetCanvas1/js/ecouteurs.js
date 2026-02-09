@@ -32,9 +32,15 @@ function initListeners(inputStates, canvas, speedInputElement) {
     }
 
     window.onmousemove = (event) => {
-        // get proper x and y for the mouse in the canvas
-        inputStates.mouseX = event.clientX - canvas.getBoundingClientRect().left;
-        inputStates.mouseY = event.clientY - canvas.getBoundingClientRect().top;
+        let rect = canvas.getBoundingClientRect();
+        
+        // On calcule le ratio d'échelle
+        let scaleX = canvas.width / rect.width;
+        let scaleY = canvas.height / rect.height;
+
+        // On ajuste les coordonnées
+        inputStates.mouseX = (event.clientX - rect.left) * scaleX;
+        inputStates.mouseY = (event.clientY - rect.top) * scaleY;
     }
 
     // Gestion du conflit slider / flèches
