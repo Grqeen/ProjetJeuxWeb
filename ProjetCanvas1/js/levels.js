@@ -43,54 +43,31 @@ export default class Levels {
             this.game.fin = new fin(1100, 50, 50, 50, "green");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 2) {
-            // --- NIVEAU 2 : DESIGN EXACT + AJUSTEMENTS ---
-            this.game.player = new Player(350, 50);
+            // --- NIVEAU 2 : Version simplifiée et compacte ---
+            // On place le joueur au début (à gauche)
+            this.game.player = new Player(100, 100);
             this.game.objetsGraphiques.push(this.game.player);
 
-            const addRotatingCross = (x, y, size, speed) => {
-                this.game.objetsGraphiques.push(new RotatingObstacle(x, y, size, 20, "black", speed, 0));
-                this.game.objetsGraphiques.push(new RotatingObstacle(x, y, size, 20, "black", speed, Math.PI / 2));
-            };
+            // Obstacles de type "Croix" (simplifiés comme le niveau 1)
+            // Croix 1
+            this.game.objetsGraphiques.push(new RotatingObstacle(400, 300, 250, 20, "black", 0.02, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(400, 300, 250, 20, "black", 0.02, Math.PI / 2));
 
-            // 1. Les deux premières croix : descendues et agrandies (Size 300)
-            // Elles bloquent presque tout l'écran, forçant le passage au centre
-            addRotatingCross(180, 300, 250, 0.02); 
-            addRotatingCross(450, 300, 250, -0.02);
+            // Croix 2
+            this.game.objetsGraphiques.push(new RotatingObstacle(800, 600, 250, 20, "black", -0.02, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(800, 600, 250, 20, "black", -0.02, Math.PI / 2));
 
-            // 2. La structure en "U" au centre
-            let uX = 650;
-            let uY = 0;
-            let uW = 300;
-            let uH = 450;
-            let thick = 30;
-            this.game.objetsGraphiques.push(new Obstacle(uX, uY, thick, uH, "black")); // Gauche
-            this.game.objetsGraphiques.push(new Obstacle(uX + uW - thick, uY, thick, uH, "black")); // Droite
-            this.game.objetsGraphiques.push(new Obstacle(uX, uY + uH - thick, uW, thick, "black")); // Fond du U
+            // Mur central (Le "U" simplifié)
+            this.game.objetsGraphiques.push(new Obstacle(550, 0, 30, 400, "black")); // Mur haut
+            this.game.objetsGraphiques.push(new Obstacle(550, 600, 30, 400, "black")); // Mur bas
 
-            // 3. La croix du milieu agrandie (Size 300)
-            addRotatingCross(uX + uW/2, 700, 400, -0.015);
+            // Obstacle de fin (Mur de protection avant la sortie)
+            let wallRightX = 1100;
+            this.game.objetsGraphiques.push(new Obstacle(wallRightX, 400, 30, 600, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(900, 920, 230, 35, "black"));
 
-            // 4. La dernière croix agrandie pour bloquer l'espace (Size 400)
-            // Placée pour qu'elle frôle le mur du U et le bord de l'écran
-            addRotatingCross(1100, 250, 290, -0.01);
-
-            // 5. Mur vertical de droite
-            let wallRightX = 1250;
-            let wallRightY = 400;
-            let wallRightH = 550;
-            this.game.objetsGraphiques.push(new Obstacle(wallRightX, wallRightY, 35, wallRightH, "black"));
-
-            // 6. Barre horizontale du bas reliée au mur vertical (Y ajusté à 950)
-            let wallBottomX = 700;
-            let wallBottomY = 920; 
-            let wallBottomW = wallRightX - wallBottomX + 35; // Calcule la largeur pour toucher le mur de droite
-            this.game.objetsGraphiques.push(new Obstacle(wallBottomX, wallBottomY, wallBottomW, 35, "black"));
-
-            // 7. La petite barre "pied" qui relie la barre du bas à la terre (le bas du canvas)
-            this.game.objetsGraphiques.push(new Obstacle(wallBottomX, wallBottomY + 35, 35, 200, "black"));
-
-            // 8. La sortie (Cercle rouge)
-            this.game.fin = new fin(wallRightX-300, wallBottomY - 70, 60, 60, "red");
+            // Sortie (Cercle rouge) - Placée à 1250 pour être visible sur tous les écrans
+            this.game.fin = new fin(1250, 850, 60, 60, "red");
             this.game.objetsGraphiques.push(this.game.fin);
         }
     }
