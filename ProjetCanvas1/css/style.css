@@ -124,7 +124,7 @@ kbd:active, kbd.active {
   /* 2 lignes de 45px */
   gap: 5px;
   /* Espace entre les touches */
-  margin-top: 10px;
+  margin: 10px auto;
   width: fit-content;
   /* La boîte s'adapte au contenu */
 }
@@ -171,9 +171,140 @@ kbd:active, kbd.active {
   display: none;
 }
 
+/* --- Styles Timer & Leaderboard --- */
+#timerContainer {
+  margin-top: 30px;
+  text-align: center;
+}
+
+.timer-label {
+  font-family: 'Lilita One', cursive;
+  font-size: 25px;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+#timerValue {
+  font-family: 'Lilita One', cursive;
+  font-size: 40px;
+  color: #ffcc00;
+  text-shadow: 2px 2px 0 #b8860b;
+  background: #333;
+  padding: 10px;
+  border-radius: 10px;
+  display: inline-block;
+  min-width: 120px;
+}
+
+#leaderboardContainer {
+  margin-top: 30px;
+}
+
+#leaderboardContainer h3 {
+  font-family: 'Lilita One', cursive;
+  color: #333;
+  text-align: center;
+  font-size: 24px;
+}
+
+#leaderboardTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: sans-serif;
+  background: white;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+#leaderboardTable th {
+  background: #333;
+  color: #ffcc00;
+  padding: 8px;
+  font-family: 'Lilita One', cursive;
+}
+
+#leaderboardTable td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #eee;
+  font-weight: bold;
+}
+
+/* --- Styles Leaderboard Menu Principal --- */
+#leaderboardMenu {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 10;
+  width: 60%;
+}
+
+#leaderboardMenu h1 {
+  margin-top: 0;
+  font-size: 80px;
+  line-height: 1.2;
+  color: #ffcc00;
+  text-shadow: 4px 4px 0 #b8860b;
+  margin-bottom: 30px;
+  font-family: 'Lilita One', cursive;
+  letter-spacing: 4px;
+}
+
+#leaderboardMenu button {
+  display: block;
+  width: fit-content;
+  margin: 20px auto;
+  padding: 10px;
+  font-size: 45px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: white;
+  font-family: 'Lilita One', cursive;
+  text-transform: none;
+  text-shadow: 3px 3px 0 #000;
+  transition: all 0.3s ease;
+}
+
+#leaderboardMenu button:hover {
+  transform: scale(1.1) rotate(-3deg);
+  color: #ffcc00;
+  text-shadow: 3px 3px 0 #b8860b;
+}
+
+#leaderboardListContainer {
+  background: rgba(0, 0, 0, 0.6);
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+#menuLeaderboardTable {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+  font-family: sans-serif;
+  font-size: 24px;
+}
+
+#menuLeaderboardTable th {
+  border-bottom: 2px solid #ffcc00;
+  padding: 5px;
+}
+
+#menuLeaderboardTable td {
+  padding: 5px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 #restartBtn {
   display: block;
-  margin-top: 10px;
+  margin: 10px auto;
   padding: 10px 20px;
   font-size: 20px;
   background-color: #ffcc00;
