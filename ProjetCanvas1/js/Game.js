@@ -4,6 +4,7 @@ import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOve
 import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
+import sizePotion from "./sizepotion.js";
 import Levels from "./levels.js";
 import fin from "./fin.js";
 
@@ -34,11 +35,6 @@ export default class Game {
 
         // Initialisation du gestionnaire de niveaux
         this.levels = new Levels(this);
-
-        //items
-        // On met une vitesse raisonnable (ex: 5) car 200 est trop rapide par frame
-        this.speedPotion1 = new speedPotion(250, 100, 25, 25, "cyan", 5, 3000);
-        this.objetsGraphiques.push(this.speedPotion1);
 
         // On initialise les écouteurs de touches, souris, etc.
         initListeners(this.inputStates, this.canvas, this.speedInputElement);
@@ -305,6 +301,16 @@ export default class Game {
                 this.activeSpeedBoost = obj.vitesse;
                 this.speedBoostEndTime = Date.now() + obj.temps;
 
+                this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+            }
+        }
+        if (obj instanceof sizePotion) {
+            if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                console.log("Collision avec SizePotion : Taille modifier !");
+
+                // on change la taille du joueur
+                this.player.w += obj.tailleW;
+                this.player.h += obj.tailleH;
                 this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
             }
         }

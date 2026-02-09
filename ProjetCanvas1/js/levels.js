@@ -3,6 +3,7 @@ import Obstacle, { RotatingObstacle } from "./Obstacle.js";
 import fin from "./fin.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
+import sizePotion from "./sizepotion.js";
 
 export default class Levels {
     constructor(game) {
@@ -37,6 +38,10 @@ export default class Levels {
             // Potion de vitesse
             this.speedPotion1 = new speedPotion(250, 100, 25, 25, "cyan", 5, 3000);
             this.game.objetsGraphiques.push(this.speedPotion1);
+
+            // Potion de taille
+            this.sizePotion1 = new sizePotion(250, 200, 25, 25, "magenta", -40, 50);
+            this.game.objetsGraphiques.push(this.sizePotion1);
 
 
             // Sortie
