@@ -51,10 +51,10 @@ export default class Game {
         initListeners(this.inputStates, this.canvas);
 
         // Récupération des éléments du DOM pour les touches virtuelles
-        this.keyUp = document.querySelector(".key-up");
-        this.keyDown = document.querySelector(".key-down");
-        this.keyLeft = document.querySelector(".key-left");
-        this.keyRight = document.querySelector(".key-right");
+        this.keyUp = document.querySelector(".key-up kbd");
+        this.keyDown = document.querySelector(".key-down kbd");
+        this.keyLeft = document.querySelector(".key-left kbd");
+        this.keyRight = document.querySelector(".key-right kbd");
 
         console.log("Game initialisé");
     }

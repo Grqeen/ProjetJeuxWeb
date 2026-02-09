@@ -24,24 +24,21 @@ async function init() {
                 <div class="mod-group">
                     <label>Vitesse Joueur</label>
                     <div class="mod-inputs">
-                        <input type="range" id="speedRange" min="1" max="20" value="5">
-                        <input type="number" id="speedInput" value="5" min="1" max="20">
+                        <input type="range" id="speedRange" min="1" max="20" value="5" disabled>
                     </div>
                 </div>
 
                 <div class="mod-group">
                     <label>Vitesse Rotation (x)</label>
                     <div class="mod-inputs">
-                        <input type="range" id="rotRange" min="0" max="5" step="0.1" value="1">
-                        <input type="number" id="rotInput" value="1" step="0.1" min="0" max="5">
+                        <input type="range" id="rotRange" min="0" max="5" step="0.1" value="1" disabled>
                     </div>
                 </div>
 
                 <div class="mod-group">
                     <label>Force Bumper</label>
                     <div class="mod-inputs">
-                        <input type="range" id="bumpRange" min="0" max="100" value="25">
-                        <input type="number" id="bumpInput" value="25" min="0" max="100">
+                        <input type="range" id="bumpRange" min="0" max="50" value="25" disabled>
                     </div>
                 </div>
             </div>
@@ -73,21 +70,19 @@ async function init() {
     await game.init();
 
     // --- GESTION DES MODIFICATEURS ---
-    const setupModifier = (rangeId, inputId, onChange) => {
+    const setupModifier = (rangeId, onChange) => {
         let range = document.querySelector(rangeId);
-        let input = document.querySelector(inputId);
-        if(range && input) {
-            range.oninput = () => { input.value = range.value; onChange(parseFloat(range.value)); };
-            input.oninput = () => { range.value = input.value; onChange(parseFloat(input.value)); };
+        if(range) {
+            range.oninput = () => { onChange(parseFloat(range.value)); };
         }
     };
 
-    setupModifier("#speedRange", "#speedInput", (val) => game.playerSpeed = val);
-    setupModifier("#rotRange", "#rotInput", (val) => {
+    setupModifier("#speedRange", (val) => game.playerSpeed = val);
+    setupModifier("#rotRange", (val) => {
         game.rotationMultiplier = val;
         game.applyRotationMultiplier();
     });
-    setupModifier("#bumpRange", "#bumpInput", (val) => game.bumperForce = val);
+    setupModifier("#bumpRange", (val) => game.bumperForce = val);
     // ---------------------------------
 
     // Détection automatique du nombre de niveaux
@@ -348,6 +343,10 @@ async function init() {
         menuBackground.style.display = "block";
         winMenu.style.display = "block";
         resizeCanvas();
+
+        // Débloque les modificateurs une fois le jeu terminé
+        let modifiers = document.querySelectorAll("#modifiersContainer input");
+        modifiers.forEach(input => input.disabled = false);
     };
 
     startBtn.onclick = () => {
