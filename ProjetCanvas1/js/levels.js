@@ -90,7 +90,7 @@ export default class Levels {
             this.game.objetsGraphiques.push(new Obstacle(wallBottomX, wallBottomY + 35, 35, 200, "black"));
 
             // 8. La sortie (Cercle rouge)
-            this.game.fin = new fin(wallRightX + 100, wallBottomY - 70, 60, 60, "red");
+            this.game.fin = new fin(wallRightX-300, wallBottomY - 70, 60, 60, "red");
             this.game.objetsGraphiques.push(this.game.fin);
         }
     }
