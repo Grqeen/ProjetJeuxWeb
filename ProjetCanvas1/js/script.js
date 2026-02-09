@@ -14,7 +14,125 @@ async function init() {
     let exitBtn = document.querySelector("#exitButton");
     let levelsBtn = document.querySelector("#LevelsButton");
     let sidebar = document.querySelector("#sidebar");
+    
+    // --- RECONSTRUCTION DE LA SIDEBAR (Déplacé au début pour l'init du jeu) ---
+    if (sidebar) {
+        sidebar.innerHTML = `
+            <div id="modifiersContainer" style="margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 20px;">
+                <h2 style="font-family: 'Lilita One', cursive; color: #333; font-size: 30px; text-align: center;">Modificateurs</h2>
+                
+                <div class="mod-group">
+                    <label>Vitesse Joueur</label>
+                    <div class="mod-inputs">
+                        <input type="range" id="speedRange" min="1" max="20" value="5">
+                        <input type="number" id="speedInput" value="5" min="1" max="20">
+                    </div>
+                </div>
+
+                <div class="mod-group">
+                    <label>Vitesse Rotation (x)</label>
+                    <div class="mod-inputs">
+                        <input type="range" id="rotRange" min="0" max="5" step="0.1" value="1">
+                        <input type="number" id="rotInput" value="1" step="0.1" min="0" max="5">
+                    </div>
+                </div>
+
+                <div class="mod-group">
+                    <label>Force Bumper</label>
+                    <div class="mod-inputs">
+                        <input type="range" id="bumpRange" min="0" max="100" value="25">
+                        <input type="number" id="bumpInput" value="25" min="0" max="100">
+                    </div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="font-family: 'Lilita One', cursive; color: #333; font-size: 30px;">Contrôles</h2>
+            </div>
+            <button id="restartBtn">Recommencer</button>
+            
+            <div class="keyboard-grid">
+                <div class="key-up"><kbd>↑</kbd></div>
+                <div class="key-left"><kbd>←</kbd></div>
+                <div class="key-down"><kbd>↓</kbd></div>
+                <div class="key-right"><kbd>→</kbd></div>
+            </div>
+
+            <div id="timerContainer">
+                <div class="timer-label">TEMPS</div>
+                <div id="timerValue">00:00</div>
+            </div>
+        `;
+    }
     let restartBtn = document.querySelector("#restartBtn");
+
+    // --- INITIALISATION DU JEU ET DÉTECTION DES NIVEAUX ---
+    let game = new Game(canvas);
+    game.levelElement = document.querySelector("#level");
+    game.timerElement = document.querySelector("#timerValue");
+    await game.init();
+
+    // --- GESTION DES MODIFICATEURS ---
+    const setupModifier = (rangeId, inputId, onChange) => {
+        let range = document.querySelector(rangeId);
+        let input = document.querySelector(inputId);
+        if(range && input) {
+            range.oninput = () => { input.value = range.value; onChange(parseFloat(range.value)); };
+            input.oninput = () => { range.value = input.value; onChange(parseFloat(input.value)); };
+        }
+    };
+
+    setupModifier("#speedRange", "#speedInput", (val) => game.playerSpeed = val);
+    setupModifier("#rotRange", "#rotInput", (val) => {
+        game.rotationMultiplier = val;
+        game.applyRotationMultiplier();
+    });
+    setupModifier("#bumpRange", "#bumpInput", (val) => game.bumperForce = val);
+    // ---------------------------------
+
+    // Détection automatique du nombre de niveaux
+    let maxLevels = 0;
+    while (true) {
+        game.levels.load(maxLevels + 1);
+        if (game.objetsGraphiques.length === 0) break;
+        maxLevels++;
+    }
+    game.objetsGraphiques = []; // Reset après détection
+    console.log("Niveaux détectés : " + maxLevels);
+
+    // Renommage du bouton Histoire en Story
+    if (exitBtn) exitBtn.innerText = "Story";
+
+    // --- GESTION DES MEILLEURS SCORES ---
+    let bestTimes = {}; // Stocke les meilleurs temps : { 1: 12.5, 2: 10.0 }
+
+    function updateLeaderboards() {
+        // Fonction pour générer le HTML des lignes du tableau
+        const generateRows = () => {
+            let html = "";
+            let total = 0;
+            let count = 0;
+            for (let level = 1; level <= maxLevels; level++) {
+                let time = bestTimes[level];
+                if (time) {
+                    total += time;
+                    count++;
+                    html += `<tr><td>${level}</td><td>${time.toFixed(2)}s</td></tr>`;
+                } else {
+                    html += `<tr><td>${level}</td><td>-</td></tr>`;
+                }
+            }
+            // Ajout de la ligne TOTAL
+            let totalDisplay = (count === maxLevels && maxLevels > 0) ? total.toFixed(2) + "s" : "-";
+            html += `<tr style="border-top: 2px solid #ffcc00; font-weight: bold;"><td>TOTAL</td><td>${totalDisplay}</td></tr>`;
+            return html;
+        };
+
+        // 2. Mise à jour du leaderboard du Menu Principal
+        let menuTable = document.querySelector("#menuLeaderboardTable tbody");
+        if (menuTable) menuTable.innerHTML = generateRows();
+    }
+    // ------------------------------------
 
     // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
     let menuTextContainer = document.createElement("div");
@@ -25,6 +143,29 @@ async function init() {
         menuTextContainer.appendChild(menu.firstChild);
     }
     menu.appendChild(menuTextContainer);
+
+    // Création du bouton LeaderBoard
+    let leaderboardBtn = document.createElement("button");
+    leaderboardBtn.id = "leaderboardButton";
+    leaderboardBtn.innerText = "LeaderBoard";
+    // On l'insère avant le bouton Exit (qui est le dernier enfant pour l'instant)
+    menuTextContainer.insertBefore(leaderboardBtn, exitBtn);
+
+    // Création de l'écran LeaderBoard (caché par défaut)
+    let leaderboardMenu = document.createElement("div");
+    leaderboardMenu.id = "leaderboardMenu";
+    leaderboardMenu.style.display = "none";
+    leaderboardMenu.innerHTML = `
+        <h1>Meilleurs Temps</h1>
+        <div id="leaderboardListContainer">
+            <table id="menuLeaderboardTable">
+                <thead><tr><th>Niveau</th><th>Temps</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <button id="btnLeaderboardBack">Retour</button>
+    `;
+    document.body.appendChild(leaderboardMenu);
 
     // Ajout de l'image (blob) sur la droite
     let blobImage = document.createElement("img");
@@ -53,17 +194,16 @@ async function init() {
         if (staticSource) blobImage.src = staticSource;
     };
 
-    // Création dynamique du menu des niveaux
+    // Création dynamique du menu des niveaux (Basé sur maxLevels)
     let levelsMenu = document.createElement("div");
     levelsMenu.id = "levelsMenu";
     levelsMenu.style.display = "none";
-    levelsMenu.innerHTML = `
-        <h1>Niveaux</h1>
-        <button id="btnLevel1">Niveau 1</button>
-        <button id="btnLevel2">Niveau 2</button>
-        <button id="btnLevel3">Niveau 3</button>
-        <button id="btnBack">Retour</button>
-    `;
+    let levelsHtml = `<h1>Niveaux</h1>`;
+    for (let i = 1; i <= maxLevels; i++) {
+        levelsHtml += `<button class="btnLevel" data-level="${i}">Niveau ${i}</button>`;
+    }
+    levelsHtml += `<button id="btnBack">Retour</button>`;
+    levelsMenu.innerHTML = levelsHtml;
     document.body.appendChild(levelsMenu);
 
     // Création de l'arrière-plan du menu
@@ -141,6 +281,7 @@ async function init() {
         menu.style.display = "none";
         menuBackground.style.display = "none";
         levelsMenu.style.display = "none";
+        leaderboardMenu.style.display = "none";
         winMenu.style.display = "none";
         if (sidebar) sidebar.style.display = "none";
 
@@ -188,9 +329,17 @@ async function init() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    let game = new Game(canvas);
-    game.levelElement = document.querySelector("#level");
-    await game.init();
+    // Initialisation de l'affichage du leaderboard (pour afficher les niveaux vides au début)
+    updateLeaderboards();
+
+    // Configuration du callback pour les scores
+    game.onLevelComplete = (level, time) => {
+        // Si pas de temps enregistré ou si le nouveau temps est meilleur (plus petit)
+        if (!bestTimes[level] || time < bestTimes[level]) {
+            bestTimes[level] = time;
+            updateLeaderboards();
+        }
+    };
 
     // Configuration du callback de fin de jeu
     game.onFinish = () => {
@@ -210,7 +359,7 @@ async function init() {
         });
     };
 
-    // Gestion du bouton Histoire (anciennement Exit)
+    // Gestion du bouton Story (anciennement Exit/Histoire)
     exitBtn.onclick = () => {
         playVideo(() => {
             menu.style.display = "flex";
@@ -226,31 +375,33 @@ async function init() {
         resizeCanvas();
     };
 
-    // Gestion des boutons du menu Niveaux
-    document.querySelector("#btnLevel1").onclick = () => {
-        winMenu.style.display = "none";
-        levelsMenu.style.display = "none";
-        menuBackground.style.display = "none";
-        if (sidebar) sidebar.style.display = "block";
+    // Gestion du bouton LeaderBoard
+    leaderboardBtn.onclick = () => {
+        menu.style.display = "none";
+        leaderboardMenu.style.display = "block";
         resizeCanvas();
-        game.start(1);
     };
-    document.querySelector("#btnLevel2").onclick = () => {
-        levelsMenu.style.display = "none";
-        winMenu.style.display = "none";
-        menuBackground.style.display = "none";
-        if (sidebar) sidebar.style.display = "block";
+
+    // Gestion du bouton Retour du LeaderBoard
+    document.querySelector("#btnLeaderboardBack").onclick = () => {
+        leaderboardMenu.style.display = "none";
+        menu.style.display = "flex";
         resizeCanvas();
-        game.start(2);
     };
-    document.querySelector("#btnLevel3").onclick = () => {
-        levelsMenu.style.display = "none";
-        winMenu.style.display = "none";
-        menuBackground.style.display = "none";
-        if (sidebar) sidebar.style.display = "block";
-        resizeCanvas();
-        game.start(3);
-    };
+
+    // Gestion des boutons du menu Niveaux (Dynamique)
+    document.querySelectorAll(".btnLevel").forEach(btn => {
+        btn.onclick = () => {
+            let level = parseInt(btn.dataset.level);
+            levelsMenu.style.display = "none";
+            winMenu.style.display = "none";
+            menuBackground.style.display = "none";
+            if (sidebar) sidebar.style.display = "block";
+            resizeCanvas();
+            game.start(level);
+        };
+    });
+
     document.querySelector("#btnBack").onclick = () => {
         levelsMenu.style.display = "none";
         menu.style.display = "flex";

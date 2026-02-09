@@ -17,6 +17,7 @@ export class RotatingObstacle extends ObjectGraphique {
     constructor(x, y, w, h, couleur, angleSpeed, initialAngle = 0) {
         super(x, y, w, h, couleur);
         this.angle = initialAngle;
+        this.initialAngleSpeed = angleSpeed;
         this.angleSpeed = angleSpeed;
     }
 

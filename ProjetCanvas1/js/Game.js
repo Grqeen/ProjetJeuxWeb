@@ -15,8 +15,9 @@ export default class Game {
 
     constructor(canvas, scoreElement) {
         this.canvas = canvas;
-        this.scoreElement = scoreElement; // L'élément HTML pour afficher le score
-        this.score = 0; // Le score actuel
+        this.timerElement = null; // Élément HTML pour le timer
+        this.onLevelComplete = null; // Callback pour gérer la fin de niveau (score)
+        this.startTime = 0; // Temps de début du niveau
         this.levelElement = null; // L'élément HTML pour afficher le niveau
         // etat du clavier
         this.inputStates = {
@@ -27,6 +28,11 @@ export default class Game {
             ArrowUp: false,
             ArrowDown: false
         };
+
+        // Modificateurs de jeu
+        this.playerSpeed = 5;
+        this.rotationMultiplier = 1;
+        this.bumperForce = 25;
 
         // Gestion du boost de vitesse
         this.speedBoostEndTime = 0;
@@ -57,6 +63,7 @@ export default class Game {
         // Charge le niveau demandé
         this.levels.load(levelNumber);
         this.currentLevel = levelNumber;
+        this.applyRotationMultiplier(); // Applique le multiplicateur aux nouveaux obstacles
 
         if (this.levelElement) {
             this.levelElement.innerText = levelNumber;
@@ -64,6 +71,9 @@ export default class Game {
         
         console.log("Game démarré niveau " + levelNumber);
         
+        // Reset du timer au lancement du niveau
+        this.startTime = Date.now();
+
         if (!this.running) {
             this.running = true;
             requestAnimationFrame(this.mainAnimationLoop.bind(this));
@@ -120,10 +130,12 @@ export default class Game {
             this.nextLevel();
         }
 
-        // Mise à jour du score dans le HTML
-        // (On pourrait optimiser en ne le faisant que si le score change)
-        if(this.scoreElement) {
-            this.scoreElement.innerText = this.score;
+        // Mise à jour du Timer
+        if (this.timerElement && this.running) {
+            let elapsed = Date.now() - this.startTime;
+            let seconds = Math.floor(elapsed / 1000);
+            let ms = Math.floor((elapsed % 1000) / 10);
+            this.timerElement.innerText = `${seconds}.${ms.toString().padStart(2, '0')}`;
         }
 
         // Mise à jour visuelle des touches du clavier virtuel
@@ -140,7 +152,7 @@ export default class Game {
         this.player.vitesseY = 0;
 
         // Vitesse de base du joueur
-        let vitesse = 5;
+        let vitesse = this.playerSpeed;
         
         // Si le boost est actif (temps actuel < temps de fin du boost)
         if (Date.now() < this.speedBoostEndTime) {
@@ -224,8 +236,6 @@ export default class Game {
                     // par exemple en le repoussant dans la direction opposée à celle de l'obstacle...
                     // Là par défaut on le renvoie en x=10 y=10 et on l'arrête
                     console.log("Collision avec obstacle");
-                    // Exemple : on perd des points ou on reset le score
-                    this.score = 0;
                     this.player.x = 10;
                     this.player.y = 10;
                     this.player.vitesseX = 0;
@@ -292,8 +302,7 @@ export default class Game {
                     this.player.vitesseY = -this.player.vitesseY;
 
                     // --- AJUSTEMENT DE LA FORCE ---
-                    // Si on est au niveau 3, on utilise une force de 60, sinon la force normale de 25
-                    let forceRebond = (this.currentLevel === 3) ? 40 : 25; 
+                    let forceRebond = this.bumperForce; 
 
                     // On applique la répulsion
                     this.player.x += this.player.vitesseX * forceRebond;
@@ -391,6 +400,12 @@ testCollisionFin() {
 }
 
     nextLevel() {
+        // Enregistrement du temps dans le leaderboard
+        if (this.onLevelComplete) {
+            let elapsed = (Date.now() - this.startTime) / 1000;
+            this.onLevelComplete(this.currentLevel, elapsed);
+        }
+
         // On incrémente le niveau
         this.currentLevel++;
         // On essaie de charger le niveau suivant
@@ -401,7 +416,18 @@ testCollisionFin() {
             this.running = false; // On arrête la boucle de jeu
             if (this.onFinish) this.onFinish(); // On appelle le callback de fin
         } else {
+            // On reset le timer pour le nouveau niveau
+            this.startTime = Date.now();
+
             if (this.levelElement) this.levelElement.innerText = this.currentLevel;
         }
+    }
+
+    applyRotationMultiplier() {
+        this.objetsGraphiques.forEach(obj => {
+            if (obj instanceof RotatingObstacle) {
+                obj.angleSpeed = obj.initialAngleSpeed * this.rotationMultiplier;
+            }
+        });
     }
 }
