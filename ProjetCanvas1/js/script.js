@@ -57,6 +57,7 @@ async function init() {
         <h1>Niveaux</h1>
         <button id="btnLevel1">Niveau 1</button>
         <button id="btnLevel2">Niveau 2</button>
+        <button id="btnLevel3">Niveau 3</button>
         <button id="btnBack">Retour</button>
     `;
     document.body.appendChild(levelsMenu);
@@ -143,6 +144,14 @@ async function init() {
         if (sidebar) sidebar.style.display = "block";
         resizeCanvas();
         game.start(2);
+    };
+    document.querySelector("#btnLevel3").onclick = () => {
+        levelsMenu.style.display = "none";
+        winMessage.style.display = "none";
+        menuBackground.style.display = "none";
+        if (sidebar) sidebar.style.display = "block";
+        resizeCanvas();
+        game.start(3);
     };
     document.querySelector("#btnBack").onclick = () => {
         levelsMenu.style.display = "none";
