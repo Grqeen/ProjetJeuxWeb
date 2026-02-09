@@ -119,7 +119,7 @@ export default class Levels {
                 this.game.objetsGraphiques.push(new bumper(1250, y, 50, 50, "orange"));
             }
             // Mur Gauche Haut
-            for (let y = 80; y < 250; y += 50) {
+            for (let y = 80; y < 230; y += 50) {
                 this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange"));
             }
             // Mur Gauche Bas
