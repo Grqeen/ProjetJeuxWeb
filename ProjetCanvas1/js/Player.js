@@ -8,6 +8,19 @@ export default class Player extends ObjectGraphique {
         this.vitesseY = 0;
         this.couleur = "green";
         this.angle = 0;
+
+        // Chargement des images
+        this.imageDroit = new Image();
+        this.imageDroit.src = "assets/images/blobDroit.png";
+        this.imageGauche = new Image();
+        this.imageGauche.src = "assets/images/blobGauche.png";
+        this.imageIdle = new Image();
+        this.imageIdle.src = "assets/images/blobIdle.png";
+        this.imageDescend = new Image();
+        this.imageDescend.src = "assets/images/blobDescend.png";
+        this.imageMonte = new Image();
+        this.imageMonte.src = "assets/images/blobMonte.png";
+        this.currentImage = this.imageIdle;
     }
 
     draw(ctx) {
@@ -27,18 +40,25 @@ export default class Player extends ObjectGraphique {
         ctx.translate(-this.w / 2, -this.h / 2);
         //this.ctx.scale(0.5, 0.5);
 
-        // tete du monstre
-        ctx.fillStyle = "green";
-        ctx.fillRect(0, 0, this.w, this.h);
-        // yeux
-        drawCircleImmediat(ctx, 20, 20, 10, "white");
-        drawCircleImmediat(ctx, 60, 20, 10, "white");
-        drawCircleImmediat(ctx, 20, 20, 5, "black");
-        drawCircleImmediat(ctx, 60, 20, 5, "black");
-        // bouche
-        ctx.fillStyle = "black";
-        ctx.fillRect(20, 60, 40, 10);
+        // Désactive le lissage pour éviter le flou (Pixel Art)
+        ctx.imageSmoothingEnabled = false;
 
+        if (this.currentImage && this.currentImage.complete && this.currentImage.naturalHeight !== 0) {
+            ctx.drawImage(this.currentImage, 0, 0, this.w, this.h);
+        } else {
+            // tete du monstre
+            ctx.fillStyle = "green";
+            ctx.fillRect(0, 0, this.w, this.h);
+            // yeux
+            drawCircleImmediat(ctx, 20, 20, 10, "white");
+            drawCircleImmediat(ctx, 60, 20, 10, "white");
+            drawCircleImmediat(ctx, 20, 20, 5, "black");
+            drawCircleImmediat(ctx, 60, 20, 5, "black");
+            // bouche
+            ctx.fillStyle = "black";
+            ctx.fillRect(20, 60, 40, 10);
+        }
+        
         // Les bras
         //this.drawBrasGauche();
 
@@ -53,5 +73,17 @@ export default class Player extends ObjectGraphique {
     move() {
         this.x += this.vitesseX;
         this.y += this.vitesseY;
+
+        if (this.vitesseX > 0) {
+            this.currentImage = this.imageDroit;
+        } else if (this.vitesseX < 0) {
+            this.currentImage = this.imageGauche;
+        } else if (this.vitesseY > 0) {
+            this.currentImage = this.imageDescend;
+        } else if (this.vitesseY < 0) {
+            this.currentImage = this.imageMonte;
+        } else {
+            this.currentImage = this.imageIdle;
+        }
     }
 }
