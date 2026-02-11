@@ -18,6 +18,10 @@ async function init() {
     // --- RECONSTRUCTION DE LA SIDEBAR (Déplacé au début pour l'init du jeu) ---
     if (sidebar) {
         sidebar.innerHTML = `
+            <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 20px;">
+                <h2 style="font-family: 'Lilita One', cursive; color: #333; font-size: 30px;">Niveau <span id="level">1</span></h2>
+            </div>
+
             <div id="modifiersContainer" style="margin-bottom: 30px; border-bottom: 2px solid #ccc; padding-bottom: 20px;">
                 <h2 style="font-family: 'Lilita One', cursive; color: #333; font-size: 30px; text-align: center;">Modificateurs</h2>
                 

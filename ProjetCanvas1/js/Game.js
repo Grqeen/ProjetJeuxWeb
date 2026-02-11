@@ -120,6 +120,30 @@ export default class Game {
         // Déplacement du joueur. 
         this.movePlayer();
 
+        // --- LOGIQUE NIVEAU 5 : Portail à triple téléportation ---
+        if (this.currentLevel === 5 && this.finPortal) {
+            let dx = this.player.x - this.finPortal.x;
+            let dy = this.player.y - this.finPortal.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Si le joueur s'approche à moins de 250 pixels
+            if (distance < 250) {
+                if (this.portalStage === 0) {
+                    // Premier saut : vers le bas à droite
+                    this.finPortal.x = 1250;
+                    this.finPortal.y = 850;
+                    this.portalStage = 1;
+                    console.log("Portal : 'Nope ! Attrape-moi en bas !'");
+                } else if (this.portalStage === 1) {
+                    // DEUXIÈME saut (3ème position) : Sous la barre rouge à gauche
+                    this.finPortal.x = 150;
+                    this.finPortal.y = 650;
+                    this.portalStage = 2;
+                    console.log("Portal : 'Plus vite ! Je suis caché sous la barre !'");
+                }
+            }
+        }
+
         // Mise à jour des objets animés (sauf le joueur qui est géré par movePlayer)
         this.objetsGraphiques.forEach(obj => {
             if (obj !== this.player && obj.move) {
@@ -302,7 +326,7 @@ export default class Game {
                 }
             } else if (obstacle instanceof bumper) {
                 // Test collision Rectangle (Joueur) vs Triangle (Bumper)
-                if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.direction)) {
                     console.log("Collision avec bumper");
 
                     // 1. On annule le mouvement pour sortir du bumper (éviter de rester coincé)
@@ -330,16 +354,36 @@ export default class Game {
                     }
                 }
             } else if (obstacle instanceof RotatingObstacle) {
-                if (rectRotatedRectOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.angle)) {
-                    console.log("Collision avec obstacle rotatif");
-                    // On repousse le joueur vers l'extérieur du centre de rotation
+                let collision = rectRotatedRectOverlap(
+                    this.player.x - this.player.w / 2, 
+                    this.player.y - this.player.h / 2, 
+                    this.player.w, this.player.h, 
+                    obstacle.x, obstacle.y, 
+                    obstacle.w, obstacle.h, 
+                    obstacle.angle
+                );
+
+                if (collision) {
+                    // 1. DIRECTION : On s'assure que le vecteur pousse vers l'extérieur du centre de l'obstacle
                     let dx = this.player.x - obstacle.x;
                     let dy = this.player.y - obstacle.y;
-                    let dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist > 0) {
-                        this.player.x += (dx / dist) * 10;
-                        this.player.y += (dy / dist) * 10;
+                    let dot = dx * collision.axis.x + dy * collision.axis.y;
+                    
+                    if (dot < 0) {
+                        collision.axis.x *= -1;
+                        collision.axis.y *= -1;
                     }
+
+                    // 2. RÉSOLUTION : On replace le joueur instantanément au bord (plus de traversée !)
+                    this.player.x += collision.axis.x * (collision.overlap + 1);
+                    this.player.y += collision.axis.y * (collision.overlap + 1);
+
+                    // 3. PHYSIQUE : On transfère un peu de la force de rotation au joueur (effet de choc)
+                    this.knockbackX = collision.axis.x * 8;
+                    this.knockbackY = collision.axis.y * 8;
+                    
+                    this.player.vitesseX = 0;
+                    this.player.vitesseY = 0;
                 }
             }
         });
