@@ -41,6 +41,7 @@ export default class Game {
 
         // Gestion du boost de vitesse
         this.speedBoostTimeout = null;
+        this.speedBoostEndTime = 0;
         this.activeSpeedBoost = 0;
         this.running = false;
         this.onFinish = null; // Callback appelé quand le jeu est fini
@@ -165,6 +166,10 @@ export default class Game {
         
         // Si le boost est actif
         vitesse += this.activeSpeedBoost;
+        // Si le boost est actif (temps actuel < temps de fin du boost)
+        if (Date.now() < this.speedBoostEndTime) {
+            vitesse += this.activeSpeedBoost;
+        }
 
         if(this.inputStates.ArrowRight) inputVx = vitesse;
         if(this.inputStates.ArrowLeft) inputVx = -vitesse;
@@ -365,6 +370,7 @@ export default class Game {
                 this.speedBoostTimeout = setTimeout(() => {
                     this.activeSpeedBoost = 0;
                 }, obj.temps);
+                this.speedBoostEndTime = Date.now() + obj.temps;
 
                 this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
             }
@@ -376,6 +382,12 @@ export default class Game {
                 // on change la taille du joueur
                 this.player.w += obj.tailleW;
                 this.player.h += obj.tailleH;
+                // On modifie la taille de base du joueur.
+                // On suppose que la modification est proportionnelle et on utilise tailleW.
+                this.player.baseSize += obj.tailleW;
+                // On met à jour immédiatement la taille actuelle du joueur.
+                this.player.updateDimensions();
+
                 this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
             }
         }

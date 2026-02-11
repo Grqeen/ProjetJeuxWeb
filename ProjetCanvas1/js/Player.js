@@ -3,11 +3,12 @@ import { drawCircleImmediat } from "./utils.js";
 
 export default class Player extends ObjectGraphique {
     constructor(x, y) {
-        super(x, y, 100, 100);
+        super(x, y, 100, 100); // La taille sera mise à jour dynamiquement
         this.vitesseX = 0;
         this.vitesseY = 0;
         this.couleur = "green";
         this.angle = 0;
+        this.baseSize = 100; // Dimension maximale (largeur ou hauteur)
 
         // Chargement des images
         this.imageDroit = new Image();
@@ -21,6 +22,29 @@ export default class Player extends ObjectGraphique {
         this.imageMonte = new Image();
         this.imageMonte.src = "assets/images/blobMonte.png";
         this.currentImage = this.imageIdle;
+
+        // Met à jour les dimensions une fois que l'image de départ est chargée
+        this.imageIdle.onload = () => {
+            this.updateDimensions();
+        }
+    }
+
+    updateDimensions() {
+        if (!this.currentImage || !this.currentImage.complete || this.currentImage.naturalHeight === 0) {
+            return; // Ne fait rien si l'image n'est pas chargée
+        }
+
+        const ratio = this.currentImage.naturalWidth / this.currentImage.naturalHeight;
+
+        if (ratio > 1) {
+            // Image plus large que haute
+            this.w = this.baseSize;
+            this.h = this.baseSize / ratio;
+        } else {
+            // Image plus haute que large ou carrée
+            this.h = this.baseSize;
+            this.w = this.baseSize * ratio;
+        }
     }
 
     draw(ctx) {
@@ -44,6 +68,7 @@ export default class Player extends ObjectGraphique {
         ctx.imageSmoothingEnabled = false;
 
         if (this.currentImage && this.currentImage.complete && this.currentImage.naturalHeight !== 0) {
+            // La hitbox (w, h) a maintenant le bon ratio, on peut dessiner directement
             ctx.drawImage(this.currentImage, 0, 0, this.w, this.h);
         } else {
             // tete du monstre
@@ -74,16 +99,33 @@ export default class Player extends ObjectGraphique {
         this.x += this.vitesseX;
         this.y += this.vitesseY;
 
+        let nextImage = this.currentImage;
+
         if (this.vitesseX > 0) {
-            this.currentImage = this.imageDroit;
+            nextImage = this.imageDroit;
         } else if (this.vitesseX < 0) {
-            this.currentImage = this.imageGauche;
+            nextImage = this.imageGauche;
         } else if (this.vitesseY > 0) {
-            this.currentImage = this.imageDescend;
+            nextImage = this.imageDescend;
         } else if (this.vitesseY < 0) {
-            this.currentImage = this.imageMonte;
+            nextImage = this.imageMonte;
         } else {
-            this.currentImage = this.imageIdle;
+            nextImage = this.imageIdle;
+        }
+
+        if (this.currentImage !== nextImage) {
+            let previousHeight = this.h;
+            let previousImage = this.currentImage;
+            this.currentImage = nextImage;
+            this.updateDimensions();
+            
+            if (previousImage === this.imageMonte || nextImage === this.imageMonte) {
+                // Si on monte OU qu'on vient de monter, on ancre le HAUT pour éviter le décalage
+                this.y -= (previousHeight - this.h) / 2;
+            } else {
+                // Sinon (descend, idle, coté), on ancre le BAS pour éviter de rentrer dans le sol
+                this.y += (previousHeight - this.h) / 2;
+            }
         }
     }
 }
