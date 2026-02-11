@@ -63,6 +63,32 @@ export default class Game {
         console.log("Game initialisé");
     }
 
+    restartLevel() {
+        console.log("Sortie de zone détectée ! Retour au spawn.");
+        this.levels.load(this.currentLevel);
+        this.applyRotationMultiplier();
+        this.startTime = Date.now();
+        this.knockbackX = 0;
+        this.knockbackY = 0;
+    }
+
+    checkLevel9Bounds() {
+        if (this.currentLevel !== 9) return;
+
+        let p = this.player;
+        // Les zones valides définies dans ton levels.js pour le Niveau 9 sont :
+        // - Couloir vertical : x entre 50 et 250, y entre 50 et 950
+        // - Couloir horizontal : x entre 50 et 1350, y entre 750 et 950
+        
+        let inVerticalCorridor = (p.x >= 50 && p.x <= 250 && p.y >= 50 && p.y <= 950);
+        let inHorizontalCorridor = (p.x >= 50 && p.x <= 1350 && p.y >= 750 && p.y <= 950);
+
+        // Si le joueur n'est dans AUCUNE de ces deux zones, il a traversé un mur
+        if (!inVerticalCorridor && !inHorizontalCorridor) {
+            this.restartLevel();
+        }
+    }
+
     start(levelNumber = 1) {
         // Charge le niveau demandé
         this.levels.load(levelNumber);
@@ -119,6 +145,9 @@ export default class Game {
         
         // Déplacement du joueur. 
         this.movePlayer();
+
+        // Détection de sortie de mur pour le Niveau 9
+        this.checkLevel9Bounds();
 
         // --- LOGIQUE NIVEAU 5 : Portail à triple téléportation ---
         if (this.currentLevel === 5 && this.finPortal) {
@@ -228,28 +257,34 @@ export default class Game {
     }
 
     testCollisionPlayerBordsEcran() {
-        // Raoppel : le x, y du joueur est en son centre, pas dans le coin en haut à gauche!
-        if(this.player.x - this.player.w/2 < 0) {
-            // On stoppe le joueur
-            this.player.vitesseX = 0;
-            // on le remet au point de contaxct
-            this.player.x = this.player.w/2;
-        }
-        if(this.player.x + this.player.w/2 > this.canvas.width) {
-            this.player.vitesseX = 0;
-            // on le remet au point de contact
-            this.player.x = this.canvas.width - this.player.w/2;
+        // 1. Détection de sortie de map (Mort)
+        // Si le joueur est poussé au-delà des limites du canvas (1400x1000)
+        if (this.player.x + this.player.w/2 < -50 || 
+            this.player.x - this.player.w/2 > this.canvas.width + 50 ||
+            this.player.y + this.player.h/2 < -50 || 
+            this.player.y - this.player.h/2 > this.canvas.height + 50) {
+            
+            this.restartLevel();
+            return;
         }
 
+        // 2. Comportement normal (Murs invisibles des bords)
+        // On garde le clamping pour les déplacements classiques au clavier
+        if(this.player.x - this.player.w/2 < 0) {
+            this.player.x = this.player.w/2;
+            this.player.vitesseX = 0;
+        }
+        if(this.player.x + this.player.w/2 > this.canvas.width) {
+            this.player.x = this.canvas.width - this.player.w/2;
+            this.player.vitesseX = 0;
+        }
         if(this.player.y - this.player.h/2 < 0) {
             this.player.y = this.player.h/2;
             this.player.vitesseY = 0;
-
         }
-       
         if(this.player.y + this.player.h/2 > this.canvas.height) {
-            this.player.vitesseY = 0;
             this.player.y = this.canvas.height - this.player.h/2;
+            this.player.vitesseY = 0;
         }
     }
 
@@ -364,6 +399,12 @@ export default class Game {
                 );
 
                 if (collision) {
+                    // Si le choc est trop violent (overlap énorme), on considère que le joueur est écrasé
+                    if (collision.overlap > this.player.w * 0.8) {
+                        this.restartLevel();
+                        return;
+                    }
+
                     // 1. DIRECTION : On s'assure que le vecteur pousse vers l'extérieur du centre de l'obstacle
                     let dx = this.player.x - obstacle.x;
                     let dy = this.player.y - obstacle.y;
@@ -377,6 +418,17 @@ export default class Game {
                     // 2. RÉSOLUTION : On replace le joueur instantanément au bord (plus de traversée !)
                     this.player.x += collision.axis.x * (collision.overlap + 1);
                     this.player.y += collision.axis.y * (collision.overlap + 1);
+
+                    // NOUVEAU : Vérification d'écrasement
+                    // Si après avoir été poussé par la barre, le joueur touche un mur noir, il meurt
+                    this.objetsGraphiques.forEach(obj => {
+                        if (obj instanceof Obstacle && !(obj instanceof RotatingObstacle) && !(obj instanceof fadingDoor && !obj.visible)) {
+                            if (rectsOverlap(this.player.x - this.player.w/2, this.player.y - this.player.h/2, 
+                                            this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                                this.restartLevel();
+                            }
+                        }
+                    });
 
                     // 3. PHYSIQUE : On transfère un peu de la force de rotation au joueur (effet de choc)
                     this.knockbackX = collision.axis.x * 8;

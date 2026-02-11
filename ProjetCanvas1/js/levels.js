@@ -15,6 +15,9 @@ export default class Levels {
     load(levelNumber) {
         // On vide le tableau d'objets graphiques avant de charger le niveau
         this.game.objetsGraphiques = [];
+        
+        // Réinitialisation de la vitesse par défaut pour tous les niveaux
+        this.game.playerSpeed = 5;
 
         if (levelNumber === 1) {
             // --- NIVEAU 1 ---
@@ -326,54 +329,60 @@ export default class Levels {
             this.game.fin = new fin(1250, 500, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 9) {
+            // 1. JOUEUR : Spawn dans la boîte du haut (Taille 100x100)
             this.game.player = new Player(150, 150);
+            
+            // --- MODIFICATIONS SPÉCIFIQUES NIVEAU 9 ---
+            this.game.player.w = 80;
+            this.game.player.h = 80;
+            this.game.playerSpeed = 8;
+            
             this.game.objetsGraphiques.push(this.game.player);
 
-            // MURS DU SPAWN (Avec une ouverture au milieu en bas)
-            this.game.objetsGraphiques.push(new Obstacle(50, 50, 210, 10, "black")); // Haut
-            this.game.objetsGraphiques.push(new Obstacle(50, 50, 10, 210, "black"));  // Gauche
-            this.game.objetsGraphiques.push(new Obstacle(250, 50, 10, 710, "black")); // Droite longue
-            
-            // Mur du bas avec un trou pour passer (x de 50 à 250, trou de 100px au milieu)
-            this.game.objetsGraphiques.push(new Obstacle(50, 250, 50, 10, "black"));  
-            this.game.objetsGraphiques.push(new Obstacle(200, 250, 60, 10, "black")); 
+            // 2. MURS DU SPAWN (Avec ouverture de 120px pour laisser passer le joueur)
+            this.game.objetsGraphiques.push(new Obstacle(50, 50, 210, 10, "black"));  // Haut
+            this.game.objetsGraphiques.push(new Obstacle(50, 50, 10, 210, "black"));   // Gauche
+            this.game.objetsGraphiques.push(new Obstacle(250, 50, 10, 710, "black"));  // Droite longue
 
-            // SUITE DU COULOIR VERTICAL
-            this.game.objetsGraphiques.push(new Obstacle(50, 250, 10, 710, "black")); // Mur Gauche long
+            // Mur du bas du spawn avec un trou (Ouverture entre x=100 et x=220)
+            this.game.objetsGraphiques.push(new Obstacle(50, 250, 50, 10, "black"));   // Segment gauche
+            this.game.objetsGraphiques.push(new Obstacle(220, 250, 30, 10, "black"));  // Segment droit
 
-            // --- PREMIER OBSTACLE : 2 Croix Mobiles (Gauche/Droite) ---
-            // On crée deux paires de barres pour former des croix
+            // 3. COULOIR VERTICAL (Fermé à gauche)
+            this.game.objetsGraphiques.push(new Obstacle(50, 250, 10, 710, "black"));  // Mur Gauche long
+
+            // PREMIERS OBSTACLES : 2 Grosses Barres VERTICALES (Mouvement Gauche/Droite)
             const vSpeed = 0.05;
-            const vCentersY = [450, 650];
-            
-            vCentersY.forEach((y, i) => {
-                let offset = (i % 2 === 0) ? 0 : Math.PI;
-                // Barre verticale de la croix
-                let b1 = new MovingObstacle(150, y, 30, 120, "purple", 70, 0, vSpeed);
-                // Barre horizontale de la croix (collée)
-                let b2 = new MovingObstacle(150, y, 120, 30, "purple", 70, 0, vSpeed);
-                b1.timer = offset; b2.timer = offset;
-                this.game.objetsGraphiques.push(b1, b2);
-            });
 
-            // --- LE VIRAGE : Rotating Obstacle ---
+            // Premier obstacle : Remonté à y=280 (juste après la sortie du spawn à y=250)
+            // On réduit légèrement la hauteur à 160 pour créer de l'espace
+            this.game.objetsGraphiques.push(new MovingObstacle(150, 280, 40, 160, "purple", 70, 0, vSpeed));
+
+            // Deuxième obstacle : Placé à y=560 pour laisser un couloir de sécurité entre les deux
+            // Le premier finit à 280+160=440, ce qui laisse 120px de vide (ton joueur fait 100px)
+            let bar2 = new MovingObstacle(150, 560, 40, 160, "purple", 70, 0, vSpeed);
+            bar2.timer = Math.PI; // En déphasage
+            this.game.objetsGraphiques.push(bar2);
+
+            // 4. LE VIRAGE : Obstacle rotatif central (positionné à y=850)
+            // Cette herse finit à 560+160=720. 
+            // L'obstacle rotatif à y=850 a une portée haute de 760 (850 - 180/2).
+            // Il reste donc 40px de marge de sécurité pour éviter tout contact visuel.
             this.game.objetsGraphiques.push(new RotatingObstacle(150, 850, 180, 20, "purple", 0.02));
 
-            // --- DERNIER OBSTACLE : 2 Croix Mobiles (Haut/Bas) ---
+            // 5. COULOIR HORIZONTAL (Entièrement fermé)
             this.game.objetsGraphiques.push(new Obstacle(250, 750, 1110, 10, "black")); // Plafond
             this.game.objetsGraphiques.push(new Obstacle(50, 950, 1310, 10, "black"));  // Sol
-            
-            const hCentersX = [600, 950];
-            hCentersX.forEach((x, i) => {
-                let offset = (i % 2 === 0) ? 0 : Math.PI;
-                // Barre verticale de la croix
-                let b1 = new MovingObstacle(x, 850, 30, 120, "purple", 0, 70, vSpeed);
-                // Barre horizontale de la croix
-                let b2 = new MovingObstacle(x, 850, 120, 30, "purple", 0, 70, vSpeed);
-                b1.timer = offset; b2.timer = offset;
-                this.game.objetsGraphiques.push(b1, b2);
-            });
+            this.game.objetsGraphiques.push(new Obstacle(1350, 750, 10, 210, "black")); // Mur de fin
 
+            // DERNIERS OBSTACLES : 2 Grosses Barres HORIZONTALES (Mouvement Haut/Bas)
+            // Ces barres sont plus larges que hautes pour bloquer le passage horizontal
+            this.game.objetsGraphiques.push(new MovingObstacle(600, 850, 180, 60, "purple", 0, 70, vSpeed));
+            let bar4 = new MovingObstacle(950, 850, 180, 60, "purple", 0, 70, vSpeed);
+            bar4.timer = Math.PI;
+            this.game.objetsGraphiques.push(bar4);
+
+            // 6. LA SORTIE
             this.game.fin = new fin(1250, 850, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         }
