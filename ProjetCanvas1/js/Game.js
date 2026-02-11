@@ -9,6 +9,7 @@ import Levels from "./levels.js";
 import keypad from "./keypad.js";
 import fadingDoor from "./fadingDoor.js";
 import fin from "./fin.js";
+import teleporter from "./teleporter.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -39,7 +40,7 @@ export default class Game {
         this.knockbackY = 0;
 
         // Gestion du boost de vitesse
-        this.speedBoostEndTime = 0;
+        this.speedBoostTimeout = null;
         this.activeSpeedBoost = 0;
         this.running = false;
         this.onFinish = null; // Callback appelé quand le jeu est fini
@@ -162,10 +163,8 @@ export default class Game {
         // Vitesse de base du joueur
         let vitesse = this.playerSpeed;
         
-        // Si le boost est actif (temps actuel < temps de fin du boost)
-        if (Date.now() < this.speedBoostEndTime) {
-            vitesse += this.activeSpeedBoost;
-        }
+        // Si le boost est actif
+        vitesse += this.activeSpeedBoost;
 
         if(this.inputStates.ArrowRight) inputVx = vitesse;
         if(this.inputStates.ArrowLeft) inputVx = -vitesse;
@@ -341,6 +340,13 @@ export default class Game {
                         this.player.y += (dy / dist) * 10;
                     }
                 }
+            }else if (obstacle instanceof teleporter) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                    console.log("Collision avec téléporteur : Téléportation !");
+                    // On téléporte le joueur à la destination du téléporteur
+                    this.player.x = obstacle.destinationX;
+                    this.player.y = obstacle.destinationY;
+                }
             }
         });
     }
@@ -354,8 +360,11 @@ export default class Game {
                 console.log("Collision avec SpeedPotion : Vitesse augmentée !");
                 
                 // On active le boost
+                if (this.speedBoostTimeout) clearTimeout(this.speedBoostTimeout);
                 this.activeSpeedBoost = obj.vitesse;
-                this.speedBoostEndTime = Date.now() + obj.temps;
+                this.speedBoostTimeout = setTimeout(() => {
+                    this.activeSpeedBoost = 0;
+                }, obj.temps);
 
                 this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
             }

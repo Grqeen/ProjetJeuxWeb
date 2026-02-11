@@ -6,6 +6,7 @@ import speedPotion from "./speedPotion.js";
 import sizePotion from "./sizepotion.js";
 import fadingDoor from "./fadingDoor.js";
 import keypad from "./keypad.js";
+import teleporter from "./teleporter.js";
 
 export default class Levels {
     constructor(game) {
@@ -55,6 +56,9 @@ export default class Levels {
             this.sizePotion1 = new sizePotion(650, 50, 25, 25, "magenta", -40, 50);
             this.game.objetsGraphiques.push(this.sizePotion1);
 
+            // Téléporteur
+            this.teleporter1 = new teleporter(250, 50, 25, 25, "purple", 1100, 250);
+            this.game.objetsGraphiques.push(this.teleporter1);
 
             // Sortie
             this.game.fin = new fin(1100, 50, 100, 100, "green", "assets/images/portal.png");
