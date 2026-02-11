@@ -9,6 +9,7 @@ import Levels from "./levels.js";
 import keypad from "./keypad.js";
 import fadingDoor from "./fadingDoor.js";
 import fin from "./fin.js";
+import teleporter from "./teleporter.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -338,6 +339,13 @@ export default class Game {
                         this.player.x += (dx / dist) * 10;
                         this.player.y += (dy / dist) * 10;
                     }
+                }
+            }else if (obstacle instanceof teleporter) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                    console.log("Collision avec téléporteur : Téléportation !");
+                    // On téléporte le joueur à la destination du téléporteur
+                    this.player.x = obstacle.destinationX;
+                    this.player.y = obstacle.destinationY;
                 }
             }
         });
