@@ -19,6 +19,7 @@ export default class fin extends ObjectGraphique {
 
         if (this.image && this.image.complete && this.image.naturalHeight !== 0) {
             // On dessine l'image centrée (-w/2, -h/2)
+            ctx.imageSmoothingEnabled = false;
             ctx.drawImage(this.image, -this.w / 2, -this.h / 2, this.w, this.h);
         } else {
             ctx.fillStyle = this.couleur;

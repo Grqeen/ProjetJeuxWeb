@@ -21,6 +21,7 @@ export default class bumper extends ObjectGraphique {
         
         if (this.image.complete && this.image.naturalHeight !== 0) {
             // Dessin de l'image (Champignon)
+            ctx.imageSmoothingEnabled = false;
             ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
             ctx.scale(this.scale, this.scale);
             let angle = 0;
