@@ -9,6 +9,7 @@ import Levels from "./levels.js";
 import keypad from "./keypad.js";
 import fadingDoor from "./fadingDoor.js";
 import fin from "./fin.js";
+import teleporter from "./teleporter.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -39,6 +40,7 @@ export default class Game {
         this.knockbackY = 0;
 
         // Gestion du boost de vitesse
+        this.speedBoostTimeout = null;
         this.speedBoostEndTime = 0;
         this.activeSpeedBoost = 0;
         this.running = false;
@@ -248,6 +250,9 @@ export default class Game {
         // Vitesse de base du joueur
         let vitesse = this.playerSpeed;
 
+        
+        // Si le boost est actif
+        vitesse += this.activeSpeedBoost;
         // Si le boost est actif (temps actuel < temps de fin du boost)
         if (Date.now() < this.speedBoostEndTime) {
             vitesse += this.activeSpeedBoost;
@@ -452,6 +457,13 @@ export default class Game {
 
                     this.player.vitesseX = 0;
                     this.player.vitesseY = 0;
+                }
+            }else if (obstacle instanceof teleporter) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                    console.log("Collision avec téléporteur : Téléportation !");
+                    // On téléporte le joueur à la destination du téléporteur
+                    this.player.x = obstacle.destinationX;
+                    this.player.y = obstacle.destinationY;
                 }
             }
         });
