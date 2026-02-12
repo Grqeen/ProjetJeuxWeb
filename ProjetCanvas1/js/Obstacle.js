@@ -91,3 +91,21 @@ export class MovingObstacle extends Obstacle {
         this.y = this.startY + Math.sin(this.timer) * this.distY;
     }
 }
+
+export class CircleObstacle extends ObjectGraphique {
+    constructor(x, y, radius, couleur) {
+        // On appelle le constructeur parent (x, y, largeur, hauteur)
+        super(x, y, radius * 2, radius * 2, couleur);
+        this.radius = radius;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = this.couleur;
+        ctx.beginPath();
+        // Dessine le cercle centré sur x, y
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}

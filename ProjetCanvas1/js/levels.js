@@ -20,6 +20,17 @@ export default class Levels {
         // Réinitialisation de la vitesse par défaut pour tous les niveaux
         this.game.playerSpeed = 5;
 
+        // --- AJOUT : NIVEAU ÉDITEUR (VIDE) ---
+        if (levelNumber === 0) {
+            // On place le joueur au centre (700, 500 pour un canvas de 1400x1000)
+            this.game.player = new Player(700, 500);
+            this.game.objetsGraphiques.push(this.game.player);
+            
+            // On change le texte du niveau pour indiquer qu'on est dans l'éditeur
+            if (this.game.levelElement) this.game.levelElement.innerText = "Editeur";
+            return; // On arrête ici pour ne pas charger d'autres objets
+        }
+
         if (levelNumber === 1) {
             // --- NIVEAU 1 ---
             this.game.player = new Player(100, 100);

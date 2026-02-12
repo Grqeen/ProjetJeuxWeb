@@ -14,7 +14,7 @@ async function init() {
     let exitBtn = document.querySelector("#exitButton");
     let levelsBtn = document.querySelector("#LevelsButton");
     let sidebar = document.querySelector("#sidebar");
-    
+
     // --- RECONSTRUCTION DE LA SIDEBAR (Déplacé au début pour l'init du jeu) ---
     if (sidebar) {
         sidebar.innerHTML = `
@@ -76,7 +76,7 @@ async function init() {
     // --- GESTION DES MODIFICATEURS ---
     const setupModifier = (rangeId, onChange) => {
         let range = document.querySelector(rangeId);
-        if(range) {
+        if (range) {
             range.oninput = () => { onChange(parseFloat(range.value)); };
         }
     };
@@ -136,7 +136,7 @@ async function init() {
     // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
     let menuTextContainer = document.createElement("div");
     menuTextContainer.id = "menuTextContainer";
-    
+
     // On déplace les éléments existants du menu dans le conteneur de texte
     while (menu.firstChild) {
         menuTextContainer.appendChild(menu.firstChild);
@@ -150,6 +150,103 @@ async function init() {
     // On l'insère avant le bouton Exit (qui est le dernier enfant pour l'instant)
     menuTextContainer.insertBefore(leaderboardBtn, exitBtn);
 
+    // --- CRÉATION DU BOUTON BLOB EDITOR ---
+    let editorBtn = document.createElement("button");
+    editorBtn.id = "editorButton";
+    editorBtn.innerText = "Blob Editor";
+
+    // On l'ajoute à la fin du conteneur pour qu'il soit SOUS le bouton Story
+    menuTextContainer.appendChild(editorBtn);
+
+    // Variable globale pour stocker l'objet en cours de déplacement
+    let draggedItem = null;
+
+    // Dans js/script.js, à l'intérieur de editorBtn.onclick
+    editorBtn.onclick = () => {
+        menu.style.display = "none";
+        menuBackground.style.display = "none";
+        if (sidebar) {
+            sidebar.style.display = "block";
+            sidebar.innerHTML = `
+            <div id="editorHeader" style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding-top: 20px;">
+                <button id="btnEditorWall" class="menu-style-button">Mur</button>
+                <button id="btnEditorObstacle" class="menu-style-button">Obstacle</button>
+            </div>
+            <div class="editor-separator" style="height: 4px; background-color: #ffcc00; width: 90%; margin: 30px auto; border-radius: 10px;"></div>
+            <div id="editorAssetsContainer" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 10px;">
+                <p style="color: #666; font-family: 'Lilita One';">Clique sur Mur ou Obstacle</p>
+            </div>
+            <button id="btnExitEditor" class="menu-style-button" style="margin-top: auto; background-color: #ff4444; color: white;">Quitter</button>
+        `;
+
+            const assetsContainer = document.querySelector("#editorAssetsContainer");
+
+            // --- CLIC SUR LE BOUTON MUR ---
+            document.querySelector("#btnEditorWall").onclick = () => {
+                assetsContainer.innerHTML = ""; // On vide
+                // On crée 3 types : Carré, Rectangle, Cercle
+                createAssetPreview(assetsContainer, "square", "Carré", { w: 60, h: 60, type: "rect" });
+                createAssetPreview(assetsContainer, "rect", "Rectangle", { w: 120, h: 40, type: "rect" });
+                createAssetPreview(assetsContainer, "circle", "Cercle", { r: 35, type: "circle" });
+            };
+
+            // --- CLIC SUR LE BOUTON OBSTACLE ---
+            document.querySelector("#btnEditorObstacle").onclick = () => {
+                assetsContainer.innerHTML = "";
+                createAssetPreview(assetsContainer, "triangle", "Bumper", { w: 50, h: 50, type: "bumper" });
+            };
+
+            document.querySelector("#btnExitEditor").onclick = () => location.reload();
+        }
+        resizeCanvas();
+        game.start(0);
+    };
+
+    // Fonction pour créer les icônes cliquables dans la sidebar
+    function createAssetPreview(container, cssClass, label, data) {
+        const div = document.createElement("div");
+        div.className = `asset-preview ${cssClass}`;
+        div.innerHTML = `<span style="pointer-events:none">${label}</span>`;
+
+        // Début du Drag
+        div.onmousedown = (e) => {
+            draggedItem = data;
+            document.body.style.cursor = "grabbing";
+        };
+
+        container.appendChild(div);
+    }
+
+    // --- GESTION DU DROP SUR LE CANVAS ---
+    document.addEventListener("mouseup", async (e) => {
+        if (!draggedItem) return;
+
+        let rect = canvas.getBoundingClientRect();
+        let x = (e.clientX - rect.left) * (canvas.width / rect.width);
+        let y = (e.clientY - rect.top) * (canvas.height / rect.height)s;
+
+        // Si on lâche la souris sur le canvas
+        if (x > 0 && x < canvas.width && y > 0 && y < canvas.height) {
+            let newObj;
+            const ObstacleClass = (await import("./Obstacle.js")).default;
+            const { CircleObstacle } = await import("./Obstacle.js");
+            const BumperClass = (await import("./bumper.js")).default;
+
+            if (draggedItem.type === "rect") {
+                newObj = new ObstacleClass(x - draggedItem.w / 2, y - draggedItem.h / 2, draggedItem.w, draggedItem.h, "white");
+            } else if (draggedItem.type === "circle") {
+                // On crée l'obstacle circulaire avec les bonnes coordonnées
+                newObj = new CircleObstacle(x, y, draggedItem.r, "white");
+            } else if (draggedItem.type === "bumper") {
+                newObj = new BumperClass(x - 25, y - 25, 50, 50, "orange", "up");
+            }
+
+            if (newObj) game.objetsGraphiques.push(newObj);
+        }
+
+        draggedItem = null;
+        document.body.style.cursor = "default";
+    });
     // Création de l'écran LeaderBoard (caché par défaut)
     let leaderboardMenu = document.createElement("div");
     leaderboardMenu.id = "leaderboardMenu";
@@ -197,7 +294,7 @@ async function init() {
     let levelsMenu = document.createElement("div");
     levelsMenu.id = "level-selection";
     levelsMenu.style.display = "none";
-    
+
     // Conteneur pour les boutons de niveaux (Centré)
     let levelButtonsContainer = document.createElement("div");
     levelButtonsContainer.id = "levels-container";
@@ -223,7 +320,7 @@ async function init() {
 
     function renderLevelButtons() {
         levelButtonsContainer.innerHTML = "";
-        
+
         let start = currentLevelPage * levelsPerPage + 1;
         let end = Math.min(start + levelsPerPage - 1, maxLevels);
 
@@ -237,7 +334,7 @@ async function init() {
             btn.className = "level-button";
             btn.dataset.level = i;
             btn.innerText = i; // Juste le chiffre
-            
+
             btn.onclick = () => {
                 levelsMenu.style.display = "none";
                 winMenu.style.display = "none";
@@ -254,7 +351,7 @@ async function init() {
                 rightCol.appendChild(btn);
             }
         }
-        
+
         levelButtonsContainer.appendChild(leftCol);
         levelButtonsContainer.appendChild(rightCol);
 
@@ -318,13 +415,13 @@ async function init() {
         alignItems: "center",
         justifyContent: "center"
     });
-    
+
     let videoPlayer = document.createElement("video");
-    videoPlayer.src = "assets/video/Blob_Escape_Lore.mp4"; 
+    videoPlayer.src = "assets/video/Blob_Escape_Lore.mp4";
     videoPlayer.style.width = "100%";
     videoPlayer.style.height = "100%";
     videoPlayer.style.objectFit = "cover";
-    
+
     // Création du bouton SKIP
     let skipButton = document.createElement("button");
     skipButton.innerText = "SKIP >>";
@@ -382,7 +479,7 @@ async function init() {
         };
 
         videoPlayer.onended = endVideo;
-        
+
         // Clic pour passer la vidéo (Bouton ou Vidéo)
         videoPlayer.onclick = endVideo;
         skipButton.onclick = (e) => {
@@ -394,19 +491,19 @@ async function init() {
     function resizeCanvas() {
         // 1. On fixe une taille INTERNE constante (Pratique "Pro")
         // Tes coordonnées dans levels.js ne bougeront plus jamais !
-        canvas.width = 1400; 
+        canvas.width = 1400;
         canvas.height = 1000;
 
         let sidebarWidth = 450;
         // On calcule l'espace disponible
         let availableWidth = window.innerWidth - (sidebar.style.display !== "none" ? sidebarWidth : 0);
-        
+
         // 2. On utilise le CSS pour "étirer" ou "réduire" l'image sans couper le jeu
         canvas.style.width = availableWidth + "px";
         canvas.style.height = window.innerHeight + "px";
-        
+
         // Garde les proportions (évite d'écraser le dessin)
-        canvas.style.objectFit = "contain"; 
+        canvas.style.objectFit = "contain";
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);

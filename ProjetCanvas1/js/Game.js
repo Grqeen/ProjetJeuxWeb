@@ -1,6 +1,6 @@
-import Obstacle, { RotatingObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, CircleObstacle } from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
-import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap } from "./collisions.js";
+import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap, circleRect } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
@@ -32,6 +32,7 @@ export default class Game {
 
         // Modificateurs de jeu
         this.playerSpeed = 5;
+        this.savedSize = 100; // AJOUT : Sauvegarde de la taille entre les morts
         this.rotationMultiplier = 1;
         this.bumperForce = 25;
 
@@ -67,7 +68,13 @@ export default class Game {
 
     restartLevel() {
         console.log("Sortie de zone détectée ! Retour au spawn.");
+        let currentSize = this.savedSize; // On mémorise la taille actuelle
         this.levels.load(this.currentLevel);
+        
+        // On réapplique la taille sauvegardée au nouveau joueur généré par load()
+        this.player.w = currentSize;
+        this.player.h = currentSize;
+
         this.applyRotationMultiplier();
         this.startTime = Date.now();
         this.knockbackX = 0;
@@ -257,6 +264,10 @@ export default class Game {
         if (Date.now() < this.speedBoostEndTime) {
             vitesse += this.activeSpeedBoost;
         }
+
+        // Sauvegarde de la position avant déplacement
+        this.player.oldX = this.player.x;
+        this.player.oldY = this.player.y;
 
         if (this.inputStates.ArrowRight) inputVx = vitesse;
         if (this.inputStates.ArrowLeft) inputVx = -vitesse;
@@ -465,6 +476,14 @@ export default class Game {
                     this.player.x = obstacle.destinationX;
                     this.player.y = obstacle.destinationY;
                 }
+            } else if (obstacle instanceof CircleObstacle) {
+                if (circleRect(obstacle.x, obstacle.y, obstacle.radius, this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h)) {
+                    // Collision détectée ! On remet le joueur à son ancienne position
+                    this.player.x = this.player.oldX;
+                    this.player.y = this.player.oldY;
+                    this.player.vitesseX = 0;
+                    this.player.vitesseY = 0;
+                }
             }
         });
     }
@@ -491,7 +510,21 @@ export default class Game {
                     // on change la taille du joueur
                     this.player.w += obj.tailleW;
                     this.player.h += obj.tailleH;
+                    this.savedSize = this.player.w; // AJOUT : Sauvegarde de la nouvelle taille
                     this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+
+                    // Gestion de la durée : Temporaire (1s) sauf pour le niveau 6 où c'est permanent
+                    if (this.currentLevel !== 6) {
+                        let affectedPlayer = this.player;
+                        setTimeout(() => {
+                            // On vérifie que le joueur n'a pas changé (mort ou changement de niveau)
+                            if (this.player === affectedPlayer) {
+                                this.player.w -= obj.tailleW;
+                                this.player.h -= obj.tailleH;
+                                this.savedSize = this.player.w; // On met à jour la sauvegarde après expiration
+                            }
+                        }, 1000);
+                    }
                 }
             }
             if (obj instanceof keypad) {
@@ -553,6 +586,7 @@ export default class Game {
 
         // On incrémente le niveau
         this.currentLevel++;
+        this.savedSize = 100; // Reset de la taille pour le nouveau niveau
         // On essaie de charger le niveau suivant
         this.levels.load(this.currentLevel);
 
