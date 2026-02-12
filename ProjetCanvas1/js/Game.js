@@ -46,6 +46,7 @@ export default class Game {
         this.activeSpeedBoost = 0;
         this.running = false;
         this.onFinish = null; // Callback appelé quand le jeu est fini
+        this.selectedObject = null; // Objet sélectionné dans l'éditeur
     }
 
     async init(canvas) {
@@ -145,6 +146,50 @@ export default class Game {
         // Dessine tous les objets du jeu
         this.objetsGraphiques.forEach(obj => {
             obj.draw(this.ctx);
+
+            // --- DESSIN DU CONTOUR DE SÉLECTION (ÉDITEUR) ---
+            if (this.selectedObject === obj) {
+                this.ctx.save();
+                this.ctx.strokeStyle = "cyan";
+                this.ctx.lineWidth = 3;
+                this.ctx.shadowColor = "cyan";
+                this.ctx.shadowBlur = 10;
+
+                // Fonction utilitaire pour dessiner une poignée
+                const hSize = 10;
+                const drawHandle = (x, y) => this.ctx.fillRect(x - hSize/2, y - hSize/2, hSize, hSize);
+                this.ctx.fillStyle = "cyan";
+
+                if (obj instanceof RotatingObstacle) {
+                    // RotatingObstacle a son x,y au centre
+                    this.ctx.translate(obj.x, obj.y);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    // Poignées (locales)
+                    drawHandle(obj.w/2, 0); // Droite
+                    drawHandle(0, obj.h/2); // Bas
+                    drawHandle(obj.w/2, obj.h/2); // Coin
+                } else if (obj.angle) {
+                    // Autres objets avec angle (Obstacle, Items...) ont x,y en haut à gauche
+                    this.ctx.translate(obj.x + obj.w / 2, obj.y + obj.h / 2);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    drawHandle(obj.w/2, 0);
+                    drawHandle(0, obj.h/2);
+                    drawHandle(obj.w/2, obj.h/2);
+                } else if (obj.radius) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    drawHandle(obj.x + obj.radius, obj.y); // Poignée Rayon
+                } else {
+                    this.ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                    drawHandle(obj.x + obj.w, obj.y + obj.h/2); // Droite
+                    drawHandle(obj.x + obj.w/2, obj.y + obj.h); // Bas
+                    drawHandle(obj.x + obj.w, obj.y + obj.h);   // Coin
+                }
+                this.ctx.restore();
+            }
         });
     }
 
@@ -367,7 +412,40 @@ export default class Game {
                 // Si l'obstacle est une porte invisible, on ne gère pas la collision
                 if (obstacle instanceof fadingDoor && !obstacle.visible) return;
 
-                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                // GESTION DE LA ROTATION POUR LES MURS (OBSTACLE)
+                if (obstacle.angle && obstacle.angle !== 0) {
+                    // Si le mur est tourné, on utilise la collision OBB (Oriented Bounding Box)
+                    // Attention : Obstacle est défini par x,y (top-left), rectRotatedRectOverlap attend le centre.
+                    let centerX = obstacle.x + obstacle.w / 2;
+                    let centerY = obstacle.y + obstacle.h / 2;
+
+                    let collision = rectRotatedRectOverlap(
+                        this.player.x - this.player.w / 2,
+                        this.player.y - this.player.h / 2,
+                        this.player.w, this.player.h,
+                        centerX, centerY,
+                        obstacle.w, obstacle.h,
+                        obstacle.angle
+                    );
+
+                    if (collision) {
+                        // Réponse à la collision (repousser le joueur)
+                        let dx = this.player.x - centerX;
+                        let dy = this.player.y - centerY;
+                        let dot = dx * collision.axis.x + dy * collision.axis.y;
+
+                        if (dot < 0) {
+                            collision.axis.x *= -1;
+                            collision.axis.y *= -1;
+                        }
+                        this.player.x += collision.axis.x * (collision.overlap + 0.1);
+                        this.player.y += collision.axis.y * (collision.overlap + 0.1);
+                        // On stop la vitesse pour éviter de glisser bizarrement
+                        // this.player.vitesseX = 0; this.player.vitesseY = 0; 
+                    }
+                } 
+                // GESTION CLASSIQUE (AABB) POUR LES MURS DROITS
+                else if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     // Calcul des coordonnées des bords du joueur (x, y sont au centre)
                     let playerLeft = this.player.x - this.player.w / 2;
                     let playerRight = this.player.x + this.player.w / 2;
@@ -562,6 +640,9 @@ export default class Game {
 
     // Teste si le joueur a ateint la fin du niveau
     testCollisionFin() {
+        // Si on est dans l'éditeur (Niveau 0), le portail ne fonctionne pas
+        if (this.currentLevel === 0) return false;
+
         for (let obj of this.objetsGraphiques) {
             if (obj instanceof fin) {
                 // Le joueur est un rectangle, la fin est un cercle

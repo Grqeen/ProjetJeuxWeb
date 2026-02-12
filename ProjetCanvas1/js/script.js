@@ -1,4 +1,6 @@
 import Game from "./Game.js";
+import { getMousePos } from "./utils.js";
+import Obstacle, { RotatingObstacle, CircleObstacle } from "./Obstacle.js";
 
 // Bonne pratique : avoir une fonction appelée une fois
 // que la page est prête, que le DOM est chargé, etc.
@@ -166,17 +168,31 @@ async function init() {
         menu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) {
-            sidebar.style.display = "block";
+            sidebar.style.display = "flex";
             sidebar.innerHTML = `
             <div id="editorHeader" style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding-top: 20px;">
                 <button id="btnEditorWall" class="menu-style-button">Mur</button>
                 <button id="btnEditorObstacle" class="menu-style-button">Obstacle</button>
+                <button id="btnEditorModifiers" class="menu-style-button">Modificateurs</button>
             </div>
             <div class="editor-separator" style="height: 4px; background-color: #ffcc00; width: 90%; margin: 30px auto; border-radius: 10px;"></div>
             <div id="editorAssetsContainer" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 10px;">
                 <p style="color: #666; font-family: 'Lilita One';">Clique sur Mur ou Obstacle</p>
             </div>
-            <button id="btnExitEditor" class="menu-style-button" style="margin-top: auto; background-color: #ff4444; color: white;">Quitter</button>
+            
+            <!-- PANNEAU PROPRIÉTÉS -->
+            <div id="editorProperties" style="display:none; border-top: 2px solid #ccc; padding-top: 10px; margin-top: 20px;">
+                <h3 style="font-family: 'Lilita One'; text-align: center;">Propriétés</h3>
+                <div class="mod-group"><label>Largeur (W)</label><input type="number" id="propW"></div>
+                <div class="mod-group"><label>Hauteur (H)</label><input type="number" id="propH"></div>
+                <div class="mod-group"><label>Rotation (°)</label><input type="number" id="propRot"></div>
+                <div class="mod-group" id="divRotSpeed" style="display:none;"><label>Vitesse Rot.</label><input type="number" id="propRotSpeed" step="0.01"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button id="btnDeleteObj" style="background: #ff0000; color: white; border: 3px solid #990000; padding: 10px; border-radius: 8px; cursor: pointer; font-family: 'Lilita One'; font-size: 20px; width: 100%; box-shadow: 0 4px 0 #990000; text-transform: uppercase;">Supprimer</button>
+                </div>
+            </div>
+
+            <button id="btnExitEditor" class="menu-style-button" style="margin-top: auto; margin-bottom: 20px; align-self: center; background-color: #ff4444; color: white;">Quitter</button>
         `;
 
             const assetsContainer = document.querySelector("#editorAssetsContainer");
@@ -187,6 +203,7 @@ async function init() {
                 // On crée 3 types : Carré, Rectangle, Cercle
                 createAssetPreview(assetsContainer, "square", "Carré", { w: 60, h: 60, type: "rect" });
                 createAssetPreview(assetsContainer, "rect", "Rectangle", { w: 120, h: 40, type: "rect" });
+                createAssetPreview(assetsContainer, "rect", "Mur V", { w: 40, h: 120, type: "rect" });
                 createAssetPreview(assetsContainer, "circle", "Cercle", { r: 35, type: "circle" });
             };
 
@@ -194,9 +211,238 @@ async function init() {
             document.querySelector("#btnEditorObstacle").onclick = () => {
                 assetsContainer.innerHTML = "";
                 createAssetPreview(assetsContainer, "triangle", "Bumper", { w: 50, h: 50, type: "bumper" });
+                createAssetPreview(assetsContainer, "rect", "Croix", { w: 200, h: 20, type: "rotating" });
+                createAssetPreview(assetsContainer, "circle", "Fin", { w: 80, h: 80, type: "fin" });
+            };
+
+            // --- CLIC SUR LE BOUTON MODIFICATEURS ---
+            document.querySelector("#btnEditorModifiers").onclick = () => {
+                assetsContainer.innerHTML = "";
+                createAssetPreview(assetsContainer, "square", "Vitesse", { w: 30, h: 30, type: "speed" });
+                createAssetPreview(assetsContainer, "square", "Taille", { w: 30, h: 30, type: "size" });
             };
 
             document.querySelector("#btnExitEditor").onclick = () => location.reload();
+
+            // --- GESTION DES INPUTS DE PROPRIÉTÉS ---
+            const propW = document.querySelector("#propW");
+            const propH = document.querySelector("#propH");
+            const propRot = document.querySelector("#propRot");
+            const propRotSpeed = document.querySelector("#propRotSpeed");
+            const divRotSpeed = document.querySelector("#divRotSpeed");
+            const btnDelete = document.querySelector("#btnDeleteObj");
+            const propsPanel = document.querySelector("#editorProperties");
+
+            function updateInputs() {
+                if (!game.selectedObject) {
+                    propsPanel.style.display = "none";
+                    return;
+                }
+                propsPanel.style.display = "block";
+
+                // On empêche la suppression du joueur (on cache le bouton)
+                if (game.selectedObject === game.player) {
+                    btnDelete.style.display = "none";
+                } else {
+                    btnDelete.style.display = "block";
+                }
+
+                propW.value = Math.round(game.selectedObject.w);
+                propH.value = Math.round(game.selectedObject.h);
+                // Conversion radians -> degrés pour l'affichage
+                let angleDeg = (game.selectedObject.angle || 0) * (180 / Math.PI);
+                propRot.value = Math.round(angleDeg);
+
+                // Gestion Vitesse Rotation (si l'objet a cette propriété)
+                if (game.selectedObject.angleSpeed !== undefined) {
+                    divRotSpeed.style.display = "block";
+                    propRotSpeed.value = game.selectedObject.angleSpeed;
+                } else {
+                    divRotSpeed.style.display = "none";
+                }
+            }
+
+            propW.oninput = () => { if (game.selectedObject) game.selectedObject.w = parseFloat(propW.value); };
+            propH.oninput = () => { if (game.selectedObject) game.selectedObject.h = parseFloat(propH.value); };
+            propRot.oninput = () => { 
+                if (game.selectedObject) {
+                    // Conversion degrés -> radians
+                    game.selectedObject.angle = parseFloat(propRot.value) * (Math.PI / 180);
+                }
+            };
+            propRotSpeed.oninput = () => {
+                if (game.selectedObject && game.selectedObject.angleSpeed !== undefined) {
+                    game.selectedObject.angleSpeed = parseFloat(propRotSpeed.value);
+                    if (game.selectedObject.initialAngleSpeed !== undefined) {
+                        game.selectedObject.initialAngleSpeed = parseFloat(propRotSpeed.value);
+                    }
+                }
+            };
+            btnDelete.onclick = () => {
+                if (game.selectedObject && game.selectedObject !== game.player) {
+                    const index = game.objetsGraphiques.indexOf(game.selectedObject);
+                    if (index > -1) {
+                        game.objetsGraphiques.splice(index, 1);
+                        game.selectedObject = null;
+                        updateInputs();
+                    }
+                }
+            };
+
+            // Raccourci clavier : Touche Suppr pour supprimer l'objet sélectionné
+            window.addEventListener("keydown", (e) => {
+                if (e.key === "Delete") {
+                    // On évite de supprimer si on est en train d'écrire dans un input
+                    if (document.activeElement.tagName === "INPUT") return;
+                    btnDelete.click();
+                }
+            });
+
+            // Variables pour le déplacement d'objets existants
+            let isDraggingSelected = false;
+            let dragOffsetX = 0;
+            let dragOffsetY = 0;
+            let resizingHandle = null; // 'right', 'bottom', 'corner', 'radius'
+
+            // --- SÉLECTION D'OBJET SUR LE CANVAS ---
+            canvas.onmousedown = (e) => {
+                if (draggedItem) return; // Si on est en train de drag depuis le menu, on ignore
+
+                let pos = getMousePos(canvas, e);
+                let x = pos.x;
+                let y = pos.y;
+
+                // 1. Vérifier si on clique sur une poignée de redimensionnement
+                if (game.selectedObject) {
+                    let obj = game.selectedObject;
+                    let cx, cy, angle = obj.angle || 0;
+
+                    // Calcul du centre et de l'angle pour la transformation locale
+                    if (obj instanceof RotatingObstacle) {
+                        cx = obj.x; cy = obj.y;
+                    } else if (obj.radius) {
+                        cx = obj.x; cy = obj.y; angle = 0;
+                    } else {
+                        // Obstacle standard (x,y top-left) -> Centre calculé
+                        cx = obj.x + obj.w/2;
+                        cy = obj.y + obj.h/2;
+                    }
+
+                    // Transformation de la souris en coordonnées locales
+                    let dx = x - cx;
+                    let dy = y - cy;
+                    let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+                    let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+
+                    // Test de collision avec les poignées (Seuil ~10px)
+                    let hitDist = 12;
+                    
+                    if (obj.radius) {
+                        if (Math.hypot(localX - obj.radius, localY) < hitDist) resizingHandle = 'radius';
+                    } else {
+                        let hw = obj.w/2;
+                        let hh = obj.h/2;
+                        if (Math.hypot(localX - hw, localY - hh) < hitDist) resizingHandle = 'corner';
+                        else if (Math.hypot(localX - hw, localY) < hitDist) resizingHandle = 'right';
+                        else if (Math.hypot(localX, localY - hh) < hitDist) resizingHandle = 'bottom';
+                    }
+
+                    if (resizingHandle) return; // On commence le redimensionnement, on arrête là
+                }
+
+                // On cherche l'objet sous la souris (en partant de la fin pour avoir le dessus)
+                game.selectedObject = null;
+                for (let i = game.objetsGraphiques.length - 1; i >= 0; i--) {
+                    let obj = game.objetsGraphiques[i];
+                    // Test simple AABB (approximatif pour les objets rotatifs mais suffisant pour l'éditeur)
+                    // Note : RotatingObstacle est centré, Obstacle est top-left. On simplifie ici.
+                    if (x >= obj.x - obj.w && x <= obj.x + obj.w && y >= obj.y - obj.h && y <= obj.y + obj.h) {
+                        game.selectedObject = obj;
+                        break;
+                    }
+                }
+                updateInputs();
+
+                // Initialisation du déplacement si un objet est sélectionné
+                if (game.selectedObject) {
+                    isDraggingSelected = true;
+                    dragOffsetX = x - game.selectedObject.x;
+                    dragOffsetY = y - game.selectedObject.y;
+                }
+            };
+
+            canvas.onmousemove = (e) => {
+                let pos = getMousePos(canvas, e);
+                let x = pos.x;
+                let y = pos.y;
+
+                // Gestion du redimensionnement
+                if (resizingHandle && game.selectedObject) {
+                    let obj = game.selectedObject;
+                    let cx, cy, angle = obj.angle || 0;
+
+                    if (obj instanceof RotatingObstacle) {
+                        cx = obj.x; cy = obj.y;
+                    } else if (obj.radius) {
+                        cx = obj.x; cy = obj.y; angle = 0;
+                    } else {
+                        cx = obj.x + obj.w/2;
+                        cy = obj.y + obj.h/2;
+                    }
+
+                    let dx = x - cx;
+                    let dy = y - cy;
+                    let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+                    let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+
+                    if (resizingHandle === 'radius') {
+                        obj.radius = Math.max(10, localX);
+                    } else {
+                        // On redimensionne (localX est la demi-largeur depuis le centre)
+                        if (resizingHandle === 'right' || resizingHandle === 'corner') {
+                            let newW = Math.max(10, Math.abs(localX) * 2);
+                            
+                            // Pour les obstacles définis par Top-Left, changer W déplace le centre.
+                            // On compense pour que le centre reste fixe pendant le resize.
+                            if (!(obj instanceof RotatingObstacle)) {
+                                let oldW = obj.w;
+                                obj.w = newW;
+                                obj.x -= (newW - oldW) / 2;
+                            } else {
+                                obj.w = newW;
+                            }
+                        }
+                        if (resizingHandle === 'bottom' || resizingHandle === 'corner') {
+                            let newH = Math.max(10, Math.abs(localY) * 2);
+                            
+                            if (!(obj instanceof RotatingObstacle)) {
+                                let oldH = obj.h;
+                                obj.h = newH;
+                                obj.y -= (newH - oldH) / 2;
+                            } else {
+                                obj.h = newH;
+                            }
+                        }
+                    }
+                    updateInputs();
+                    return;
+                }
+
+                if (isDraggingSelected && game.selectedObject) {
+                    game.selectedObject.x = x - dragOffsetX;
+                    game.selectedObject.y = y - dragOffsetY;
+                }
+            };
+
+            canvas.onmouseup = () => {
+                isDraggingSelected = false;
+                resizingHandle = null;
+            };
+
+            document.addEventListener("mouseup", () => {
+                isDraggingSelected = false;
+                resizingHandle = null;
+            });
         }
         resizeCanvas();
         game.start(0);
@@ -205,13 +451,138 @@ async function init() {
     // Fonction pour créer les icônes cliquables dans la sidebar
     function createAssetPreview(container, cssClass, label, data) {
         const div = document.createElement("div");
-        div.className = `asset-preview ${cssClass}`;
-        div.innerHTML = `<span style="pointer-events:none">${label}</span>`;
+        div.className = `asset-preview`;
+        
+        // Ajustement du style pour que le texte soit bien visible en dessous
+        div.style.width = "80px";
+        div.style.height = "auto";
+        div.style.minHeight = "80px";
+        div.style.padding = "5px";
+
+        div.style.display = "flex";
+        div.style.flexDirection = "column";
+        div.style.alignItems = "center";
+        div.style.justifyContent = "center";
+        div.style.gap = "5px";
+        
+        // Canvas de prévisualisation (réduit légèrement pour laisser place au texte)
+        const cvs = document.createElement("canvas");
+        cvs.width = 50;
+        cvs.height = 50;
+        const ctx = cvs.getContext("2d");
+
+        // Dessin selon le type
+        ctx.clearRect(0, 0, 50, 50);
+        
+        if (data.type === "rect") {
+            ctx.fillStyle = "white";
+            let w = Math.min(40, data.w);
+            let h = Math.min(40, data.h);
+            if (data.w > data.h) h = w * (data.h/data.w);
+            else w = h * (data.w/data.h);
+            ctx.fillRect(25 - w/2, 25 - h/2, w, h);
+        } else if (data.type === "circle") {
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(25, 25, 18, 0, Math.PI*2);
+            ctx.fill();
+        } else if (data.type === "bumper") {
+            ctx.fillStyle = "orange";
+            ctx.beginPath();
+            ctx.moveTo(25, 5);
+            ctx.lineTo(45, 45);
+            ctx.lineTo(5, 45);
+            ctx.fill();
+        } else if (data.type === "rotating") {
+            ctx.fillStyle = "red";
+            ctx.translate(25, 25);
+            ctx.rotate(Math.PI/4);
+            ctx.fillRect(-20, -4, 40, 8);
+            ctx.fillRect(-4, -20, 8, 40);
+        } else if (data.type === "fin") {
+            let img = new Image();
+            img.src = "assets/images/portal.png";
+            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+        } else if (data.type === "speed") {
+            ctx.fillStyle = "cyan";
+            ctx.fillRect(10, 10, 30, 30);
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("S", 18, 30);
+        } else if (data.type === "size") {
+            ctx.fillStyle = "magenta";
+            ctx.fillRect(10, 10, 30, 30);
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("T", 18, 30);
+        }
+
+        div.appendChild(cvs);
+        
+        const lbl = document.createElement("span");
+        lbl.innerText = label;
+        lbl.style.fontSize = "11px";
+        lbl.style.pointerEvents = "none";
+        lbl.style.textAlign = "center";
+        div.appendChild(lbl);
 
         // Début du Drag
         div.onmousedown = (e) => {
             draggedItem = data;
             document.body.style.cursor = "grabbing";
+
+            // --- GHOST ELEMENT (Visual Feedback) ---
+            const ghost = document.createElement("div");
+            ghost.style.position = "fixed";
+            ghost.style.pointerEvents = "none";
+            ghost.style.zIndex = "10000";
+            ghost.style.opacity = "0.8";
+            ghost.style.border = "2px solid white";
+            ghost.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+            
+            // Dimensions & Style
+            let w, h;
+            if (data.r) {
+                w = data.r * 2;
+                h = data.r * 2;
+                ghost.style.borderRadius = "50%";
+            } else {
+                w = data.w;
+                h = data.h;
+            }
+            
+            if (data.type === "fin") ghost.style.borderRadius = "50%";
+
+            ghost.style.width = w + "px";
+            ghost.style.height = h + "px";
+
+            // Colors based on type
+            if (data.type === "bumper") ghost.style.backgroundColor = "orange";
+            else if (data.type === "rotating") ghost.style.backgroundColor = "red";
+            else if (data.type === "fin") ghost.style.backgroundColor = "green";
+            else if (data.type === "speed") ghost.style.backgroundColor = "cyan";
+            else if (data.type === "size") ghost.style.backgroundColor = "magenta";
+            else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // Default wall
+
+            // Centering on mouse
+            ghost.style.left = (e.clientX - w / 2) + "px";
+            ghost.style.top = (e.clientY - h / 2) + "px";
+
+            document.body.appendChild(ghost);
+
+            const moveGhost = (ev) => {
+                ghost.style.left = (ev.clientX - w / 2) + "px";
+                ghost.style.top = (ev.clientY - h / 2) + "px";
+            };
+            
+            const removeGhost = () => {
+                if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+                document.removeEventListener("mousemove", moveGhost);
+                document.removeEventListener("mouseup", removeGhost);
+            };
+
+            document.addEventListener("mousemove", moveGhost);
+            document.addEventListener("mouseup", removeGhost);
         };
 
         container.appendChild(div);
@@ -221,16 +592,19 @@ async function init() {
     document.addEventListener("mouseup", async (e) => {
         if (!draggedItem) return;
 
-        let rect = canvas.getBoundingClientRect();
-        let x = (e.clientX - rect.left) * (canvas.width / rect.width);
-        let y = (e.clientY - rect.top) * (canvas.height / rect.height)s;
+        let pos = getMousePos(canvas, e);
+        let x = pos.x;
+        let y = pos.y;
 
         // Si on lâche la souris sur le canvas
         if (x > 0 && x < canvas.width && y > 0 && y < canvas.height) {
             let newObj;
             const ObstacleClass = (await import("./Obstacle.js")).default;
-            const { CircleObstacle } = await import("./Obstacle.js");
+            const { CircleObstacle, RotatingObstacle } = await import("./Obstacle.js");
             const BumperClass = (await import("./bumper.js")).default;
+            const FinClass = (await import("./fin.js")).default;
+            const SpeedPotionClass = (await import("./speedPotion.js")).default;
+            const SizePotionClass = (await import("./sizepotion.js")).default;
 
             if (draggedItem.type === "rect") {
                 newObj = new ObstacleClass(x - draggedItem.w / 2, y - draggedItem.h / 2, draggedItem.w, draggedItem.h, "white");
@@ -239,6 +613,14 @@ async function init() {
                 newObj = new CircleObstacle(x, y, draggedItem.r, "white");
             } else if (draggedItem.type === "bumper") {
                 newObj = new BumperClass(x - 25, y - 25, 50, 50, "orange", "up");
+            } else if (draggedItem.type === "rotating") {
+                newObj = new RotatingObstacle(x, y, draggedItem.w, draggedItem.h, "red", 0.02);
+            } else if (draggedItem.type === "fin") {
+                newObj = new FinClass(x - 40, y - 40, 80, 80, "green", "assets/images/portal.png");
+            } else if (draggedItem.type === "speed") {
+                newObj = new SpeedPotionClass(x - 15, y - 15, 30, 30, "cyan", 5, 3000);
+            } else if (draggedItem.type === "size") {
+                newObj = new SizePotionClass(x - 15, y - 15, 30, 30, "magenta", -40, -40);
             }
 
             if (newObj) game.objetsGraphiques.push(newObj);
