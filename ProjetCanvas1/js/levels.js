@@ -196,34 +196,34 @@ export default class Levels {
 
             // 4. BUMPERS DES MURS (Ajustés pour ne pas toucher les coins)
             // Mur Haut : on commence après le mur gauche et on finit avant le mur droite
-            for (let x = 380; x < 1250; x += 75) {
-                this.game.objetsGraphiques.push(new bumper(x, 30, 75, 75, "orange"));
+            for (let x = 420; x < 1150; x += 75) {
+                this.game.objetsGraphiques.push(new bumper(x, 30, 75, 75, "orange", "down"));
             }
             // Mur Bas : idem
-            for (let x = 380; x < 1250; x += 75) {
-                this.game.objetsGraphiques.push(new bumper(x, 920, 75, 75, "orange"));
+            for (let x = 420; x < 1150; x += 75) {
+                this.game.objetsGraphiques.push(new bumper(x, 895, 75, 75, "orange", "up"));
             }
             // Mur Droite : on commence après le coin haut et on finit avant le coin bas
             for (let y = 80; y < 920; y += 75) {
-                this.game.objetsGraphiques.push(new bumper(1250, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(1225, y, 75, 75, "orange", "left"));
             }
             // Mur Gauche Haut
             for (let y = 80; y < 230; y += 75) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange", "right"));
             }
             // Mur Gauche Bas
             for (let y = 780; y < 920; y += 75) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange", "right"));
             }
 
             // 5. BUMPERS DU CARRÉ CENTRAL (Même logique pour éviter les chevauchements)
             for (let x = 700; x < 900; x += 75) { // Haut et Bas (raccourcis)
-                this.game.objetsGraphiques.push(new bumper(x, 300, 75, 75, "orange"));
-                this.game.objetsGraphiques.push(new bumper(x, 650, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(x, 275, 75, 75, "orange", "up"));
+                this.game.objetsGraphiques.push(new bumper(x, 650, 75, 75, "orange", "down"));
             }
             for (let y = 350; y < 650; y += 75) { // Gauche et Droite
-                this.game.objetsGraphiques.push(new bumper(600, y, 75, 75, "orange"));
-                this.game.objetsGraphiques.push(new bumper(950, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(575, y, 75, 75, "orange", "left"));
+                this.game.objetsGraphiques.push(new bumper(950, y, 75, 75, "orange", "right"));
             }
 
             // 6. Sortie
@@ -263,9 +263,9 @@ export default class Levels {
             this.game.objetsGraphiques.push(new Obstacle(1100, 400, 300, 40, "red"));
 
             // 2. BUMPERS (Plafond et Sol)
-            for (let x = 0; x < 1400; x += 60) {
-                this.game.objetsGraphiques.push(new bumper(x, 0, 60, 60, "orange"));
-                this.game.objetsGraphiques.push(new bumper(x, 940, 60, 60, "orange"));
+            for (let x = 0; x < 1340; x += 60) {
+                this.game.objetsGraphiques.push(new bumper(x, 0, 60, 60, "orange", "down"));
+                this.game.objetsGraphiques.push(new bumper(x, 940, 60, 60, "orange", "up"));
             }
 
             // 3. CROIX ROTATIVES (Difficulté accrue)

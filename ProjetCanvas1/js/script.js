@@ -80,9 +80,129 @@ async function init() {
                 <div class="timer-label">TEMPS</div>
                 <div id="timerValue">00:00</div>
             </div>
+            <button id="btnExitLevel" class="menu-style-button" style="margin-top: auto; margin-bottom: 20px; align-self: center; background-color: #ff4444; color: white;">Quitter</button>
         `;
     }
     let restartBtn = document.querySelector("#restartBtn");
+    let btnExitLevel = document.querySelector("#btnExitLevel");
+
+    // --- GESTION MUSIQUE ---
+    const menuMusic = new Audio("assets/sounds/menu.mp3");
+    menuMusic.loop = true;
+    menuMusic.volume = 0.5;
+    const gameMusic = new Audio("assets/sounds/ingame.mp3");
+    gameMusic.loop = true;
+    gameMusic.volume = 0.5;
+
+    let currentMusicState = "stop";
+
+    function playMusic(state) {
+        currentMusicState = state;
+        if (state === "menu") {
+            gameMusic.pause();
+            gameMusic.currentTime = 0;
+            menuMusic.play().catch(() => {});
+        } else if (state === "game") {
+            menuMusic.pause();
+            menuMusic.currentTime = 0;
+            gameMusic.play().catch(() => {});
+        } else if (state === "stop") {
+            menuMusic.pause();
+            gameMusic.pause();
+        }
+    }
+
+    const unlockAudio = () => {
+        if (currentMusicState === "menu" && menuMusic.paused) {
+            menuMusic.play().catch(() => {});
+        } else if (currentMusicState === "game" && gameMusic.paused) {
+            gameMusic.play().catch(() => {});
+        }
+        document.removeEventListener("click", unlockAudio);
+        document.removeEventListener("keydown", unlockAudio);
+    };
+
+    document.addEventListener("click", unlockAudio);
+    document.addEventListener("keydown", unlockAudio);
+
+    // Tentative de lancement immédiat de la musique (Autoplay)
+    playMusic("menu");
+
+    // --- GESTION DU VOLUME (UI) ---
+    let volumeContainer = document.createElement("div");
+    volumeContainer.id = "volumeContainer";
+    Object.assign(volumeContainer.style, {
+        position: "fixed",
+        bottom: "20px",
+        right: "20px",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        zIndex: "10000", // Très haut pour être au-dessus de tout
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        padding: "8px 15px",
+        borderRadius: "25px",
+        backdropFilter: "blur(5px)",
+        border: "1px solid rgba(255,255,255,0.3)"
+    });
+
+    let volumeSlider = document.createElement("input");
+    volumeSlider.type = "range";
+    volumeSlider.id = "volumeSlider";
+    volumeSlider.min = "0";
+    volumeSlider.max = "1";
+    volumeSlider.step = "0.01";
+    volumeSlider.value = "0.5";
+    volumeSlider.style.width = "80px";
+    volumeSlider.style.cursor = "pointer";
+    volumeSlider.style.accentColor = "#ffcc00";
+
+    let volumeIcon = document.createElement("span");
+    volumeIcon.innerText = "🔊";
+    volumeIcon.style.fontSize = "24px";
+    volumeIcon.style.cursor = "pointer";
+    volumeIcon.style.userSelect = "none";
+    volumeIcon.style.color = "white";
+
+    volumeContainer.appendChild(volumeSlider);
+    volumeContainer.appendChild(volumeIcon);
+    document.body.appendChild(volumeContainer);
+
+    let previousVolume = 0.5;
+    let isMuted = false;
+
+    volumeSlider.oninput = (e) => {
+        let vol = parseFloat(e.target.value);
+        menuMusic.volume = vol;
+        gameMusic.volume = vol;
+        if (vol > 0) {
+            isMuted = false;
+            volumeIcon.innerText = "🔊";
+            previousVolume = vol;
+        } else {
+            isMuted = true;
+            volumeIcon.innerText = "🔇";
+        }
+    };
+
+    volumeIcon.onclick = () => {
+        if (isMuted) {
+            isMuted = false;
+            let vol = previousVolume || 0.5;
+            if (vol === 0) vol = 0.5;
+            menuMusic.volume = vol;
+            gameMusic.volume = vol;
+            volumeSlider.value = vol;
+            volumeIcon.innerText = "🔊";
+        } else {
+            isMuted = true;
+            previousVolume = parseFloat(volumeSlider.value);
+            menuMusic.volume = 0;
+            gameMusic.volume = 0;
+            volumeSlider.value = 0;
+            volumeIcon.innerText = "🔇";
+        }
+    };
 
     // --- INITIALISATION DU JEU ET DÉTECTION DES NIVEAUX ---
     let game = new Game(canvas);
@@ -183,6 +303,7 @@ async function init() {
         menu.style.display = "none";
         menuBackground.style.display = "none";
         if (sidebar) {
+            playMusic("menu");
             sidebar.style.display = "flex";
             sidebar.innerHTML = `
             <div id="editorHeader" style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding-top: 20px;">
@@ -1057,8 +1178,9 @@ async function init() {
                 levelsMenu.style.display = "none";
                 winMenu.style.display = "none";
                 menuBackground.style.display = "none";
-                if (sidebar) sidebar.style.display = "block";
+                if (sidebar) sidebar.style.display = "flex";
                 resizeCanvas();
+                playMusic("game");
                 game.start(i);
             };
 
@@ -1175,6 +1297,7 @@ async function init() {
     document.body.appendChild(videoContainer);
 
     function playVideo(callback) {
+        playMusic("stop");
         menu.style.display = "none";
         menuBackground.style.display = "none";
         levelsMenu.style.display = "none";
@@ -1245,6 +1368,7 @@ async function init() {
         menuBackground.style.display = "block";
         winMenu.style.display = "block";
         resizeCanvas();
+        playMusic("menu");
 
         // Débloque les modificateurs une fois le jeu terminé
         let modifiers = document.querySelectorAll("#modifiersContainer input");
@@ -1254,8 +1378,9 @@ async function init() {
     startBtn.onclick = () => {
         winMenu.style.display = "none"; // On cache le menu si on relance
         playVideo(() => {
-            if (sidebar) sidebar.style.display = "block";
+            if (sidebar) sidebar.style.display = "flex";
             resizeCanvas();
+            playMusic("game");
             game.start(1); // Lance le niveau 1 par défaut
         });
     };
@@ -1266,6 +1391,7 @@ async function init() {
             menu.style.display = "flex";
             menuBackground.style.display = "block";
             resizeCanvas();
+            playMusic("menu");
         });
     };
 
@@ -1274,6 +1400,7 @@ async function init() {
         menu.style.display = "none";
         levelsMenu.style.display = "flex";
         resizeCanvas();
+        playMusic("menu");
     };
 
     // Gestion du bouton LeaderBoard
@@ -1281,6 +1408,7 @@ async function init() {
         menu.style.display = "none";
         leaderboardMenu.style.display = "block";
         resizeCanvas();
+        playMusic("menu");
     };
 
     // Gestion du bouton Retour du LeaderBoard
@@ -1294,8 +1422,9 @@ async function init() {
     document.querySelector("#btnWinRestart").onclick = () => {
         winMenu.style.display = "none";
         menuBackground.style.display = "none";
-        if (sidebar) sidebar.style.display = "block";
+        if (sidebar) sidebar.style.display = "flex";
         resizeCanvas();
+        playMusic("game");
         game.start(1);
     };
     document.querySelector("#btnWinHome").onclick = () => {
@@ -1309,4 +1438,16 @@ async function init() {
         restartBtn.blur(); // Enlève le focus pour ne pas gêner les contrôles clavier
         game.start(game.currentLevel);
     };
+
+    // Gestion du bouton Quitter (Sidebar)
+    if (btnExitLevel) {
+        btnExitLevel.onclick = () => {
+            game.running = false;
+            menu.style.display = "flex";
+            menuBackground.style.display = "block";
+            if (sidebar) sidebar.style.display = "none";
+            resizeCanvas();
+            playMusic("menu");
+        };
+    }
 }
