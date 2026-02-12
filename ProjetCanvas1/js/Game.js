@@ -309,6 +309,7 @@ export default class Game {
                 if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     console.log("Collision avec bumper");
 
+                    obstacle.triggerBounce();
                     // 1. On annule le mouvement pour sortir du bumper (éviter de rester coincé)
                     this.player.x -= this.player.vitesseX;
                     this.player.y -= this.player.vitesseY;

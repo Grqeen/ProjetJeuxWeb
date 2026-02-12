@@ -33,9 +33,9 @@ export default class Levels {
             this.game.objetsGraphiques.push(fadingDoor1);
             let fadingDoor2 = new fadingDoor(900, 0, 40, 600, "Pink", 3000, 2);
             this.game.objetsGraphiques.push(fadingDoor2);
-            this.game.keypad1 = new keypad(250, 200, 25, 25, "pink", 3000, 1);
+            this.game.keypad1 = new keypad(250, 200, 60, 60, "pink", 3000, 1);
             this.game.objetsGraphiques.push(this.game.keypad1);
-            this.game.keypad2 = new keypad(350, 400, 25, 25, "pink", 3000, 2);
+            this.game.keypad2 = new keypad(350, 400, 60, 60, "pink", 3000, 2);
             this.game.objetsGraphiques.push(this.game.keypad2);
 
             // Carrés
@@ -45,11 +45,11 @@ export default class Levels {
             this.game.objetsGraphiques.push(obstacle4);
 
             // Bumper
-            this.game.bumper1 = new bumper(550, 340, 50, 50, "orange");
+            this.game.bumper1 = new bumper(550, 340, 75, 75, "orange");
             this.game.objetsGraphiques.push(this.game.bumper1);
 
             // Potion de vitesse 
-            this.speedPotion1 = new speedPotion(250, 100, 25, 25, "cyan", 5, 3000);
+            this.speedPotion1 = new speedPotion(250, 100, 50, 50, "cyan", 5, 3000);
             this.game.objetsGraphiques.push(this.speedPotion1);
 
             // Potion de taille
@@ -111,38 +111,38 @@ export default class Levels {
 
             // 4. BUMPERS DES MURS (Ajustés pour ne pas toucher les coins)
             // Mur Haut : on commence après le mur gauche et on finit avant le mur droite
-            for (let x = 380; x < 1250; x += 50) {
-                this.game.objetsGraphiques.push(new bumper(x, 30, 50, 50, "orange"));
+            for (let x = 380; x < 1250; x += 75) {
+                this.game.objetsGraphiques.push(new bumper(x, 30, 75, 75, "orange"));
             }
             // Mur Bas : idem
-            for (let x = 380; x < 1250; x += 50) {
-                this.game.objetsGraphiques.push(new bumper(x, 920, 50, 50, "orange"));
+            for (let x = 380; x < 1250; x += 75) {
+                this.game.objetsGraphiques.push(new bumper(x, 920, 75, 75, "orange"));
             }
             // Mur Droite : on commence après le coin haut et on finit avant le coin bas
-            for (let y = 80; y < 920; y += 50) {
-                this.game.objetsGraphiques.push(new bumper(1250, y, 50, 50, "orange"));
+            for (let y = 80; y < 920; y += 75) {
+                this.game.objetsGraphiques.push(new bumper(1250, y, 75, 75, "orange"));
             }
             // Mur Gauche Haut
-            for (let y = 80; y < 230; y += 50) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange"));
+            for (let y = 80; y < 230; y += 75) {
+                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange"));
             }
             // Mur Gauche Bas
-            for (let y = 780; y < 920; y += 50) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange"));
+            for (let y = 780; y < 920; y += 75) {
+                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange"));
             }
 
             // 5. BUMPERS DU CARRÉ CENTRAL (Même logique pour éviter les chevauchements)
-            for (let x = 700; x < 900; x += 50) { // Haut et Bas (raccourcis)
-                this.game.objetsGraphiques.push(new bumper(x, 300, 50, 50, "orange"));
-                this.game.objetsGraphiques.push(new bumper(x, 650, 50, 50, "orange"));
+            for (let x = 700; x < 900; x += 75) { // Haut et Bas (raccourcis)
+                this.game.objetsGraphiques.push(new bumper(x, 300, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(x, 650, 75, 75, "orange"));
             }
-            for (let y = 350; y < 650; y += 50) { // Gauche et Droite
-                this.game.objetsGraphiques.push(new bumper(600, y, 50, 50, "orange"));
-                this.game.objetsGraphiques.push(new bumper(950, y, 50, 50, "orange"));
+            for (let y = 350; y < 650; y += 75) { // Gauche et Droite
+                this.game.objetsGraphiques.push(new bumper(600, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(950, y, 75, 75, "orange"));
             }
 
             // 6. Sortie
-            this.game.fin = new fin(1150, 475, 80, 80, "red");
+            this.game.fin = new fin(1150, 475, 80, 80, "red", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         }
     }
