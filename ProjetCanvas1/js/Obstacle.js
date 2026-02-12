@@ -34,3 +34,25 @@ export class RotatingObstacle extends ObjectGraphique {
         this.angle += this.angleSpeed;
     }
 }
+
+export class movingObstacle extends ObjectGraphique {
+    constructor(x, y, w, h, couleur, moveX, moveY) {
+        super(x, y, w, h, couleur);
+        this.moveX = moveX;
+        this.moveY = moveY;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.fillStyle = this.couleur;
+        ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+        ctx.restore();
+    }
+
+    move() {
+        this.x += this.moveX;
+        this.y += this.moveY;
+        
+    }
+}

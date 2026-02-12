@@ -7,6 +7,7 @@ import sizePotion from "./sizepotion.js";
 import fadingDoor from "./fadingDoor.js";
 import keypad from "./keypad.js";
 import teleporter from "./teleporter.js";
+import { movingObstacle } from "./Obstacle.js";
 
 export default class Levels {
     constructor(game) {
@@ -59,6 +60,12 @@ export default class Levels {
             // Téléporteur
             this.teleporter1 = new teleporter(250, 50, 25, 25, "purple", 1100, 250);
             this.game.objetsGraphiques.push(this.teleporter1);
+
+            // Obstacle mobile
+            let movingObstacle1 = new movingObstacle(400, 200, 50, 50, "brown", 2, 0);
+            this.game.objetsGraphiques.push(movingObstacle1);
+            let movingObstacle2 = new movingObstacle(500, 200, 50, 50, "brown", 2, 0);
+            this.game.objetsGraphiques.push(movingObstacle2);
 
             // Sortie
             this.game.fin = new fin(1100, 50, 100, 100, "green", "assets/images/portal.png");

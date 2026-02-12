@@ -1,4 +1,4 @@
-import Obstacle, { RotatingObstacle } from "./Obstacle.js";
+import Obstacle, { movingObstacle, RotatingObstacle } from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
 import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
@@ -340,6 +340,67 @@ export default class Game {
                         this.player.y += (dy / dist) * 10;
                     }
                 }
+            }else if (obstacle instanceof movingObstacle) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                    console.log("Collision avec obstacle mobile");
+                    // On repousse le joueur vers l'extérieur du centre de rotation
+                    let dx = this.player.x - obstacle.x;
+                    let dy = this.player.y - obstacle.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0) {
+                        this.player.x += (dx / dist) * 10;
+                        this.player.y += (dy / dist) * 10;
+                    }
+                }
+                // on gère la collision de l'obstacle mobile avec un obstacle fixe pour qu'il puisse rebondir dessus
+                this.objetsGraphiques.forEach(o => {
+                    if (o instanceof Obstacle && o !== obstacle) {
+                        if (rectsOverlap(obstacle.x, obstacle.y, obstacle.w, obstacle.h, o.x, o.y, o.w, o.h)) {
+                            // Inverse la direction de l'obstacle mobile
+                            obstacle.moveX = -obstacle.moveX;
+                            obstacle.moveY = -obstacle.moveY;
+                        }
+                    }
+                });
+                // on gère aussi la collision de l'obstacle mobile avec les bords du canvas pour qu'il puisse rebondir dessus
+                if (obstacle.x < 0 || obstacle.x + obstacle.w > this.canvas.width) {
+                    obstacle.moveX = -obstacle.moveX;
+                }
+                if (obstacle.y < 0 || obstacle.y + obstacle.h > this.canvas.height) {
+                    obstacle.moveY = -obstacle.moveY;
+                }
+                // on gère aussi la collision de l'obstacle mobile avec les autres obstacles mobiles pour qu'ils puissent rebondir dessus
+                this.objetsGraphiques.forEach(o => {
+                    if (o instanceof movingObstacle && o !== obstacle) {
+                        if (rectsOverlap(obstacle.x, obstacle.y, obstacle.w, obstacle.h, o.x, o.y, o.w, o.h)) {
+                            // Inverse la direction de l'obstacle mobile
+                            obstacle.moveX = -obstacle.moveX;
+                            obstacle.moveY = -obstacle.moveY;
+                        }
+                    }
+                });
+                // on gère aussi la collision de l'obstacle mobile avec les bumpers pour qu'il puisse rebondir dessus
+                this.objetsGraphiques.forEach(o => {
+                    if (o instanceof bumper) {
+                        if (rectTriangleOverlap(obstacle.x, obstacle.y, obstacle.w, obstacle.h, o.x, o.y, o.w, o.h)) {
+                            // Inverse la direction de l'obstacle mobile
+                            obstacle.moveX = -obstacle.moveX;
+                            obstacle.moveY = -obstacle.moveY;
+                        }
+                    }
+                });
+                // on gère aussi la collision de l'obstacle mobile avec les portes qui quand elles deviennent invisibles ne gèrent plus la collision et on repousse l'obstacle mobile quand la devient visible à nouveau pour éviter qu'il reste coincé dedans
+                this.objetsGraphiques.forEach(o => {
+                    if (o instanceof fadingDoor) {
+                        if (rectsOverlap(obstacle.x, obstacle.y, obstacle.w, obstacle.h, o.x, o.y, o.w, o.h)) {
+                            if (!o.visible) {
+                                // Inverse la direction de l'obstacle mobile
+                                obstacle.moveX = -obstacle.moveX;
+                                obstacle.moveY = -obstacle.moveY;
+                            }
+                        }
+                    }
+                });
             }else if (obstacle instanceof teleporter) {
                 if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     console.log("Collision avec téléporteur : Téléportation !");
