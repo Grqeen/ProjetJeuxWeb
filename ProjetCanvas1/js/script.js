@@ -763,8 +763,9 @@ async function init() {
             img.src = "assets/images/portal.png";
             img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "speed") {
-            ctx.fillStyle = "cyan";
-            ctx.fillRect(10, 10, 30, 30);
+            let img = new Image();
+            img.src = "assets/images/citron.png";
+            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "size") {
             ctx.fillStyle = "magenta";
             ctx.fillRect(10, 10, 30, 30);
@@ -772,10 +773,9 @@ async function init() {
             ctx.fillStyle = "pink";
             ctx.fillRect(20, 5, 10, 40);
         } else if (data.type === "keypad") {
-            ctx.fillStyle = "pink";
-            ctx.fillRect(15, 15, 20, 20);
-            ctx.strokeStyle = "black";
-            ctx.strokeRect(15, 15, 20, 20);
+            let img = new Image();
+            img.src = "assets/images/fadingdoor.png";
+            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "moving") {
             ctx.fillStyle = "purple";
             ctx.fillRect(10, 20, 30, 10);
@@ -835,9 +835,20 @@ async function init() {
             }
             else if (data.type === "rotating") ghost.style.backgroundColor = "red";
             else if (data.type === "fin") ghost.style.backgroundColor = "green";
-            else if (data.type === "speed") ghost.style.backgroundColor = "cyan";
+            else if (data.type === "speed") {
+                ghost.style.backgroundColor = "transparent";
+                ghost.style.backgroundImage = "url('assets/images/citron.png')";
+                ghost.style.backgroundSize = "contain";
+                ghost.style.backgroundRepeat = "no-repeat";
+            }
             else if (data.type === "size") ghost.style.backgroundColor = "magenta";
-            else if (data.type === "door" || data.type === "keypad") ghost.style.backgroundColor = "pink";
+            else if (data.type === "keypad") {
+                ghost.style.backgroundColor = "transparent";
+                ghost.style.backgroundImage = "url('assets/images/fadingdoor.png')";
+                ghost.style.backgroundSize = "contain";
+                ghost.style.backgroundRepeat = "no-repeat";
+            }
+            else if (data.type === "door") ghost.style.backgroundColor = "pink";
             else if (data.type === "moving") ghost.style.backgroundColor = "purple";
             else if (data.type === "teleporter") ghost.style.backgroundColor = "blue";
             else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // Default wall
