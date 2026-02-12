@@ -1,5 +1,5 @@
 import Player from "./Player.js";
-import Obstacle, { RotatingObstacle, IntermittentRotatingObstacle, MovingObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, IntermittentRotatingObstacle, MovingObstacle, CircleObstacle } from "./Obstacle.js";
 import fin from "./fin.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
@@ -11,6 +11,65 @@ import teleporter from "./teleporter.js";
 export default class Levels {
     constructor(game) {
         this.game = game;
+        this.customLevels = new Map();
+    }
+
+    registerCustomLevel(id, data) {
+        this.customLevels.set(id, data);
+    }
+
+    loadFromJSON(data) {
+        this.game.objetsGraphiques = [];
+        this.game.playerSpeed = 5;
+
+        data.forEach(objData => {
+            let newObj;
+            switch(objData.type) {
+                case "player":
+                    this.game.player = new Player(objData.x, objData.y);
+                    this.game.player.w = objData.w;
+                    this.game.player.h = objData.h;
+                    newObj = this.game.player;
+                    break;
+                case "rect":
+                    newObj = new Obstacle(objData.x, objData.y, objData.w, objData.h, objData.couleur);
+                    break;
+                case "circle":
+                    newObj = new CircleObstacle(objData.x, objData.y, objData.r || (objData.w/2), objData.couleur);
+                    break;
+                case "rotating":
+                    newObj = new RotatingObstacle(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.angleSpeed, objData.angle);
+                    break;
+                case "bumper":
+                    newObj = new bumper(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.direction);
+                    break;
+                case "fin":
+                    newObj = new fin(objData.x, objData.y, objData.w, objData.h, objData.couleur, "assets/images/portal.png");
+                    break;
+                case "speed":
+                    newObj = new speedPotion(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.vitesse, objData.temps);
+                    break;
+                case "size":
+                    newObj = new sizePotion(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.tailleW, objData.tailleH);
+                    break;
+                case "door":
+                    newObj = new fadingDoor(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.timer, objData.id);
+                    break;
+                case "keypad":
+                    newObj = new keypad(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.temps, objData.id);
+                    break;
+            }
+            if (newObj) {
+                if (objData.angle && !(newObj instanceof RotatingObstacle)) newObj.angle = objData.angle;
+                this.game.objetsGraphiques.push(newObj);
+            }
+        });
+
+        // Sécurité : si pas de joueur dans le JSON, on en crée un
+        if (!this.game.player) {
+            this.game.player = new Player(100, 100);
+            this.game.objetsGraphiques.push(this.game.player);
+        }
     }
 
     load(levelNumber) {
@@ -19,6 +78,12 @@ export default class Levels {
 
         // Réinitialisation de la vitesse par défaut pour tous les niveaux
         this.game.playerSpeed = 5;
+
+        // --- GESTION DES NIVEAUX IMPORTÉS ---
+        if (this.customLevels.has(levelNumber)) {
+            this.loadFromJSON(this.customLevels.get(levelNumber));
+            return;
+        }
 
         // --- AJOUT : NIVEAU ÉDITEUR (VIDE) ---
         if (levelNumber === 0) {

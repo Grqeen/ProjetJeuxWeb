@@ -1,10 +1,24 @@
 import Game from "./Game.js";
 import { getMousePos } from "./utils.js";
 import Obstacle, { RotatingObstacle, CircleObstacle } from "./Obstacle.js";
+import bumper from "./bumper.js";
+import fin from "./fin.js";
+import speedPotion from "./speedPotion.js";
+import sizePotion from "./sizepotion.js";
+import fadingDoor from "./fadingDoor.js";
+import keypad from "./keypad.js";
+import Player from "./Player.js";
 
 // Bonne pratique : avoir une fonction appelée une fois
 // que la page est prête, que le DOM est chargé, etc.
 window.onload = init;
+
+// Mapping des couleurs nommées vers Hex pour l'input color
+const colorMap = {
+    "red": "#ff0000", "white": "#ffffff", "black": "#000000", "orange": "#ffa500", 
+    "blue": "#0000ff", "purple": "#800080", "green": "#008000", "yellow": "#ffff00", 
+    "cyan": "#00ffff", "magenta": "#ff00ff", "pink": "#ffc0cb", "gray": "#808080"
+};
 
 async function init() {
     // Force le scroll en haut au chargement (fix pour le bug de rafraîchissement)
@@ -186,13 +200,22 @@ async function init() {
                 <div class="mod-group"><label>Largeur (W)</label><input type="number" id="propW"></div>
                 <div class="mod-group"><label>Hauteur (H)</label><input type="number" id="propH"></div>
                 <div class="mod-group"><label>Rotation (°)</label><input type="number" id="propRot"></div>
+                <div class="mod-group"><label>Couleur</label><input type="color" id="propColor" style="width:100%; height:30px; cursor:pointer;"></div>
                 <div class="mod-group" id="divRotSpeed" style="display:none;"><label>Vitesse Rot.</label><input type="number" id="propRotSpeed" step="0.01"></div>
+                <div class="mod-group" id="divLinkId" style="display:none;"><label>ID Liaison</label><input type="number" id="propLinkId"></div>
+                
+                <div class="mod-group" style="display:flex; justify-content: space-between; margin-top:10px;">
+                    <button id="btnLayerDown" style="width:48%; cursor:pointer; padding:5px;">Arr. Plan</button>
+                    <button id="btnLayerUp" style="width:48%; cursor:pointer; padding:5px;">Av. Plan</button>
+                </div>
+
                 <div style="text-align: center; margin-top: 20px;">
                     <button id="btnDeleteObj" style="background: #ff0000; color: white; border: 3px solid #990000; padding: 10px; border-radius: 8px; cursor: pointer; font-family: 'Lilita One'; font-size: 20px; width: 100%; box-shadow: 0 4px 0 #990000; text-transform: uppercase;">Supprimer</button>
                 </div>
             </div>
 
-            <button id="btnExitEditor" class="menu-style-button" style="margin-top: auto; margin-bottom: 20px; align-self: center; background-color: #ff4444; color: white;">Quitter</button>
+            <button id="btnExportLevel" class="menu-style-button" style="margin-top: auto; margin-bottom: 10px; align-self: center; background-color: #4CAF50; color: white; border-color: #2E7D32; box-shadow: 0 4px 0 #2E7D32;">Exporter JSON</button>
+            <button id="btnExitEditor" class="menu-style-button" style="margin-bottom: 20px; align-self: center; background-color: #ff4444; color: white;">Quitter</button>
         `;
 
             const assetsContainer = document.querySelector("#editorAssetsContainer");
@@ -220,6 +243,8 @@ async function init() {
                 assetsContainer.innerHTML = "";
                 createAssetPreview(assetsContainer, "square", "Vitesse", { w: 30, h: 30, type: "speed" });
                 createAssetPreview(assetsContainer, "square", "Taille", { w: 30, h: 30, type: "size" });
+                createAssetPreview(assetsContainer, "rect", "Porte", { w: 20, h: 100, type: "door" });
+                createAssetPreview(assetsContainer, "square", "Clé", { w: 30, h: 30, type: "keypad" });
             };
 
             document.querySelector("#btnExitEditor").onclick = () => location.reload();
@@ -228,10 +253,16 @@ async function init() {
             const propW = document.querySelector("#propW");
             const propH = document.querySelector("#propH");
             const propRot = document.querySelector("#propRot");
+            const propColor = document.querySelector("#propColor");
+            const btnLayerUp = document.querySelector("#btnLayerUp");
+            const btnLayerDown = document.querySelector("#btnLayerDown");
             const propRotSpeed = document.querySelector("#propRotSpeed");
             const divRotSpeed = document.querySelector("#divRotSpeed");
+            const propLinkId = document.querySelector("#propLinkId");
+            const divLinkId = document.querySelector("#divLinkId");
             const btnDelete = document.querySelector("#btnDeleteObj");
             const propsPanel = document.querySelector("#editorProperties");
+            const btnExport = document.querySelector("#btnExportLevel");
 
             function updateInputs() {
                 if (!game.selectedObject) {
@@ -253,12 +284,28 @@ async function init() {
                 let angleDeg = (game.selectedObject.angle || 0) * (180 / Math.PI);
                 propRot.value = Math.round(angleDeg);
 
+                // Gestion Couleur
+                let c = game.selectedObject.couleur || "#000000";
+                // Si c'est un nom de couleur, on convertit en hex
+                if (!c.startsWith("#")) {
+                    c = colorMap[c.toLowerCase()] || "#000000";
+                }
+                propColor.value = c;
+
                 // Gestion Vitesse Rotation (si l'objet a cette propriété)
                 if (game.selectedObject.angleSpeed !== undefined) {
                     divRotSpeed.style.display = "block";
                     propRotSpeed.value = game.selectedObject.angleSpeed;
                 } else {
                     divRotSpeed.style.display = "none";
+                }
+
+                // Gestion ID Liaison (pour Portes et Keypads)
+                if (game.selectedObject.id !== undefined) {
+                    divLinkId.style.display = "block";
+                    propLinkId.value = game.selectedObject.id;
+                } else {
+                    divLinkId.style.display = "none";
                 }
             }
 
@@ -270,12 +317,20 @@ async function init() {
                     game.selectedObject.angle = parseFloat(propRot.value) * (Math.PI / 180);
                 }
             };
+            propColor.oninput = () => {
+                if (game.selectedObject) game.selectedObject.couleur = propColor.value;
+            };
             propRotSpeed.oninput = () => {
                 if (game.selectedObject && game.selectedObject.angleSpeed !== undefined) {
                     game.selectedObject.angleSpeed = parseFloat(propRotSpeed.value);
                     if (game.selectedObject.initialAngleSpeed !== undefined) {
                         game.selectedObject.initialAngleSpeed = parseFloat(propRotSpeed.value);
                     }
+                }
+            };
+            propLinkId.oninput = () => {
+                if (game.selectedObject && game.selectedObject.id !== undefined) {
+                    game.selectedObject.id = parseInt(propLinkId.value);
                 }
             };
             btnDelete.onclick = () => {
@@ -289,6 +344,26 @@ async function init() {
                 }
             };
 
+            // --- GESTION DES CALQUES (Z-INDEX) ---
+            btnLayerUp.onclick = () => {
+                if (game.selectedObject) {
+                    const idx = game.objetsGraphiques.indexOf(game.selectedObject);
+                    if (idx < game.objetsGraphiques.length - 1) {
+                        // On échange avec l'élément suivant
+                        [game.objetsGraphiques[idx], game.objetsGraphiques[idx+1]] = [game.objetsGraphiques[idx+1], game.objetsGraphiques[idx]];
+                    }
+                }
+            };
+            btnLayerDown.onclick = () => {
+                if (game.selectedObject) {
+                    const idx = game.objetsGraphiques.indexOf(game.selectedObject);
+                    if (idx > 0) {
+                        // On échange avec l'élément précédent
+                        [game.objetsGraphiques[idx], game.objetsGraphiques[idx-1]] = [game.objetsGraphiques[idx-1], game.objetsGraphiques[idx]];
+                    }
+                }
+            };
+
             // Raccourci clavier : Touche Suppr pour supprimer l'objet sélectionné
             window.addEventListener("keydown", (e) => {
                 if (e.key === "Delete") {
@@ -297,6 +372,112 @@ async function init() {
                     btnDelete.click();
                 }
             });
+
+            // --- COPIER / COLLER (Ctrl+C / Ctrl+V) ---
+            let clipboard = null;
+
+            function getObjectData(obj) {
+                let type = "rect";
+                let extra = {};
+
+                if (obj instanceof Player) {
+                    type = "player";
+                } else if (obj instanceof CircleObstacle) {
+                    type = "circle";
+                    extra.r = obj.radius;
+                } else if (obj instanceof RotatingObstacle) {
+                    type = "rotating";
+                    extra.angleSpeed = obj.initialAngleSpeed || obj.angleSpeed;
+                    extra.angle = obj.angle;
+                } else if (obj instanceof bumper) {
+                    type = "bumper";
+                    extra.direction = obj.direction;
+                } else if (obj instanceof fin) {
+                    type = "fin";
+                } else if (obj instanceof speedPotion) {
+                    type = "speed";
+                    extra.vitesse = obj.vitesse;
+                    extra.temps = obj.temps;
+                } else if (obj instanceof sizePotion) {
+                    type = "size";
+                    extra.tailleW = obj.tailleW;
+                    extra.tailleH = obj.tailleH;
+                } else if (obj instanceof fadingDoor) {
+                    type = "door";
+                    extra.timer = obj.timer;
+                    extra.id = obj.id;
+                } else if (obj instanceof keypad) {
+                    type = "keypad";
+                    extra.temps = obj.temps;
+                    extra.id = obj.id;
+                }
+                return { type, x: obj.x, y: obj.y, w: obj.w, h: obj.h, couleur: obj.couleur, ...extra };
+            }
+
+            function createObjectFromData(data) {
+                let newObj;
+                if (data.type === "rect") {
+                    newObj = new Obstacle(data.x, data.y, data.w, data.h, data.couleur);
+                } else if (data.type === "circle") {
+                    newObj = new CircleObstacle(data.x, data.y, data.r, data.couleur);
+                } else if (data.type === "rotating") {
+                    newObj = new RotatingObstacle(data.x, data.y, data.w, data.h, data.couleur, data.angleSpeed, data.angle);
+                } else if (data.type === "bumper") {
+                    newObj = new bumper(data.x, data.y, data.w, data.h, data.couleur, data.direction);
+                } else if (data.type === "fin") {
+                    newObj = new fin(data.x, data.y, data.w, data.h, data.couleur, "assets/images/portal.png");
+                } else if (data.type === "speed") {
+                    newObj = new speedPotion(data.x, data.y, data.w, data.h, data.couleur, data.vitesse, data.temps);
+                } else if (data.type === "size") {
+                    newObj = new sizePotion(data.x, data.y, data.w, data.h, data.couleur, data.tailleW, data.tailleH);
+                } else if (data.type === "door") {
+                    newObj = new fadingDoor(data.x, data.y, data.w, data.h, data.couleur, data.timer, data.id);
+                } else if (data.type === "keypad") {
+                    newObj = new keypad(data.x, data.y, data.w, data.h, data.couleur, data.temps, data.id);
+                }
+                
+                if (newObj && data.angle && !(newObj instanceof RotatingObstacle)) {
+                    newObj.angle = data.angle;
+                }
+                return newObj;
+            }
+
+            window.addEventListener("keydown", (e) => {
+                // Ctrl+C
+                if (e.ctrlKey && e.key === 'c') {
+                    if (game.selectedObject && game.selectedObject !== game.player) {
+                        clipboard = getObjectData(game.selectedObject);
+                    }
+                }
+                // Ctrl+V
+                if (e.ctrlKey && e.key === 'v') {
+                    if (clipboard) {
+                        let newObj = createObjectFromData(clipboard);
+                        if (newObj) {
+                            newObj.x += 20; // Décalage pour voir la copie
+                            newObj.y += 20;
+                            game.objetsGraphiques.push(newObj);
+                            game.selectedObject = newObj;
+                            updateInputs();
+                        }
+                    }
+                }
+            });
+
+            // --- EXPORT DU NIVEAU EN JSON ---
+            btnExport.onclick = () => {
+                const levelData = game.objetsGraphiques.map(obj => getObjectData(obj));
+
+                const blob = new Blob([JSON.stringify(levelData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const downloadAnchorNode = document.createElement('a');
+                downloadAnchorNode.setAttribute("href", url);
+                downloadAnchorNode.setAttribute("download", "mon_niveau_blob.json");
+                document.body.appendChild(downloadAnchorNode);
+                downloadAnchorNode.click();
+                downloadAnchorNode.remove();
+                URL.revokeObjectURL(url);
+            };
 
             // Variables pour le déplacement d'objets existants
             let isDraggingSelected = false;
@@ -506,15 +687,17 @@ async function init() {
         } else if (data.type === "speed") {
             ctx.fillStyle = "cyan";
             ctx.fillRect(10, 10, 30, 30);
-            ctx.font = "16px Arial";
-            ctx.fillStyle = "black";
-            ctx.fillText("S", 18, 30);
         } else if (data.type === "size") {
             ctx.fillStyle = "magenta";
             ctx.fillRect(10, 10, 30, 30);
-            ctx.font = "16px Arial";
-            ctx.fillStyle = "black";
-            ctx.fillText("T", 18, 30);
+        } else if (data.type === "door") {
+            ctx.fillStyle = "pink";
+            ctx.fillRect(20, 5, 10, 40);
+        } else if (data.type === "keypad") {
+            ctx.fillStyle = "pink";
+            ctx.fillRect(15, 15, 20, 20);
+            ctx.strokeStyle = "black";
+            ctx.strokeRect(15, 15, 20, 20);
         }
 
         div.appendChild(cvs);
@@ -562,6 +745,7 @@ async function init() {
             else if (data.type === "fin") ghost.style.backgroundColor = "green";
             else if (data.type === "speed") ghost.style.backgroundColor = "cyan";
             else if (data.type === "size") ghost.style.backgroundColor = "magenta";
+            else if (data.type === "door" || data.type === "keypad") ghost.style.backgroundColor = "pink";
             else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // Default wall
 
             // Centering on mouse
@@ -599,28 +783,27 @@ async function init() {
         // Si on lâche la souris sur le canvas
         if (x > 0 && x < canvas.width && y > 0 && y < canvas.height) {
             let newObj;
-            const ObstacleClass = (await import("./Obstacle.js")).default;
-            const { CircleObstacle, RotatingObstacle } = await import("./Obstacle.js");
-            const BumperClass = (await import("./bumper.js")).default;
-            const FinClass = (await import("./fin.js")).default;
-            const SpeedPotionClass = (await import("./speedPotion.js")).default;
-            const SizePotionClass = (await import("./sizepotion.js")).default;
+            // Note : Les classes sont maintenant importées en haut du fichier
 
             if (draggedItem.type === "rect") {
-                newObj = new ObstacleClass(x - draggedItem.w / 2, y - draggedItem.h / 2, draggedItem.w, draggedItem.h, "white");
+                newObj = new Obstacle(x - draggedItem.w / 2, y - draggedItem.h / 2, draggedItem.w, draggedItem.h, "white");
             } else if (draggedItem.type === "circle") {
                 // On crée l'obstacle circulaire avec les bonnes coordonnées
                 newObj = new CircleObstacle(x, y, draggedItem.r, "white");
             } else if (draggedItem.type === "bumper") {
-                newObj = new BumperClass(x - 25, y - 25, 50, 50, "orange", "up");
+                newObj = new bumper(x - 25, y - 25, 50, 50, "orange", "up");
             } else if (draggedItem.type === "rotating") {
                 newObj = new RotatingObstacle(x, y, draggedItem.w, draggedItem.h, "red", 0.02);
             } else if (draggedItem.type === "fin") {
-                newObj = new FinClass(x - 40, y - 40, 80, 80, "green", "assets/images/portal.png");
+                newObj = new fin(x - 40, y - 40, 80, 80, "green", "assets/images/portal.png");
             } else if (draggedItem.type === "speed") {
-                newObj = new SpeedPotionClass(x - 15, y - 15, 30, 30, "cyan", 5, 3000);
+                newObj = new speedPotion(x - 15, y - 15, 30, 30, "cyan", 5, 3000);
             } else if (draggedItem.type === "size") {
-                newObj = new SizePotionClass(x - 15, y - 15, 30, 30, "magenta", -40, -40);
+                newObj = new sizePotion(x - 15, y - 15, 30, 30, "magenta", -40, -40);
+            } else if (draggedItem.type === "door") {
+                newObj = new fadingDoor(x - 10, y - 50, 20, 100, "pink", 3000, 1);
+            } else if (draggedItem.type === "keypad") {
+                newObj = new keypad(x - 15, y - 15, 30, 30, "pink", 3000, 1);
             }
 
             if (newObj) game.objetsGraphiques.push(newObj);
@@ -693,6 +876,50 @@ async function init() {
     btnNextLevels.id = "next-levels";
     btnNextLevels.innerText = "Suivant >";
     levelsMenu.insertBefore(btnNextLevels, btnBack); // On l'insère avant le bouton retour
+
+    // --- BOUTON IMPORTER JSON ---
+    let btnImport = document.createElement("button");
+    btnImport.id = "btnImportLevel";
+    btnImport.innerText = "Importer JSON";
+    // Style identique aux autres boutons
+    btnImport.className = "menu-style-button"; 
+    btnImport.style.marginTop = "10px";
+    btnImport.style.backgroundColor = "#2196F3"; // Bleu
+    btnImport.style.color = "white";
+    btnImport.style.borderColor = "#0b7dda";
+    
+    levelsMenu.appendChild(btnImport);
+
+    let fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".json";
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
+
+    btnImport.onclick = () => fileInput.click();
+
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                maxLevels++;
+                game.levels.registerCustomLevel(maxLevels, data);
+                currentLevelPage = Math.floor((maxLevels - 1) / levelsPerPage);
+                renderLevelButtons();
+                updateLeaderboards();
+                alert("Niveau importé avec succès ! (Niveau " + maxLevels + ")");
+            } catch (err) {
+                console.error("Erreur JSON", err);
+                alert("Fichier invalide !");
+            }
+        };
+        reader.readAsText(file);
+        fileInput.value = ""; // Reset
+    };
 
     document.body.appendChild(levelsMenu);
 

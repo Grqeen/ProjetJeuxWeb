@@ -124,6 +124,20 @@ export default class Game {
         }
     }
 
+    startCustomLevel(levelData) {
+        this.currentLevel = "custom";
+        this.levels.loadFromJSON(levelData);
+        this.applyRotationMultiplier();
+        if (this.levelElement) this.levelElement.innerText = "Custom";
+        this.knockbackX = 0;
+        this.knockbackY = 0;
+        this.startTime = Date.now();
+        if (!this.running) {
+            this.running = true;
+            requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        }
+    }
+
     mainAnimationLoop() {
         if (!this.running) return;
         // 1 - on efface le canvas avec une couleur de fond (gris clair) pour délimiter le niveau
