@@ -435,6 +435,233 @@ export default class Levels {
 
             // Initialisation de l'étape du portail
             this.game.portalStage = 0;
+        }else if (levelNumber === 11) {
+            // --- NIVEAU 11 : Le Labyrinthe en S (Basé sur l'image) ---
+            
+            // 1. Position de départ du joueur (en bas à gauche comme sur l'image)
+            this.game.player = new Player(120, 500); //
+            this.game.objetsGraphiques.push(this.game.player); //
+
+            // 2. Murs extérieurs (Bordures noires - Obstacles)
+            this.game.objetsGraphiques.push(new Obstacle(0, 50, 1320, 20, "black"));        // Plafond
+            this.game.objetsGraphiques.push(new Obstacle(0, 800, 1320, 20, "black"));      // Sol
+            this.game.objetsGraphiques.push(new Obstacle(0, 70, 20, 730, "black"));        // Mur Gauche
+            this.game.objetsGraphiques.push(new Obstacle(780, 200, 20, 600, "black"));      // Mur Droit
+            this.game.objetsGraphiques.push(new Obstacle(200, 400, 20, 250, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(500, 550, 20, 250, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(1300, 50, 20, 750, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(800, 200, 300, 20, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(900, 500, 250, 20, "black"));      
+
+
+            // 3. Murs intérieurs (Chicanes pour créer le "S")
+            // Premier mur : part de la gauche et s'arrête pour laisser un passage à droite
+            this.game.objetsGraphiques.push(new Obstacle(0, 400, 600, 20, "black")); 
+            // Deuxième mur : part de la droite et s'arrête pour laisser un passage à gauche
+            this.game.objetsGraphiques.push(new Obstacle(200, 200, 600, 20, "black"));
+
+            // ajout de potion de vitesse
+            this.game.objetsGraphiques.push(new speedPotion(400, 100, 30, 30, "cyan", 6, 5000));
+
+            // ajout d'un obstacle mobile
+            this.game.objetsGraphiques.push(new movingObstacle(1000, 300, 50, 50, "brown", 2, 0));
+
+            // 4. Bumpers (Triangles orange) - Placés aux points stratégiques du schéma
+            // On utilise la classe bumper(x, y, w, h, couleur)
+            this.game.objetsGraphiques.push(new bumper(250, 450, 60, 60, "orange")); // Tournant bas-droit
+            this.game.objetsGraphiques.push(new bumper(20, 350, 60, 60, "orange")); // Tournant milieu-gauche
+            this.game.objetsGraphiques.push(new bumper(400, 300, 50, 50, "orange")); // Obstacle dans le couloir central
+            this.game.objetsGraphiques.push(new bumper(20, 70, 60, 60, "orange"));   // Coin haut-gauche
+            this.game.objetsGraphiques.push(new bumper(1240, 70, 60, 60, "orange"));   // Coin haut-droit
+            this.game.objetsGraphiques.push(new bumper(1240, 750, 60, 60, "orange"));   // Coin bas-droit
+            this.game.objetsGraphiques.push(new bumper(940, 750, 60, 60, "orange"));
+            this.game.objetsGraphiques.push(new bumper(100, 750, 60, 60, "orange"));
+            this.game.objetsGraphiques.push(new bumper(540, 750, 60, 60, "orange"));
+            this.game.objetsGraphiques.push(new bumper(540, 150, 60, 60, "orange"));
+
+
+
+
+            // 5. Sortie (Cercle vert) - En haut à droite
+            // Utilisation de la classe fin avec son image de portail
+            this.game.fin = new fin(800, 700, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        }else if (levelNumber === 12) {
+            // --- NIVEAU 12 : Les Chambres de Téléportation ---
+            
+            // 1. Position de départ (Pièce du bas)
+            this.game.player = new Player(100, 500);
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Murs extérieurs et séparations horizontales (Noirs)
+            this.game.objetsGraphiques.push(new Obstacle(0, 50, 1320, 20, "black"));        // Plafond
+            this.game.objetsGraphiques.push(new Obstacle(0, 800, 1320, 20, "black"));      // Sol
+            this.game.objetsGraphiques.push(new Obstacle(0, 70, 20, 730, "black"));        // Mur Gauche
+            this.game.objetsGraphiques.push(new Obstacle(780, 200, 20, 600, "black"));      // Mur Droit
+            this.game.objetsGraphiques.push(new Obstacle(200, 400, 20, 250, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(500, 550, 20, 250, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(1300, 50, 20, 750, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(800, 200, 300, 20, "black"));      
+            this.game.objetsGraphiques.push(new Obstacle(900, 500, 250, 20, "black"));      // Entre Pièce 2 et 3
+
+            // 3. Téléporteurs (Carrés violets)
+            // T1 : Situé à droite de la Pièce 1 -> Envoie au milieu de la Pièce 2 (400, 310)
+            this.game.objetsGraphiques.push(new teleporter(700, 480, 40, 40, "purple", 400, 310));
+            
+            // T2 : Situé à gauche de la Pièce 2 -> Envoie au milieu de la Pièce 3 (400, 110)
+            this.game.objetsGraphiques.push(new teleporter(60, 280, 40, 40, "purple", 400, 110));
+
+            // 4. Bumpers (Triangles orange pour la difficulté dans les pièces)
+            this.game.objetsGraphiques.push(new bumper(400, 500, 60, 60, "orange"));
+            this.game.objetsGraphiques.push(new bumper(200, 310, 50, 50, "orange"));
+            this.game.objetsGraphiques.push(new bumper(600, 110, 50, 50, "orange"));
+
+            // 5. Sortie (Cercle vert - Portail)
+            this.game.fin = new fin(700, 60, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 13) {
+            // --- NIVEAU 13 : Le Slalom des Gardiens Rouges ---
+            
+            // 1. Position de départ du joueur (bas-gauche)
+            this.game.player = new Player(60, 500);
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Murs extérieurs (Bordures noires)
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 800, 20, "black"));        // Plafond
+            this.game.objetsGraphiques.push(new Obstacle(0, 580, 800, 20, "black"));      // Sol
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 20, 600, "black"));        // Mur Gauche
+            this.game.objetsGraphiques.push(new Obstacle(780, 0, 20, 600, "black"));      // Mur Droit
+
+            // 3. Murs de séparation (Parcours en S)
+            // Mur du bas (laisse un passage à droite)
+            this.game.objetsGraphiques.push(new Obstacle(0, 400, 650, 20, "black")); 
+            // Mur du haut (laisse un passage à gauche)
+            this.game.objetsGraphiques.push(new Obstacle(150, 200, 650, 20, "black"));
+
+            // 4. MovingObstacles (Carrés rouges - Mouvement Haut/Bas)
+            // Paramètres : x, y, w, h, couleur, distX, distY, speed
+            // Premier obstacle dans le couloir du bas
+            this.game.objetsGraphiques.push(new MovingObstacle(300, 480, 40, 40, "red", 0, 60, 0.05));
+            // Deuxième obstacle dans le couloir du milieu
+            this.game.objetsGraphiques.push(new MovingObstacle(500, 300, 40, 40, "red", 0, 70, 0.07));
+            // Troisième obstacle dans le couloir du haut
+            this.game.objetsGraphiques.push(new MovingObstacle(300, 100, 40, 40, "red", 0, 50, 0.04));
+
+            // 5. Bumpers (Triangles orange) pour ajouter du chaos
+            this.game.objetsGraphiques.push(new bumper(700, 500, 50, 50, "orange")); // Coin bas-droit
+            this.game.objetsGraphiques.push(new bumper(50, 300, 50, 50, "orange"));  // Coin milieu-gauche
+            this.game.objetsGraphiques.push(new bumper(400, 50, 50, 50, "orange"));  // Dans le couloir final
+
+            // 6. Sortie (Portail vert)
+            this.game.fin = new fin(700, 60, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 13) {
+            // --- NIVEAU 13 : Le Slalom des Gardiens Rouges ---
+            
+            // 1. Position de départ du joueur (bas-gauche)
+            this.game.player = new Player(60, 500);
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Murs extérieurs (Bordures noires)
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 800, 20, "black"));        // Plafond
+            this.game.objetsGraphiques.push(new Obstacle(0, 580, 800, 20, "black"));      // Sol
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 20, 600, "black"));        // Mur Gauche
+            this.game.objetsGraphiques.push(new Obstacle(780, 0, 20, 600, "black"));      // Mur Droit
+
+            // 3. Murs de séparation (Parcours en S)
+            // Mur du bas (laisse un passage à droite)
+            this.game.objetsGraphiques.push(new Obstacle(0, 400, 650, 20, "black")); 
+            // Mur du haut (laisse un passage à gauche)
+            this.game.objetsGraphiques.push(new Obstacle(150, 200, 650, 20, "black"));
+
+            // 4. MovingObstacles (Carrés rouges - Mouvement Haut/Bas)
+            // Paramètres : x, y, w, h, couleur, distX, distY, speed
+            // Premier obstacle dans le couloir du bas
+            this.game.objetsGraphiques.push(new MovingObstacle(300, 480, 40, 40, "red", 0, 60, 0.05));
+            // Deuxième obstacle dans le couloir du milieu
+            this.game.objetsGraphiques.push(new MovingObstacle(500, 300, 40, 40, "red", 0, 70, 0.07));
+            // Troisième obstacle dans le couloir du haut
+            this.game.objetsGraphiques.push(new MovingObstacle(300, 100, 40, 40, "red", 0, 50, 0.04));
+
+            // 5. Bumpers (Triangles orange) pour ajouter du chaos
+            this.game.objetsGraphiques.push(new bumper(700, 500, 50, 50, "orange")); // Coin bas-droit
+            this.game.objetsGraphiques.push(new bumper(50, 300, 50, 50, "orange"));  // Coin milieu-gauche
+            this.game.objetsGraphiques.push(new bumper(400, 50, 50, 50, "orange"));  // Dans le couloir final
+
+            // 6. Sortie (Portail vert)
+            this.game.fin = new fin(700, 60, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        }else if (levelNumber === 13) {
+            // --- NIVEAU 13 : Le Slalom des Gardiens Rouges ---
+            
+            // 1. Position de départ du joueur (bas-gauche)
+            this.game.player = new Player(60, 500);
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Murs extérieurs (Bordures noires)
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 800, 20, "black"));        // Plafond
+            this.game.objetsGraphiques.push(new Obstacle(0, 580, 800, 20, "black"));      // Sol
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 20, 600, "black"));        // Mur Gauche
+            this.game.objetsGraphiques.push(new Obstacle(780, 0, 20, 600, "black"));      // Mur Droit
+
+            // 3. Murs de séparation (Parcours en S)
+            // Mur du bas (laisse un passage à droite)
+            this.game.objetsGraphiques.push(new Obstacle(0, 400, 650, 20, "black")); 
+            // Mur du haut (laisse un passage à gauche)
+            this.game.objetsGraphiques.push(new Obstacle(150, 200, 650, 20, "black"));
+
+            // 4. MovingObstacles (Carrés rouges - Mouvement Haut/Bas)
+            // Paramètres : x, y, w, h, couleur, distX, distY, speed
+            // Premier obstacle dans le couloir du bas
+            this.game.objetsGraphiques.push(new MovingObstacle(300, 480, 40, 40, "red", 0, 60, 0.05));
+            // Deuxième obstacle dans le couloir du milieu
+            this.game.objetsGraphiques.push(new MovingObstacle(500, 300, 40, 40, "red", 0, 70, 0.07));
+            // Troisième obstacle dans le couloir du haut
+            this.game.objetsGraphiques.push(new MovingObstacle(300, 100, 40, 40, "red", 0, 50, 0.04));
+
+            // 5. Bumpers (Triangles orange) pour ajouter du chaos
+            this.game.objetsGraphiques.push(new bumper(700, 500, 50, 50, "orange")); // Coin bas-droit
+            this.game.objetsGraphiques.push(new bumper(50, 300, 50, 50, "orange"));  // Coin milieu-gauche
+            this.game.objetsGraphiques.push(new bumper(400, 50, 50, 50, "orange"));  // Dans le couloir final
+
+            // 6. Sortie (Portail vert)
+            this.game.fin = new fin(700, 60, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 14) {
+            // --- NIVEAU 14 : Le Passage de la Croix ---
+            
+            // 1. Position de départ du joueur (en bas à gauche)
+            this.game.player = new Player(60, 500);
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Murs extérieurs (Bordures noires)
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 800, 20, "black"));        // Plafond
+            this.game.objetsGraphiques.push(new Obstacle(0, 580, 800, 20, "black"));      // Sol
+            this.game.objetsGraphiques.push(new Obstacle(0, 0, 20, 600, "black"));        // Mur Gauche
+            this.game.objetsGraphiques.push(new Obstacle(780, 0, 20, 600, "black"));      // Mur Droit
+
+            // 3. Murs de séparation (Parcours en S)
+            // Mur inférieur (ouverture à droite)
+            this.game.objetsGraphiques.push(new Obstacle(0, 400, 650, 20, "black")); 
+            // Mur supérieur (ouverture à gauche)
+            this.game.objetsGraphiques.push(new Obstacle(150, 200, 650, 20, "black"));
+
+            // 4. CROIX ROUGE (RotatingObstacle)
+            // On crée une croix en superposant deux obstacles rotatifs à 90 degrés
+            const centerX = 400;
+            const centerY = 300;
+            const rotationSpeed = 0.03;
+
+            this.game.objetsGraphiques.push(new RotatingObstacle(centerX, centerY, 200, 20, "red", rotationSpeed, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(centerX, centerY, 200, 20, "red", rotationSpeed, Math.PI / 2));
+
+            // 5. Bumpers (Triangles orange) pour ajouter du rebond dans les coins
+            this.game.objetsGraphiques.push(new bumper(710, 510, 50, 50, "orange")); // Coin bas-droit
+            this.game.objetsGraphiques.push(new bumper(40, 310, 50, 50, "orange"));  // Coin milieu-gauche
+
+            // 6. Sortie (Portail vert)
+            this.game.fin = new fin(700, 60, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
         }
     }
 }
