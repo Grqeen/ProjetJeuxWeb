@@ -28,7 +28,7 @@ function circRectsOverlap(x0, y0, w0, h0, cx, cy, r) {
 }
 
 //Collision between square and triangle
-function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th) {
+function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th, direction = "up") {
     // 1. Test AABB (Bounding Box) pour une sortie rapide
     if (!rectsOverlap(rx, ry, rw, rh, tx, ty, tw, th)) {
         return false;
@@ -38,9 +38,25 @@ function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th) {
     // On vérifie si un espace sépare les deux formes sur les axes perpendiculaires aux côtés du triangle.
     
     // Sommets du triangle
-    let t1 = { x: tx + tw / 2, y: ty };      // Haut
-    let t2 = { x: tx + tw, y: ty + th };     // Bas Droite
-    let t3 = { x: tx, y: ty + th };          // Bas Gauche
+    let t1, t2, t3;
+    if (direction === "up") {
+        t1 = { x: tx + tw / 2, y: ty };      // Haut
+        t2 = { x: tx + tw, y: ty + th };     // Bas Droite
+        t3 = { x: tx, y: ty + th };          // Bas Gauche
+    } else if (direction === "left") {
+        t1 = { x: tx, y: ty + th / 2 };      // Pointe Gauche
+        t2 = { x: tx + tw, y: ty };          // Haut Droite
+        t3 = { x: tx + tw, y: ty + th };     // Bas Droite
+    } else if (direction === "right") {
+        t1 = { x: tx + tw, y: ty + th / 2 }; // Pointe Droite
+        t2 = { x: tx, y: ty + th };          // Bas Gauche
+        t3 = { x: tx, y: ty };               // Haut Gauche
+    } else {
+        // Down
+        t1 = { x: tx, y: ty };                   // Haut Gauche
+        t2 = { x: tx + tw, y: ty };              // Haut Droite
+        t3 = { x: tx + tw / 2, y: ty + th };     // Bas (Pointe)
+    }
 
     // Sommets du rectangle
     let rPoints = [
@@ -52,18 +68,13 @@ function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th) {
 
     let tPoints = [t1, t2, t3];
 
-    // Axes à tester : Normales des côtés inclinés du triangle.
-    // (Les axes X et Y sont déjà couverts par le test AABB)
-    
-    // Axe 1 : Normale du côté droit (t1 -> t2)
-    // Vecteur côté : (tw/2, th) -> Normale : (-th, tw/2)
-    let axis1 = { x: -th, y: tw / 2 };
-
-    // Axe 2 : Normale du côté gauche (t3 -> t1)
-    // Vecteur côté : (tw/2, -th) -> Normale : (th, tw/2)
-    let axis2 = { x: th, y: tw / 2 };
-
-    let axes = [axis1, axis2];
+    // Axes à tester : Normales des côtés du triangle
+    // On calcule dynamiquement les normales pour supporter toutes les directions
+    let axes = [
+        { x: t2.x - t1.x, y: t2.y - t1.y },
+        { x: t3.x - t2.x, y: t3.y - t2.y },
+        { x: t1.x - t3.x, y: t1.y - t3.y }
+    ].map(v => ({ x: -v.y, y: v.x })); // Rotation 90° pour avoir la normale
 
     for (let axis of axes) {
         // Projection du triangle
@@ -93,48 +104,33 @@ function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th) {
 
 // Collision entre un rectangle aligné (AABB - Joueur) et un rectangle rotatif (OBB)
 function rectRotatedRectOverlap(rx, ry, rw, rh, ox, oy, ow, oh, angle) {
-    // rx, ry : coin haut-gauche du joueur
-    // ox, oy : centre de l'obstacle rotatif
-    // ow, oh : dimensions de l'obstacle
-    // angle : rotation en radians
-
-    // 1. Points du joueur (AABB)
     let rPoints = [
-        { x: rx, y: ry },
-        { x: rx + rw, y: ry },
-        { x: rx + rw, y: ry + rh },
-        { x: rx, y: ry + rh }
+        { x: rx, y: ry }, { x: rx + rw, y: ry },
+        { x: rx + rw, y: ry + rh }, { x: rx, y: ry + rh }
     ];
 
-    // 2. Points de l'obstacle (OBB)
     let cos = Math.cos(angle);
     let sin = Math.sin(angle);
     let hw = ow / 2;
     let hh = oh / 2;
 
-    // Calcul des 4 coins de l'obstacle après rotation et translation
     let oPoints = [
-        { x: -hw, y: -hh },
-        { x: hw, y: -hh },
-        { x: hw, y: hh },
-        { x: -hw, y: hh }
+        { x: -hw, y: -hh }, { x: hw, y: -hh },
+        { x: hw, y: hh }, { x: -hw, y: hh }
     ].map(p => ({
         x: ox + (p.x * cos - p.y * sin),
         y: oy + (p.x * sin + p.y * cos)
     }));
 
-    // 3. Axes à tester (SAT - Separating Axis Theorem)
-    // Axes du joueur (AABB) : (1,0), (0,1)
-    // Axes de l'obstacle : vecteurs unitaires de ses côtés (cos, sin) et (-sin, cos)
     let axes = [
-        { x: 1, y: 0 },
-        { x: 0, y: 1 },
-        { x: cos, y: sin },
-        { x: -sin, y: cos }
+        { x: 1, y: 0 }, { x: 0, y: 1 },
+        { x: cos, y: sin }, { x: -sin, y: cos }
     ];
 
+    let minOverlap = Infinity;
+    let shortestAxis = null;
+
     for (let axis of axes) {
-        // Projection du joueur
         let minR = Infinity, maxR = -Infinity;
         for (let p of rPoints) {
             let proj = p.x * axis.x + p.y * axis.y;
@@ -142,7 +138,6 @@ function rectRotatedRectOverlap(rx, ry, rw, rh, ox, oy, ow, oh, angle) {
             maxR = Math.max(maxR, proj);
         }
 
-        // Projection de l'obstacle
         let minO = Infinity, maxO = -Infinity;
         for (let p of oPoints) {
             let proj = p.x * axis.x + p.y * axis.y;
@@ -150,13 +145,18 @@ function rectRotatedRectOverlap(rx, ry, rw, rh, ox, oy, ow, oh, angle) {
             maxO = Math.max(maxO, proj);
         }
 
-        // Si un espace est trouvé entre les projections, pas de collision
-        if (maxR < minO || maxO < minR) {
-            return false;
+        if (maxR < minO || maxO < minR) return null; // Pas de collision
+
+        // Calcul de l'overlap sur cet axe
+        let overlap = Math.min(maxR, maxO) - Math.max(minR, minO);
+        if (overlap < minOverlap) {
+            minOverlap = overlap;
+            shortestAxis = axis;
         }
     }
 
-    return true;
+    // Retourne l'axe et la profondeur pour corriger la position
+    return { axis: shortestAxis, overlap: minOverlap };
 }
 
 export { circleCollide, rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap };
