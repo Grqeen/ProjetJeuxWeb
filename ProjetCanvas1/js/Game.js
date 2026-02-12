@@ -233,15 +233,6 @@ export default class Game {
             if(obj instanceof Obstacle) {
                 if(rectsOverlap(this.player.x-this.player.w/2, this.player.y - this.player.h/2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
                     // collision
-
-                    // ICI TEST BASIQUE QUI ARRETE LE JOUEUR EN CAS DE COLLIION.
-                    // SI ON VOULAIT FAIRE MIEUX, ON POURRAIT PAR EXEMPLE REGARDER OU EST LE JOUEUR
-                    // PAR RAPPORT A L'obstacle courant : il est à droite si son x est plus grand que le x de l'obstacle + la largeur de l'obstacle
-                    // il est à gauche si son x + sa largeur est plus petit que le x de l'obstacle
-                    // etc.
-                    // Dans ce cas on pourrait savoir comment le joueur est entré en collision avec l'obstacle et réagir en conséquence
-                    // par exemple en le repoussant dans la direction opposée à celle de l'obstacle...
-                    // Là par défaut on le renvoie en x=10 y=10 et on l'arrête
                     console.log("Collision avec obstacle");
                     this.player.x = 10;
                     this.player.y = 10;
