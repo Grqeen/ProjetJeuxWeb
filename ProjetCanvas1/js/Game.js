@@ -505,6 +505,7 @@ export default class Game {
                 if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.direction)) {
                     console.log("Collision avec bumper");
 
+                    obstacle.triggerBounce();
                     // 1. On annule le mouvement pour sortir du bumper (éviter de rester coincé)
                     this.player.x -= this.player.vitesseX;
                     this.player.y -= this.player.vitesseY;
@@ -597,12 +598,11 @@ export default class Game {
             }
             if (obj instanceof sizePotion) {
                 if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
-                    console.log("Collision avec SizePotion : Taille modifier !");
+                    console.log("Collision avec SizePotion : Taille modifiée!");
 
                     // on change la taille du joueur
-                    this.player.w += obj.tailleW;
-                    this.player.h += obj.tailleH;
-                    this.savedSize = this.player.w; // AJOUT : Sauvegarde de la nouvelle taille
+                    this.player.baseSize += obj.tailleW;
+                    this.player.updateDimensions();
                     this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
 
                     // Gestion de la durée : Temporaire (1s) sauf pour le niveau 6 où c'est permanent
