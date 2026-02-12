@@ -1,7 +1,7 @@
 import ObjectGraphique from "./ObjectGraphique.js";
 
 export default class bumper extends ObjectGraphique {
-    constructor(x, y, w, h, couleur) {
+    constructor(x, y, w, h, couleur, direction = "up") {
         super(x, y, w, h, couleur);
         this.image = new Image();
         this.image.src = "assets/images/bumper.png";

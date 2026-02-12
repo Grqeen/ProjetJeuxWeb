@@ -34,7 +34,7 @@ export default class Game {
         this.playerSpeed = 5;
         this.rotationMultiplier = 1;
         this.bumperForce = 25;
-        
+
         // Gestion du recul (Knockback)
         this.knockbackX = 0;
         this.knockbackY = 0;
@@ -65,6 +65,32 @@ export default class Game {
         console.log("Game initialisé");
     }
 
+    restartLevel() {
+        console.log("Sortie de zone détectée ! Retour au spawn.");
+        this.levels.load(this.currentLevel);
+        this.applyRotationMultiplier();
+        this.startTime = Date.now();
+        this.knockbackX = 0;
+        this.knockbackY = 0;
+    }
+
+    checkLevel9Bounds() {
+        if (this.currentLevel !== 9) return;
+
+        let p = this.player;
+        // Les zones valides définies dans ton levels.js pour le Niveau 9 sont :
+        // - Couloir vertical : x entre 50 et 250, y entre 50 et 950
+        // - Couloir horizontal : x entre 50 et 1350, y entre 750 et 950
+
+        let inVerticalCorridor = (p.x >= 50 && p.x <= 250 && p.y >= 50 && p.y <= 950);
+        let inHorizontalCorridor = (p.x >= 50 && p.x <= 1350 && p.y >= 750 && p.y <= 950);
+
+        // Si le joueur n'est dans AUCUNE de ces deux zones, il a traversé un mur
+        if (!inVerticalCorridor && !inHorizontalCorridor) {
+            this.restartLevel();
+        }
+    }
+
     start(levelNumber = 1) {
         // Charge le niveau demandé
         this.levels.load(levelNumber);
@@ -74,9 +100,9 @@ export default class Game {
         if (this.levelElement) {
             this.levelElement.innerText = levelNumber;
         }
-        
+
         console.log("Game démarré niveau " + levelNumber);
-        
+
         // Reset du knockback
         this.knockbackX = 0;
         this.knockbackY = 0;
@@ -118,9 +144,69 @@ export default class Game {
     update() {
         // Appelée par mainAnimationLoop
         // donc tous les 1/60 de seconde
-        
+
         // Déplacement du joueur. 
         this.movePlayer();
+
+        // Détection de sortie de mur pour le Niveau 9
+        this.checkLevel9Bounds();
+
+        // --- LOGIQUE NIVEAU 5 : Portail à triple téléportation ---
+        if (this.currentLevel === 5 && this.finPortal) {
+            let dx = this.player.x - this.finPortal.x;
+            let dy = this.player.y - this.finPortal.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Si le joueur s'approche à moins de 250 pixels
+            if (distance < 250) {
+                if (this.portalStage === 0) {
+                    // Premier saut : vers le bas à droite
+                    this.finPortal.x = 1250;
+                    this.finPortal.y = 850;
+                    this.portalStage = 1;
+                    console.log("Portal : 'Nope ! Attrape-moi en bas !'");
+                } else if (this.portalStage === 1) {
+                    // DEUXIÈME saut (3ème position) : Sous la barre rouge à gauche
+                    this.finPortal.x = 150;
+                    this.finPortal.y = 650;
+                    this.portalStage = 2;
+                    console.log("Portal : 'Plus vite ! Je suis caché sous la barre !'");
+                }
+            }
+        }
+
+        // --- LOGIQUE NIVEAU 10 : Déplacement du Portail ---
+        if (this.currentLevel === 10 && this.finPortal) {
+            let dx = this.player.x - this.finPortal.x;
+            let dy = this.player.y - this.finPortal.y;
+            let distance = Math.sqrt(dx * dx + dy * dy);
+
+            // DÉTECTION PLUS LOIN : Changé de 150 à 250 pixels
+            if (distance < 250) {
+                if (this.portalStage === 0) {
+                    // Étape 2 : En dessous de l'œil droit
+                    this.finPortal.x = 1050;
+                    this.finPortal.y = 450;
+                    this.portalStage = 1;
+                } else if (this.portalStage === 1) {
+                    // Étape 3 : Tout en bas à droite
+                    this.finPortal.x = 1300;
+                    this.finPortal.y = 850;
+                    this.portalStage = 2;
+                } else if (this.portalStage === 2) {
+                    // Étape 4 : En dessous de la bouche au milieu
+                    this.finPortal.x = 675;
+                    this.finPortal.y = 850;
+                    this.portalStage = 3;
+                } else if (this.portalStage === 3) {
+                    // Étape 5 : Position finale (Ajustée pour ne pas être dans le mur)
+                    // On le place à x=70, y=70 (proche du spawn) pour éviter le bloc noir à x=150
+                    this.finPortal.x = 70;
+                    this.finPortal.y = 70;
+                    this.portalStage = 4;
+                }
+            }
+        }
 
         // Mise à jour des objets animés (sauf le joueur qui est géré par movePlayer)
         this.objetsGraphiques.forEach(obj => {
@@ -163,6 +249,7 @@ export default class Game {
 
         // Vitesse de base du joueur
         let vitesse = this.playerSpeed;
+
         
         // Si le boost est actif
         vitesse += this.activeSpeedBoost;
@@ -171,10 +258,10 @@ export default class Game {
             vitesse += this.activeSpeedBoost;
         }
 
-        if(this.inputStates.ArrowRight) inputVx = vitesse;
-        if(this.inputStates.ArrowLeft) inputVx = -vitesse;
-        if(this.inputStates.ArrowUp) inputVy = -vitesse;
-        if(this.inputStates.ArrowDown) inputVy = vitesse;
+        if (this.inputStates.ArrowRight) inputVx = vitesse;
+        if (this.inputStates.ArrowLeft) inputVx = -vitesse;
+        if (this.inputStates.ArrowUp) inputVy = -vitesse;
+        if (this.inputStates.ArrowDown) inputVy = vitesse;
 
         // On ajoute le knockback à la vitesse
         this.player.vitesseX = inputVx + this.knockbackX;
@@ -208,35 +295,41 @@ export default class Game {
     }
 
     testCollisionPlayerBordsEcran() {
-        // Raoppel : le x, y du joueur est en son centre, pas dans le coin en haut à gauche!
-        if(this.player.x - this.player.w/2 < 0) {
-            // On stoppe le joueur
-            this.player.vitesseX = 0;
-            // on le remet au point de contaxct
-            this.player.x = this.player.w/2;
-        }
-        if(this.player.x + this.player.w/2 > this.canvas.width) {
-            this.player.vitesseX = 0;
-            // on le remet au point de contact
-            this.player.x = this.canvas.width - this.player.w/2;
+        // 1. Détection de sortie de map (Mort)
+        // Si le joueur est poussé au-delà des limites du canvas (1400x1000)
+        if (this.player.x + this.player.w / 2 < -50 ||
+            this.player.x - this.player.w / 2 > this.canvas.width + 50 ||
+            this.player.y + this.player.h / 2 < -50 ||
+            this.player.y - this.player.h / 2 > this.canvas.height + 50) {
+
+            this.restartLevel();
+            return;
         }
 
-        if(this.player.y - this.player.h/2 < 0) {
-            this.player.y = this.player.h/2;
-            this.player.vitesseY = 0;
-
+        // 2. Comportement normal (Murs invisibles des bords)
+        // On garde le clamping pour les déplacements classiques au clavier
+        if (this.player.x - this.player.w / 2 < 0) {
+            this.player.x = this.player.w / 2;
+            this.player.vitesseX = 0;
         }
-       
-        if(this.player.y + this.player.h/2 > this.canvas.height) {
+        if (this.player.x + this.player.w / 2 > this.canvas.width) {
+            this.player.x = this.canvas.width - this.player.w / 2;
+            this.player.vitesseX = 0;
+        }
+        if (this.player.y - this.player.h / 2 < 0) {
+            this.player.y = this.player.h / 2;
             this.player.vitesseY = 0;
-            this.player.y = this.canvas.height - this.player.h/2;
+        }
+        if (this.player.y + this.player.h / 2 > this.canvas.height) {
+            this.player.y = this.canvas.height - this.player.h / 2;
+            this.player.vitesseY = 0;
         }
     }
 
     testCollisionPlayerObstacles() {
         this.objetsGraphiques.forEach(obj => {
-            if(obj instanceof Obstacle) {
-                if(rectsOverlap(this.player.x-this.player.w/2, this.player.y - this.player.h/2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+            if (obj instanceof Obstacle) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
                     // collision
 
                     // ICI TEST BASIQUE QUI ARRETE LE JOUEUR EN CAS DE COLLIION.
@@ -306,7 +399,7 @@ export default class Game {
                 }
             } else if (obstacle instanceof bumper) {
                 // Test collision Rectangle (Joueur) vs Triangle (Bumper)
-                if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                if (rectTriangleOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.direction)) {
                     console.log("Collision avec bumper");
 
                     obstacle.triggerBounce();
@@ -325,26 +418,46 @@ export default class Game {
                         this.knockbackY = -(vy / mag) * forceRebond;
                     } else {
                         // Si immobile, on repousse depuis le centre du bumper
-                        let dx = this.player.x - (obstacle.x + obstacle.w/2);
-                        let dy = this.player.y - (obstacle.y + obstacle.h/2);
-                        let dist = Math.sqrt(dx*dx + dy*dy);
-                        if(dist > 0) {
-                            this.knockbackX = (dx/dist) * forceRebond;
-                            this.knockbackY = (dy/dist) * forceRebond;
+                        let dx = this.player.x - (obstacle.x + obstacle.w / 2);
+                        let dy = this.player.y - (obstacle.y + obstacle.h / 2);
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist > 0) {
+                            this.knockbackX = (dx / dist) * forceRebond;
+                            this.knockbackY = (dy / dist) * forceRebond;
                         }
                     }
                 }
             } else if (obstacle instanceof RotatingObstacle) {
-                if (rectRotatedRectOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h, obstacle.angle)) {
-                    console.log("Collision avec obstacle rotatif");
-                    // On repousse le joueur vers l'extérieur du centre de rotation
+                let collision = rectRotatedRectOverlap(
+                    this.player.x - this.player.w / 2,
+                    this.player.y - this.player.h / 2,
+                    this.player.w, this.player.h,
+                    obstacle.x, obstacle.y,
+                    obstacle.w, obstacle.h,
+                    obstacle.angle
+                );
+
+                if (collision) {
+                    // Calcul de la direction pour repousser le joueur
                     let dx = this.player.x - obstacle.x;
                     let dy = this.player.y - obstacle.y;
-                    let dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist > 0) {
-                        this.player.x += (dx / dist) * 10;
-                        this.player.y += (dy / dist) * 10;
+                    let dot = dx * collision.axis.x + dy * collision.axis.y;
+
+                    if (dot < 0) {
+                        collision.axis.x *= -1;
+                        collision.axis.y *= -1;
                     }
+
+                    // On déplace juste le joueur sans le tuer
+                    this.player.x += collision.axis.x * (collision.overlap + 1);
+                    this.player.y += collision.axis.y * (collision.overlap + 1);
+
+                    // On garde un petit effet de choc
+                    this.knockbackX = collision.axis.x * 8;
+                    this.knockbackY = collision.axis.y * 8;
+
+                    this.player.vitesseX = 0;
+                    this.player.vitesseY = 0;
                 }
             }else if (obstacle instanceof teleporter) {
                 if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
@@ -358,89 +471,79 @@ export default class Game {
     }
 
     testCollisionItems() {
-    // On parcourt le tableau à l'envers pour pouvoir supprimer des éléments sans casser la boucle
-    for (let i = this.objetsGraphiques.length - 1; i >= 0; i--) {
-        let obj = this.objetsGraphiques[i];
-        if (obj instanceof speedPotion) {
-            if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
-                console.log("Collision avec SpeedPotion : Vitesse augmentée !");
-                
-                // On active le boost
-                if (this.speedBoostTimeout) clearTimeout(this.speedBoostTimeout);
-                this.activeSpeedBoost = obj.vitesse;
-                this.speedBoostTimeout = setTimeout(() => {
-                    this.activeSpeedBoost = 0;
-                }, obj.temps);
-                this.speedBoostEndTime = Date.now() + obj.temps;
+        // On parcourt le tableau à l'envers pour pouvoir supprimer des éléments sans casser la boucle
+        for (let i = this.objetsGraphiques.length - 1; i >= 0; i--) {
+            let obj = this.objetsGraphiques[i];
+            if (obj instanceof speedPotion) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                    console.log("Collision avec SpeedPotion : Vitesse augmentée !");
 
-                this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+                    // On active le boost
+                    this.activeSpeedBoost = obj.vitesse;
+                    this.speedBoostEndTime = Date.now() + obj.temps;
+
+                    this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+                }
             }
-        }
-        if (obj instanceof sizePotion) {
-            if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
-                console.log("Collision avec SizePotion : Taille modifier !");
+            if (obj instanceof sizePotion) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                    console.log("Collision avec SizePotion : Taille modifier !");
 
-                // on change la taille du joueur
-                this.player.w += obj.tailleW;
-                this.player.h += obj.tailleH;
-                // On modifie la taille de base du joueur.
-                // On suppose que la modification est proportionnelle et on utilise tailleW.
-                this.player.baseSize += obj.tailleW;
-                // On met à jour immédiatement la taille actuelle du joueur.
-                this.player.updateDimensions();
-
-                this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+                    // on change la taille du joueur
+                    this.player.w += obj.tailleW;
+                    this.player.h += obj.tailleH;
+                    this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
+                }
             }
-        }
-        if (obj instanceof keypad) {
-            if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
-                console.log("Collision avec keypad : Porte associée " + obj.id + " activée !");
-                // On cherche la porte associée à ce keypad
-                this.objetsGraphiques.forEach(o => {
-                    if (o instanceof fadingDoor && o.id === obj.id) {
-                        o.visible = false; // On rend la porte invisible (on pourrait aussi la retirer du tableau)
-                        console.log("Porte " + o.id + " désactivée !");
-                    }
-                });
-                this.objetsGraphiques.splice(i, 1);  // On retire le keypad ramassé
-                // faire en sorte que le bouton et la porte reaparaissent après un certain temps
-                setTimeout(() => {
-                    // On réactive la porte
+            if (obj instanceof keypad) {
+                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
+                    console.log("Collision avec keypad : Porte associée " + obj.id + " activée !");
+                    // On cherche la porte associée à ce keypad
                     this.objetsGraphiques.forEach(o => {
                         if (o instanceof fadingDoor && o.id === obj.id) {
-                            o.visible = true;
-                            console.log("Porte " + o.id + " réactivée !");
+                            o.visible = false; // On rend la porte invisible (on pourrait aussi la retirer du tableau)
+                            console.log("Porte " + o.id + " désactivée !");
                         }
                     });
-                    // On remet les keypads
-                    this.objetsGraphiques.forEach(o => {
-                        if (o instanceof keypad && o.id === obj.id) {
-                            o.visible = true;
-                            console.log("Keypad " + o.id + " réactivé !");
-                        }
-                    });
-                }, obj.temps);
+                    this.objetsGraphiques.splice(i, 1);  // On retire le keypad ramassé
+                    // faire en sorte que le bouton et la porte reaparaissent après un certain temps
+                    setTimeout(() => {
+                        // On réactive la porte
+                        this.objetsGraphiques.forEach(o => {
+                            if (o instanceof fadingDoor && o.id === obj.id) {
+                                o.visible = true;
+                                console.log("Porte " + o.id + " réactivée !");
+                            }
+                        });
+                        // On remet les keypads
+                        this.objetsGraphiques.forEach(o => {
+                            if (o instanceof keypad && o.id === obj.id) {
+                                o.visible = true;
+                                console.log("Keypad " + o.id + " réactivé !");
+                            }
+                        });
+                    }, obj.temps);
+                }
             }
         }
     }
-}
 
-// Teste si le joueur a ateint la fin du niveau
-testCollisionFin() {
-    for (let obj of this.objetsGraphiques) {
-        if (obj instanceof fin) {
-            // Le joueur est un rectangle, la fin est un cercle
-            // On utilise la fonction de collision cercle/rectangle
-            if (circRectsOverlap(
+    // Teste si le joueur a ateint la fin du niveau
+    testCollisionFin() {
+        for (let obj of this.objetsGraphiques) {
+            if (obj instanceof fin) {
+                // Le joueur est un rectangle, la fin est un cercle
+                // On utilise la fonction de collision cercle/rectangle
+                if (circRectsOverlap(
                     this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h,
-                obj.x + obj.w / 2, obj.y + obj.h / 2, obj.w / 2
-            )) {
-                return true;
+                    obj.x + obj.w / 2, obj.y + obj.h / 2, obj.w / 2
+                )) {
+                    return true;
+                }
             }
         }
+        return false;
     }
-    return false;
-}
 
     nextLevel() {
         // Enregistrement du temps dans le leaderboard
