@@ -169,6 +169,8 @@ kbd:active, kbd.active {
   box-sizing: border-box;
   font-family: sans-serif;
   display: none;
+  flex-direction: column;
+  overflow-y: auto;
 }
 
 /* --- Styles Modificateurs --- */
@@ -339,7 +341,7 @@ kbd:active, kbd.active {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px; /* Espace entre la grille et le bouton retour */
+    gap: 5px; /* RÉDUIT : Rapproche la grille et le bouton */
     padding: 30px;
     border-radius: 15px;
     z-index: 100;
@@ -397,7 +399,7 @@ kbd:active, kbd.active {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     
     /* Marge au-dessus pour le rapprocher mais pas le coller */
-    margin-top: 10px;
+    margin-top: 0px; /* RÉDUIT : Rapproche encore plus le bouton */
     font-family: 'Lilita One', cursive;
 }
 
@@ -473,3 +475,50 @@ kbd:active, kbd.active {
     transform: translateY(-10px) scale(1.05);
   }
 }
+
+/* Classe pour donner le look "Menu" aux boutons de la sidebar de l'éditeur */
+.menu-style-button {
+  font-family: 'Lilita One', cursive;
+  font-size: 28px;
+  padding: 10px 30px;
+  width: 80%; /* Pour qu'ils soient bien larges dans la sidebar */
+  cursor: pointer;
+  background-color: white;
+  color: #333;
+  border: 4px solid #333;
+  border-radius: 15px;
+  box-shadow: 4px 4px 0px #333;
+  transition: all 0.2s ease;
+}
+
+.menu-style-button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #ffcc00;
+  border-color: #ffcc00;
+  color: #000;
+}
+
+.menu-style-button:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px #333;
+}
+
+/* Vignettes dans l'éditeur */
+.asset-preview {
+    width: 70px;
+    height: 70px;
+    background: #444;
+    border: 2px solid #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: white;
+    cursor: grab;
+    user-select: none;
+    text-align: center;
+}
+
+.asset-preview.circle { border-radius: 50%; }
+.asset-preview.rect { width: 90px; height: 40px; }
+.asset-preview:hover { background: #666; transform: scale(1.05); }

@@ -8,7 +8,15 @@ export default class Obstacle extends ObjectGraphique {
     draw(ctx) {
         ctx.save();
         ctx.fillStyle = this.couleur;
-        ctx.fillRect(this.x, this.y, this.w, this.h);
+        
+        if (this.angle) {
+            // Si une rotation est définie, on pivote autour du centre de l'obstacle
+            ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+            ctx.rotate(this.angle);
+            ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+        } else {
+            ctx.fillRect(this.x, this.y, this.w, this.h);
+        }
         ctx.restore();
     }
 }
@@ -89,5 +97,23 @@ export class MovingObstacle extends Obstacle {
         // Oscillation sinusoïdale
         this.x = this.startX + Math.sin(this.timer) * this.distX;
         this.y = this.startY + Math.sin(this.timer) * this.distY;
+    }
+}
+
+export class CircleObstacle extends ObjectGraphique {
+    constructor(x, y, radius, couleur) {
+        // On appelle le constructeur parent (x, y, largeur, hauteur)
+        super(x, y, radius * 2, radius * 2, couleur);
+        this.radius = radius;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.fillStyle = this.couleur;
+        ctx.beginPath();
+        // Dessine le cercle centré sur x, y
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
 }

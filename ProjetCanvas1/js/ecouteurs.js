@@ -1,3 +1,5 @@
+import { getMousePos } from "./utils.js";
+
 function initListeners(inputStates, canvas, speedInputElement) {
     window.onkeydown = (event) => {
         console.log("Touche pressée : " + event.key);
@@ -32,15 +34,9 @@ function initListeners(inputStates, canvas, speedInputElement) {
     }
 
     window.onmousemove = (event) => {
-        let rect = canvas.getBoundingClientRect();
-        
-        // On calcule le ratio d'échelle
-        let scaleX = canvas.width / rect.width;
-        let scaleY = canvas.height / rect.height;
-
-        // On ajuste les coordonnées
-        inputStates.mouseX = (event.clientX - rect.left) * scaleX;
-        inputStates.mouseY = (event.clientY - rect.top) * scaleY;
+        let pos = getMousePos(canvas, event);
+        inputStates.mouseX = pos.x;
+        inputStates.mouseY = pos.y;
     }
 
     // Gestion du conflit slider / flèches
