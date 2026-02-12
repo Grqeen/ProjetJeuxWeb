@@ -6,6 +6,14 @@ export default class bumper extends ObjectGraphique {
         this.direction = direction;
         this.image = new Image();
         this.image.src = "assets/images/bumper.png";
+        this.scale = 1;
+    }
+
+    triggerBounce() {
+        this.scale = 1.2;
+        setTimeout(() => {
+            this.scale = 1;
+        }, 100);
     }
 
     draw(ctx) {
@@ -14,6 +22,7 @@ export default class bumper extends ObjectGraphique {
         if (this.image.complete && this.image.naturalHeight !== 0) {
             // Dessin de l'image (Champignon)
             ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+            ctx.scale(this.scale, this.scale);
             let angle = 0;
             if (this.direction === "right") angle = Math.PI / 2;
             else if (this.direction === "down") angle = Math.PI;
