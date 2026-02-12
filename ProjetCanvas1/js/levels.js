@@ -490,34 +490,69 @@ export default class Levels {
             // --- NIVEAU 12 : Les Chambres de Téléportation ---
             
             // 1. Position de départ (Pièce du bas)
-            this.game.player = new Player(100, 500);
+            this.game.player = new Player(485, 460); // Centré dans la salle de départ pour éviter les TP
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Murs extérieurs et séparations horizontales (Noirs)
             this.game.objetsGraphiques.push(new Obstacle(0, 50, 1320, 20, "black"));        // Plafond
-            this.game.objetsGraphiques.push(new Obstacle(0, 800, 1320, 20, "black"));      // Sol
-            this.game.objetsGraphiques.push(new Obstacle(0, 70, 20, 730, "black"));        // Mur Gauche
-            this.game.objetsGraphiques.push(new Obstacle(780, 200, 20, 600, "black"));      // Mur Droit
-            this.game.objetsGraphiques.push(new Obstacle(200, 400, 20, 250, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(500, 550, 20, 250, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(1300, 50, 20, 750, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(800, 200, 300, 20, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(900, 500, 250, 20, "black"));      // Entre Pièce 2 et 3
+            this.game.objetsGraphiques.push(new Obstacle(0, 850, 1320, 20, "black"));      // Sol
+            this.game.objetsGraphiques.push(new Obstacle(0, 70, 20, 780, "black"));        // Mur Gauche
+            this.game.objetsGraphiques.push(new Obstacle(1300, 70, 20, 780, "black"));      // Mur droite
+            this.game.objetsGraphiques.push(new Obstacle(300, 70, 20, 780, "black"));    
+            this.game.objetsGraphiques.push(new Obstacle(650, 70, 20, 780, "black"));    
+            this.game.objetsGraphiques.push(new Obstacle(1000, 70, 20, 780, "black"));  
+            this.game.objetsGraphiques.push(new Obstacle(0, 300, 1320, 20, "black"));  
+            this.game.objetsGraphiques.push(new Obstacle(0, 600, 1320, 20, "black"));    
+      
+            // 3. Téléporteurs (4 par salle, destination le centre d'une autre salle)
+            const cols = [
+                { start: 20, end: 300, center: 160 },
+                { start: 320, end: 650, center: 485 },
+                { start: 670, end: 1000, center: 835 },
+                { start: 1020, end: 1300, center: 1160 }
+            ];
+            const rows = [
+                { start: 70, end: 300, center: 185 },
+                { start: 320, end: 600, center: 460 },
+                { start: 620, end: 850, center: 735 }
+            ];
 
-            // 3. Téléporteurs (Carrés violets)
-            // T1 : Situé à droite de la Pièce 1 -> Envoie au milieu de la Pièce 2 (400, 310)
-            this.game.objetsGraphiques.push(new teleporter(700, 480, 40, 40, "purple", 400, 310));
-            
-            // T2 : Situé à gauche de la Pièce 2 -> Envoie au milieu de la Pièce 3 (400, 110)
-            this.game.objetsGraphiques.push(new teleporter(60, 280, 40, 40, "purple", 400, 110));
+            // On génère les 4 téléporteurs pour chaque "boite" (salle)
+            for (let r = 0; r < rows.length; r++) {
+                for (let c = 0; c < cols.length; c++) {
+                    let roomX = cols[c].start;
+                    let roomY = rows[r].start;
+                    let roomW = cols[c].end - cols[c].start;
+                    let roomH = rows[r].end - rows[r].start;
 
-            // 4. Bumpers (Triangles orange pour la difficulté dans les pièces)
-            this.game.objetsGraphiques.push(new bumper(400, 500, 60, 60, "orange"));
-            this.game.objetsGraphiques.push(new bumper(200, 310, 50, 50, "orange"));
-            this.game.objetsGraphiques.push(new bumper(600, 110, 50, 50, "orange"));
+                    // Positions des 4 coins (avec marge)
+                    let margin = 30;
+                    let tSize = 30;
+                    let corners = [
+                        { x: roomX + margin, y: roomY + margin }, // Haut Gauche
+                        { x: roomX + roomW - margin - tSize, y: roomY + margin }, // Haut Droite
+                        { x: roomX + margin, y: roomY + roomH - margin - tSize }, // Bas Gauche
+                        { x: roomX + roomW - margin - tSize, y: roomY + roomH - margin - tSize } // Bas Droite
+                    ];
+
+                    corners.forEach((pos, index) => {
+                        // Logique de destination : on mélange les indices pour changer de salle
+                        let destC = (c + 1 + index) % cols.length;
+                        let destR = (r + 1 + index) % rows.length;
+                        
+                        // On évite de se téléporter dans la même salle
+                        if(destC === c && destR === r) destC = (destC + 1) % cols.length;
+
+                        this.game.objetsGraphiques.push(new teleporter(
+                            pos.x, pos.y, tSize, tSize, "purple",
+                            cols[destC].center, rows[destR].center
+                        ));
+                    });
+                }
+            }
 
             // 5. Sortie (Cercle vert - Portail)
-            this.game.fin = new fin(700, 60, 80, 80, "green", "assets/images/portal.png");
+            this.game.fin = new fin(800, 60, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 13) {
             // --- NIVEAU 13 : Le Slalom des Gardiens Rouges ---
