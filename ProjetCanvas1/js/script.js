@@ -195,15 +195,98 @@ async function init() {
 
     // Création dynamique du menu des niveaux (Basé sur maxLevels)
     let levelsMenu = document.createElement("div");
-    levelsMenu.id = "levelsMenu";
+    levelsMenu.id = "level-selection";
     levelsMenu.style.display = "none";
-    let levelsHtml = `<h1>Niveaux</h1>`;
-    for (let i = 1; i <= maxLevels; i++) {
-        levelsHtml += `<button class="btnLevel" data-level="${i}">Niveau ${i}</button>`;
-    }
-    levelsHtml += `<button id="btnBack">Retour</button>`;
-    levelsMenu.innerHTML = levelsHtml;
+    
+    // Conteneur pour les boutons de niveaux (Centré)
+    let levelButtonsContainer = document.createElement("div");
+    levelButtonsContainer.id = "levels-container";
+    levelsMenu.appendChild(levelButtonsContainer);
+
+    // Bouton Retour
+    let btnBack = document.createElement("button");
+    btnBack.id = "back-to-menu";
+    btnBack.innerText = "Retour au Menu";
+    levelsMenu.appendChild(btnBack);
+
+    // Bouton Suivant
+    let btnNextLevels = document.createElement("button");
+    btnNextLevels.id = "next-levels";
+    btnNextLevels.innerText = "Suivant >";
+    levelsMenu.insertBefore(btnNextLevels, btnBack); // On l'insère avant le bouton retour
+
     document.body.appendChild(levelsMenu);
+
+    // --- LOGIQUE DE PAGINATION ---
+    let currentLevelPage = 0;
+    const levelsPerPage = 10;
+
+    function renderLevelButtons() {
+        levelButtonsContainer.innerHTML = "";
+        
+        let start = currentLevelPage * levelsPerPage + 1;
+        let end = Math.min(start + levelsPerPage - 1, maxLevels);
+
+        let leftCol = document.createElement("div");
+        leftCol.className = "levelColumn";
+        let rightCol = document.createElement("div");
+        rightCol.className = "levelColumn";
+
+        for (let i = start; i <= end; i++) {
+            let btn = document.createElement("button");
+            btn.className = "level-button";
+            btn.dataset.level = i;
+            btn.innerText = i; // Juste le chiffre
+            
+            btn.onclick = () => {
+                levelsMenu.style.display = "none";
+                winMenu.style.display = "none";
+                menuBackground.style.display = "none";
+                if (sidebar) sidebar.style.display = "block";
+                resizeCanvas();
+                game.start(i);
+            };
+
+            // 5 premiers à gauche, les autres à droite
+            if (i < start + 5) {
+                leftCol.appendChild(btn);
+            } else {
+                rightCol.appendChild(btn);
+            }
+        }
+        
+        levelButtonsContainer.appendChild(leftCol);
+        levelButtonsContainer.appendChild(rightCol);
+
+        // Gestion visibilité bouton Suivant
+        btnNextLevels.style.display = (end < maxLevels) ? "block" : "none";
+
+        // Gestion bouton Retour (Devient "Précédent" si page > 0)
+        if (currentLevelPage > 0) {
+            btnBack.innerText = "< Précédent";
+        } else {
+            btnBack.innerText = "Retour au Menu";
+        }
+    }
+
+    btnNextLevels.onclick = () => {
+        currentLevelPage++;
+        renderLevelButtons();
+    };
+
+    btnBack.onclick = () => {
+        if (currentLevelPage > 0) {
+            currentLevelPage--;
+            renderLevelButtons();
+        } else {
+            levelsMenu.style.display = "none";
+            menu.style.display = "flex";
+            resizeCanvas();
+        }
+    };
+
+    // Premier affichage
+    renderLevelButtons();
 
     // Création de l'arrière-plan du menu
     let menuBackground = document.createElement("div");
@@ -374,7 +457,7 @@ async function init() {
     // Gestion du bouton Levels
     levelsBtn.onclick = () => {
         menu.style.display = "none";
-        levelsMenu.style.display = "block";
+        levelsMenu.style.display = "flex";
         resizeCanvas();
     };
 
@@ -388,25 +471,6 @@ async function init() {
     // Gestion du bouton Retour du LeaderBoard
     document.querySelector("#btnLeaderboardBack").onclick = () => {
         leaderboardMenu.style.display = "none";
-        menu.style.display = "flex";
-        resizeCanvas();
-    };
-
-    // Gestion des boutons du menu Niveaux (Dynamique)
-    document.querySelectorAll(".btnLevel").forEach(btn => {
-        btn.onclick = () => {
-            let level = parseInt(btn.dataset.level);
-            levelsMenu.style.display = "none";
-            winMenu.style.display = "none";
-            menuBackground.style.display = "none";
-            if (sidebar) sidebar.style.display = "block";
-            resizeCanvas();
-            game.start(level);
-        };
-    });
-
-    document.querySelector("#btnBack").onclick = () => {
-        levelsMenu.style.display = "none";
         menu.style.display = "flex";
         resizeCanvas();
     };

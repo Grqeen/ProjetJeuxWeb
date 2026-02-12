@@ -43,7 +43,16 @@ function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th, direction = "up") {
         t1 = { x: tx + tw / 2, y: ty };      // Haut
         t2 = { x: tx + tw, y: ty + th };     // Bas Droite
         t3 = { x: tx, y: ty + th };          // Bas Gauche
+    } else if (direction === "left") {
+        t1 = { x: tx, y: ty + th / 2 };      // Pointe Gauche
+        t2 = { x: tx + tw, y: ty };          // Haut Droite
+        t3 = { x: tx + tw, y: ty + th };     // Bas Droite
+    } else if (direction === "right") {
+        t1 = { x: tx + tw, y: ty + th / 2 }; // Pointe Droite
+        t2 = { x: tx, y: ty + th };          // Bas Gauche
+        t3 = { x: tx, y: ty };               // Haut Gauche
     } else {
+        // Down
         t1 = { x: tx, y: ty };                   // Haut Gauche
         t2 = { x: tx + tw, y: ty };              // Haut Droite
         t3 = { x: tx + tw / 2, y: ty + th };     // Bas (Pointe)
@@ -59,18 +68,13 @@ function rectTriangleOverlap(rx, ry, rw, rh, tx, ty, tw, th, direction = "up") {
 
     let tPoints = [t1, t2, t3];
 
-    // Axes à tester : Normales des côtés inclinés du triangle.
-    // (Les axes X et Y sont déjà couverts par le test AABB)
-    
-    // Axe 1 : Normale du côté droit (t1 -> t2)
-    // Vecteur côté : (tw/2, th) -> Normale : (-th, tw/2)
-    let axis1 = { x: -th, y: tw / 2 };
-
-    // Axe 2 : Normale du côté gauche (t3 -> t1)
-    // Vecteur côté : (tw/2, -th) -> Normale : (th, tw/2)
-    let axis2 = { x: th, y: tw / 2 };
-
-    let axes = [axis1, axis2];
+    // Axes à tester : Normales des côtés du triangle
+    // On calcule dynamiquement les normales pour supporter toutes les directions
+    let axes = [
+        { x: t2.x - t1.x, y: t2.y - t1.y },
+        { x: t3.x - t2.x, y: t3.y - t2.y },
+        { x: t1.x - t3.x, y: t1.y - t3.y }
+    ].map(v => ({ x: -v.y, y: v.x })); // Rotation 90° pour avoir la normale
 
     for (let axis of axes) {
         // Projection du triangle

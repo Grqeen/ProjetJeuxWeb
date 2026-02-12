@@ -15,7 +15,7 @@ export default class Levels {
     load(levelNumber) {
         // On vide le tableau d'objets graphiques avant de charger le niveau
         this.game.objetsGraphiques = [];
-        
+
         // Réinitialisation de la vitesse par défaut pour tous les niveaux
         this.game.playerSpeed = 5;
 
@@ -111,33 +111,33 @@ export default class Levels {
             // 4. BUMPERS DES MURS (Ajustés pour ne pas toucher les coins)
             // Mur Haut : on commence après le mur gauche et on finit avant le mur droite
             for (let x = 380; x < 1250; x += 50) {
-                this.game.objetsGraphiques.push(new bumper(x, 30, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(x, 30, 50, 50, "orange", "down"));
             }
             // Mur Bas : idem
             for (let x = 380; x < 1250; x += 50) {
-                this.game.objetsGraphiques.push(new bumper(x, 920, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(x, 920, 50, 50, "orange", "up"));
             }
             // Mur Droite : on commence après le coin haut et on finit avant le coin bas
             for (let y = 80; y < 920; y += 50) {
-                this.game.objetsGraphiques.push(new bumper(1250, y, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(1250, y, 50, 50, "orange", "left"));
             }
             // Mur Gauche Haut
             for (let y = 80; y < 230; y += 50) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange", "right"));
             }
             // Mur Gauche Bas
             for (let y = 780; y < 920; y += 50) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(330, y, 50, 50, "orange", "right"));
             }
 
             // 5. BUMPERS DU CARRÉ CENTRAL (Même logique pour éviter les chevauchements)
             for (let x = 700; x < 900; x += 50) { // Haut et Bas (raccourcis)
-                this.game.objetsGraphiques.push(new bumper(x, 300, 50, 50, "orange"));
-                this.game.objetsGraphiques.push(new bumper(x, 650, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(x, 300, 50, 50, "orange", "up"));
+                this.game.objetsGraphiques.push(new bumper(x, 650, 50, 50, "orange", "down"));
             }
             for (let y = 350; y < 650; y += 50) { // Gauche et Droite
-                this.game.objetsGraphiques.push(new bumper(600, y, 50, 50, "orange"));
-                this.game.objetsGraphiques.push(new bumper(950, y, 50, 50, "orange"));
+                this.game.objetsGraphiques.push(new bumper(600, y, 50, 50, "orange", "left"));
+                this.game.objetsGraphiques.push(new bumper(950, y, 50, 50, "orange", "right"));
             }
 
             // 6. Sortie
@@ -331,12 +331,12 @@ export default class Levels {
         } else if (levelNumber === 9) {
             // 1. JOUEUR : Spawn dans la boîte du haut (Taille 100x100)
             this.game.player = new Player(150, 150);
-            
+
             // --- MODIFICATIONS SPÉCIFIQUES NIVEAU 9 ---
             this.game.player.w = 80;
             this.game.player.h = 80;
             this.game.playerSpeed = 8;
-            
+
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. MURS DU SPAWN (Avec ouverture de 120px pour laisser passer le joueur)
@@ -364,11 +364,10 @@ export default class Levels {
             bar2.timer = Math.PI; // En déphasage
             this.game.objetsGraphiques.push(bar2);
 
-            // 4. LE VIRAGE : Obstacle rotatif central (positionné à y=850)
-            // Cette herse finit à 560+160=720. 
-            // L'obstacle rotatif à y=850 a une portée haute de 760 (850 - 180/2).
-            // Il reste donc 40px de marge de sécurité pour éviter tout contact visuel.
-            this.game.objetsGraphiques.push(new RotatingObstacle(150, 850, 180, 20, "purple", 0.02));
+            // 4. LE VIRAGE : Petits carrés gênants
+            this.game.objetsGraphiques.push(new Obstacle(90, 810, 30, 30, "purple"));
+            this.game.objetsGraphiques.push(new Obstacle(180, 860, 30, 30, "purple"));
+            this.game.objetsGraphiques.push(new Obstacle(110, 910, 30, 30, "purple"));
 
             // 5. COULOIR HORIZONTAL (Entièrement fermé)
             this.game.objetsGraphiques.push(new Obstacle(250, 750, 1110, 10, "black")); // Plafond
@@ -385,6 +384,46 @@ export default class Levels {
             // 6. LA SORTIE
             this.game.fin = new fin(1250, 850, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 10) {
+            // --- NIVEAU 10 : Le Gardien Fugitif ---
+            // 1. POSITION DU JOUEUR (Le petit point vert en haut à gauche)
+            this.game.player = new Player(50, 50);
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. LES YEUX (Rectangles noirs creux)
+            // Œil Gauche
+            this.game.objetsGraphiques.push(new Obstacle(150, 100, 350, 250, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(225, 175, 200, 100, "white"));
+
+            // Œil Droit
+            this.game.objetsGraphiques.push(new Obstacle(850, 100, 400, 250, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(925, 175, 250, 100, "white"));
+
+            // 3. LA CROIX CENTRALE (Obstacle rotatif rouge et vert)
+            const cx = 700, cy = 380;
+            this.game.objetsGraphiques.push(new RotatingObstacle(cx, cy, 180, 15, "red", 0.04, 0));
+            this.game.objetsGraphiques.push(new RotatingObstacle(cx, cy, 180, 15, "green", 0.04, Math.PI / 2));
+
+            // 4. LA BOUCHE ET LA DENT
+            this.game.objetsGraphiques.push(new Obstacle(400, 500, 550, 200, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(430, 530, 490, 140, "white"));
+            this.game.objetsGraphiques.push(new Obstacle(400, 700, 70, 150, "black")); // La dent
+
+            // 5. LES PETITS ESCALIERS VERTS (Comme sur l'image)
+            const steps = [
+                { x: 800, y: 730 }, { x: 880, y: 780 }, { x: 980, y: 830 },
+                { x: 1080, y: 880 }, { x: 1160, y: 920 }, { x: 1260, y: 950 }
+            ];
+            steps.forEach(s => {
+                this.game.objetsGraphiques.push(new Obstacle(s.x, s.y, 60, 30, "green"));
+            });
+
+            // 6. LE PORTAIL DE FIN (Position initiale : Tout en haut à droite)
+            this.game.finPortal = new fin(1300, 80, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.finPortal);
+
+            // Initialisation de l'étape du portail
+            this.game.portalStage = 0;
         }
     }
 }
