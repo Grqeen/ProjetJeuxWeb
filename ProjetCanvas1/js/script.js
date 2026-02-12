@@ -1,6 +1,6 @@
 import Game from "./Game.js";
 import { getMousePos } from "./utils.js";
-import Obstacle, { RotatingObstacle, CircleObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, CircleObstacle, MovingObstacle } from "./Obstacle.js";
 import bumper from "./bumper.js";
 import fin from "./fin.js";
 import speedPotion from "./speedPotion.js";
@@ -8,6 +8,7 @@ import sizePotion from "./sizepotion.js";
 import fadingDoor from "./fadingDoor.js";
 import keypad from "./keypad.js";
 import Player from "./Player.js";
+import teleporter from "./teleporter.js";
 
 // Bonne pratique : avoir une fonction appelée une fois
 // que la page est prête, que le DOM est chargé, etc.
@@ -204,6 +205,18 @@ async function init() {
                 <div class="mod-group" id="divRotSpeed" style="display:none;"><label>Vitesse Rot.</label><input type="number" id="propRotSpeed" step="0.01"></div>
                 <div class="mod-group" id="divLinkId" style="display:none;"><label>ID Liaison</label><input type="number" id="propLinkId"></div>
                 
+                <!-- Propriétés Moving Obstacle -->
+                <div class="mod-group" id="divMoveProps" style="display:none;">
+                    <label>Dist X</label><input type="number" id="propDistX">
+                    <label>Dist Y</label><input type="number" id="propDistY">
+                    <label>Vitesse</label><input type="number" id="propMoveSpeed" step="0.01">
+                </div>
+                <!-- Propriétés Teleporter -->
+                <div class="mod-group" id="divTeleportProps" style="display:none;">
+                    <label>Dest X</label><input type="number" id="propDestX">
+                    <label>Dest Y</label><input type="number" id="propDestY">
+                </div>
+                
                 <div class="mod-group" style="display:flex; justify-content: space-between; margin-top:10px;">
                     <button id="btnLayerDown" style="width:48%; cursor:pointer; padding:5px;">Arr. Plan</button>
                     <button id="btnLayerUp" style="width:48%; cursor:pointer; padding:5px;">Av. Plan</button>
@@ -236,6 +249,8 @@ async function init() {
                 createAssetPreview(assetsContainer, "triangle", "Bumper", { w: 50, h: 50, type: "bumper" });
                 createAssetPreview(assetsContainer, "rect", "Croix", { w: 200, h: 20, type: "rotating" });
                 createAssetPreview(assetsContainer, "circle", "Fin", { w: 80, h: 80, type: "fin" });
+                createAssetPreview(assetsContainer, "rect", "Moving", { w: 60, h: 20, type: "moving" });
+                createAssetPreview(assetsContainer, "rect", "Teleport", { w: 40, h: 40, type: "teleporter" });
             };
 
             // --- CLIC SUR LE BOUTON MODIFICATEURS ---
@@ -262,6 +277,14 @@ async function init() {
             const divLinkId = document.querySelector("#divLinkId");
             const btnDelete = document.querySelector("#btnDeleteObj");
             const propsPanel = document.querySelector("#editorProperties");
+            
+            const divMoveProps = document.querySelector("#divMoveProps");
+            const propDistX = document.querySelector("#propDistX");
+            const propDistY = document.querySelector("#propDistY");
+            const propMoveSpeed = document.querySelector("#propMoveSpeed");
+            const divTeleportProps = document.querySelector("#divTeleportProps");
+            const propDestX = document.querySelector("#propDestX");
+            const propDestY = document.querySelector("#propDestY");
             const btnExport = document.querySelector("#btnExportLevel");
 
             function updateInputs() {
@@ -307,6 +330,25 @@ async function init() {
                 } else {
                     divLinkId.style.display = "none";
                 }
+
+                // Gestion Moving Obstacle
+                if (game.selectedObject instanceof MovingObstacle) {
+                    divMoveProps.style.display = "block";
+                    propDistX.value = game.selectedObject.distX;
+                    propDistY.value = game.selectedObject.distY;
+                    propMoveSpeed.value = game.selectedObject.speed;
+                } else {
+                    divMoveProps.style.display = "none";
+                }
+
+                // Gestion Teleporter
+                if (game.selectedObject instanceof teleporter) {
+                    divTeleportProps.style.display = "block";
+                    propDestX.value = game.selectedObject.destinationX;
+                    propDestY.value = game.selectedObject.destinationY;
+                } else {
+                    divTeleportProps.style.display = "none";
+                }
             }
 
             propW.oninput = () => { if (game.selectedObject) game.selectedObject.w = parseFloat(propW.value); };
@@ -333,6 +375,13 @@ async function init() {
                     game.selectedObject.id = parseInt(propLinkId.value);
                 }
             };
+            propDistX.oninput = () => { if (game.selectedObject instanceof MovingObstacle) game.selectedObject.distX = parseFloat(propDistX.value); };
+            propDistY.oninput = () => { if (game.selectedObject instanceof MovingObstacle) game.selectedObject.distY = parseFloat(propDistY.value); };
+            propMoveSpeed.oninput = () => { if (game.selectedObject instanceof MovingObstacle) game.selectedObject.speed = parseFloat(propMoveSpeed.value); };
+            
+            propDestX.oninput = () => { if (game.selectedObject instanceof teleporter) game.selectedObject.destinationX = parseFloat(propDestX.value); };
+            propDestY.oninput = () => { if (game.selectedObject instanceof teleporter) game.selectedObject.destinationY = parseFloat(propDestY.value); };
+
             btnDelete.onclick = () => {
                 if (game.selectedObject && game.selectedObject !== game.player) {
                     const index = game.objetsGraphiques.indexOf(game.selectedObject);
@@ -410,6 +459,15 @@ async function init() {
                     type = "keypad";
                     extra.temps = obj.temps;
                     extra.id = obj.id;
+                } else if (obj instanceof MovingObstacle) {
+                    type = "moving";
+                    extra.distX = obj.distX;
+                    extra.distY = obj.distY;
+                    extra.speed = obj.speed;
+                } else if (obj instanceof teleporter) {
+                    type = "teleporter";
+                    extra.destinationX = obj.destinationX;
+                    extra.destinationY = obj.destinationY;
                 }
                 return { type, x: obj.x, y: obj.y, w: obj.w, h: obj.h, couleur: obj.couleur, ...extra };
             }
@@ -434,6 +492,10 @@ async function init() {
                     newObj = new fadingDoor(data.x, data.y, data.w, data.h, data.couleur, data.timer, data.id);
                 } else if (data.type === "keypad") {
                     newObj = new keypad(data.x, data.y, data.w, data.h, data.couleur, data.temps, data.id);
+                } else if (data.type === "moving") {
+                    newObj = new MovingObstacle(data.x, data.y, data.w, data.h, data.couleur, data.distX, data.distY, data.speed);
+                } else if (data.type === "teleporter") {
+                    newObj = new teleporter(data.x, data.y, data.w, data.h, data.couleur, data.destinationX, data.destinationY);
                 }
                 
                 if (newObj && data.angle && !(newObj instanceof RotatingObstacle)) {
@@ -498,8 +560,8 @@ async function init() {
                     let obj = game.selectedObject;
                     let cx, cy, angle = obj.angle || 0;
 
-                    // Calcul du centre et de l'angle pour la transformation locale
-                    if (obj instanceof RotatingObstacle) {
+                    // Calcul du centre et de l'angle pour la transformation locale (Objets centrés)
+                    if (obj instanceof RotatingObstacle || obj instanceof Player) {
                         cx = obj.x; cy = obj.y;
                     } else if (obj.radius) {
                         cx = obj.x; cy = obj.y; angle = 0;
@@ -535,9 +597,22 @@ async function init() {
                 game.selectedObject = null;
                 for (let i = game.objetsGraphiques.length - 1; i >= 0; i--) {
                     let obj = game.objetsGraphiques[i];
-                    // Test simple AABB (approximatif pour les objets rotatifs mais suffisant pour l'éditeur)
-                    // Note : RotatingObstacle est centré, Obstacle est top-left. On simplifie ici.
-                    if (x >= obj.x - obj.w && x <= obj.x + obj.w && y >= obj.y - obj.h && y <= obj.y + obj.h) {
+                    
+                    // Détection précise selon le type d'objet (Centré vs Top-Left)
+                    let isCentered = (obj instanceof Player || obj instanceof RotatingObstacle || obj instanceof CircleObstacle);
+                    let minX, maxX, minY, maxY;
+
+                    if (isCentered) {
+                        let hw = (obj instanceof CircleObstacle) ? obj.radius : obj.w / 2;
+                        let hh = (obj instanceof CircleObstacle) ? obj.radius : obj.h / 2;
+                        minX = obj.x - hw; maxX = obj.x + hw;
+                        minY = obj.y - hh; maxY = obj.y + hh;
+                    } else {
+                        minX = obj.x; maxX = obj.x + obj.w;
+                        minY = obj.y; maxY = obj.y + obj.h;
+                    }
+
+                    if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
                         game.selectedObject = obj;
                         break;
                     }
@@ -562,7 +637,7 @@ async function init() {
                     let obj = game.selectedObject;
                     let cx, cy, angle = obj.angle || 0;
 
-                    if (obj instanceof RotatingObstacle) {
+                    if (obj instanceof RotatingObstacle || obj instanceof Player) {
                         cx = obj.x; cy = obj.y;
                     } else if (obj.radius) {
                         cx = obj.x; cy = obj.y; angle = 0;
@@ -585,7 +660,7 @@ async function init() {
                             
                             // Pour les obstacles définis par Top-Left, changer W déplace le centre.
                             // On compense pour que le centre reste fixe pendant le resize.
-                            if (!(obj instanceof RotatingObstacle)) {
+                            if (!(obj instanceof RotatingObstacle || obj instanceof Player)) {
                                 let oldW = obj.w;
                                 obj.w = newW;
                                 obj.x -= (newW - oldW) / 2;
@@ -596,7 +671,7 @@ async function init() {
                         if (resizingHandle === 'bottom' || resizingHandle === 'corner') {
                             let newH = Math.max(10, Math.abs(localY) * 2);
                             
-                            if (!(obj instanceof RotatingObstacle)) {
+                            if (!(obj instanceof RotatingObstacle || obj instanceof Player)) {
                                 let oldH = obj.h;
                                 obj.h = newH;
                                 obj.y -= (newH - oldH) / 2;
@@ -612,6 +687,11 @@ async function init() {
                 if (isDraggingSelected && game.selectedObject) {
                     game.selectedObject.x = x - dragOffsetX;
                     game.selectedObject.y = y - dragOffsetY;
+                    // Pour MovingObstacle, il faut mettre à jour le point de départ de l'animation
+                    if (game.selectedObject instanceof MovingObstacle) {
+                        game.selectedObject.startX = game.selectedObject.x;
+                        game.selectedObject.startY = game.selectedObject.y;
+                    }
                 }
             };
 
@@ -668,12 +748,10 @@ async function init() {
             ctx.arc(25, 25, 18, 0, Math.PI*2);
             ctx.fill();
         } else if (data.type === "bumper") {
-            ctx.fillStyle = "orange";
-            ctx.beginPath();
-            ctx.moveTo(25, 5);
-            ctx.lineTo(45, 45);
-            ctx.lineTo(5, 45);
-            ctx.fill();
+            // Prévisualisation avec l'image du champignon
+            let img = new Image();
+            img.src = "assets/images/bumper.png";
+            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "rotating") {
             ctx.fillStyle = "red";
             ctx.translate(25, 25);
@@ -697,6 +775,15 @@ async function init() {
             ctx.fillStyle = "pink";
             ctx.fillRect(15, 15, 20, 20);
             ctx.strokeStyle = "black";
+            ctx.strokeRect(15, 15, 20, 20);
+        } else if (data.type === "moving") {
+            ctx.fillStyle = "purple";
+            ctx.fillRect(10, 20, 30, 10);
+            ctx.fillText("↔", 20, 15);
+        } else if (data.type === "teleporter") {
+            ctx.fillStyle = "blue";
+            ctx.fillRect(10, 10, 30, 30);
+            ctx.strokeStyle = "white";
             ctx.strokeRect(15, 15, 20, 20);
         }
 
@@ -740,12 +827,19 @@ async function init() {
             ghost.style.height = h + "px";
 
             // Colors based on type
-            if (data.type === "bumper") ghost.style.backgroundColor = "orange";
+            if (data.type === "bumper") {
+                ghost.style.backgroundColor = "transparent";
+                ghost.style.backgroundImage = "url('assets/images/bumper.png')";
+                ghost.style.backgroundSize = "contain";
+                ghost.style.backgroundRepeat = "no-repeat";
+            }
             else if (data.type === "rotating") ghost.style.backgroundColor = "red";
             else if (data.type === "fin") ghost.style.backgroundColor = "green";
             else if (data.type === "speed") ghost.style.backgroundColor = "cyan";
             else if (data.type === "size") ghost.style.backgroundColor = "magenta";
             else if (data.type === "door" || data.type === "keypad") ghost.style.backgroundColor = "pink";
+            else if (data.type === "moving") ghost.style.backgroundColor = "purple";
+            else if (data.type === "teleporter") ghost.style.backgroundColor = "blue";
             else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // Default wall
 
             // Centering on mouse
@@ -804,6 +898,10 @@ async function init() {
                 newObj = new fadingDoor(x - 10, y - 50, 20, 100, "pink", 3000, 1);
             } else if (draggedItem.type === "keypad") {
                 newObj = new keypad(x - 15, y - 15, 30, 30, "pink", 3000, 1);
+            } else if (draggedItem.type === "moving") {
+                newObj = new MovingObstacle(x - 30, y - 10, 60, 20, "purple", 100, 0, 0.05);
+            } else if (draggedItem.type === "teleporter") {
+                newObj = new teleporter(x - 20, y - 20, 40, 40, "blue", 100, 100);
             }
 
             if (newObj) game.objetsGraphiques.push(newObj);

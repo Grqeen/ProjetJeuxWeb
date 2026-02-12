@@ -58,6 +58,12 @@ export default class Levels {
                 case "keypad":
                     newObj = new keypad(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.temps, objData.id);
                     break;
+                case "moving":
+                    newObj = new MovingObstacle(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.distX, objData.distY, objData.speed);
+                    break;
+                case "teleporter":
+                    newObj = new teleporter(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.destinationX, objData.destinationY);
+                    break;
             }
             if (newObj) {
                 if (objData.angle && !(newObj instanceof RotatingObstacle)) newObj.angle = objData.angle;

@@ -32,7 +32,6 @@ export default class Game {
 
         // Modificateurs de jeu
         this.playerSpeed = 5;
-        this.savedSize = 100; // AJOUT : Sauvegarde de la taille entre les morts
         this.rotationMultiplier = 1;
         this.bumperForce = 25;
 
@@ -69,12 +68,10 @@ export default class Game {
 
     restartLevel() {
         console.log("Sortie de zone détectée ! Retour au spawn.");
-        let currentSize = this.savedSize; // On mémorise la taille actuelle
+        // Réinitialisation des modificateurs
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
         this.levels.load(this.currentLevel);
-        
-        // On réapplique la taille sauvegardée au nouveau joueur généré par load()
-        this.player.w = currentSize;
-        this.player.h = currentSize;
 
         this.applyRotationMultiplier();
         this.startTime = Date.now();
@@ -101,6 +98,9 @@ export default class Game {
 
     start(levelNumber = 1) {
         // Charge le niveau demandé
+        // Réinitialisation des modificateurs
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
         this.levels.load(levelNumber);
         this.currentLevel = levelNumber;
         this.applyRotationMultiplier(); // Applique le multiplicateur aux nouveaux obstacles
@@ -126,6 +126,9 @@ export default class Game {
 
     startCustomLevel(levelData) {
         this.currentLevel = "custom";
+        // Réinitialisation des modificateurs
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
         this.levels.loadFromJSON(levelData);
         this.applyRotationMultiplier();
         if (this.levelElement) this.levelElement.innerText = "Custom";
@@ -183,6 +186,14 @@ export default class Game {
                     drawHandle(obj.w/2, 0); // Droite
                     drawHandle(0, obj.h/2); // Bas
                     drawHandle(obj.w/2, obj.h/2); // Coin
+                } else if (obj === this.player) {
+                    // Le joueur est centré (x,y au milieu)
+                    this.ctx.translate(obj.x, obj.y);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    drawHandle(obj.w/2, 0);
+                    drawHandle(0, obj.h/2);
+                    drawHandle(obj.w/2, obj.h/2);
                 } else if (obj.angle) {
                     // Autres objets avec angle (Obstacle, Items...) ont x,y en haut à gauche
                     this.ctx.translate(obj.x + obj.w / 2, obj.y + obj.h / 2);
@@ -604,19 +615,6 @@ export default class Game {
                     this.player.baseSize += obj.tailleW;
                     this.player.updateDimensions();
                     this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
-
-                    // Gestion de la durée : Temporaire (1s) sauf pour le niveau 6 où c'est permanent
-                    if (this.currentLevel !== 6) {
-                        let affectedPlayer = this.player;
-                        setTimeout(() => {
-                            // On vérifie que le joueur n'a pas changé (mort ou changement de niveau)
-                            if (this.player === affectedPlayer) {
-                                this.player.w -= obj.tailleW;
-                                this.player.h -= obj.tailleH;
-                                this.savedSize = this.player.w; // On met à jour la sauvegarde après expiration
-                            }
-                        }, 1000);
-                    }
                 }
             }
             if (obj instanceof keypad) {
@@ -681,7 +679,8 @@ export default class Game {
 
         // On incrémente le niveau
         this.currentLevel++;
-        this.savedSize = 100; // Reset de la taille pour le nouveau niveau
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
         // On essaie de charger le niveau suivant
         this.levels.load(this.currentLevel);
 
