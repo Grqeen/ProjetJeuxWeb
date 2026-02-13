@@ -1,4 +1,4 @@
-import Obstacle, { RotatingObstacle, CircleObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, movingObstacle, CircleObstacle } from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
 import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap, circleRect } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";

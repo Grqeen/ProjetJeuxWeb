@@ -677,40 +677,65 @@ export default class Levels {
             this.game.fin = new fin(1150, 150, 100, 100, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 14) {
-            // --- NIVEAU 14 : Le Passage de la Croix ---
-            
-            // 1. Position de départ du joueur (en bas à gauche)
-            this.game.player = new Player(60, 500);
+            // --- NIVEAU 14 : Le Labyrinthe Complexe (Import JSON) ---
+
+            // 1. POSITION DU JOUEUR
+            this.game.player = new Player(130, 200);
             this.game.objetsGraphiques.push(this.game.player);
 
-            // 2. Murs extérieurs (Bordures noires)
-            this.game.objetsGraphiques.push(new Obstacle(0, 0, 800, 20, "black"));        // Plafond
-            this.game.objetsGraphiques.push(new Obstacle(0, 580, 800, 20, "black"));      // Sol
-            this.game.objetsGraphiques.push(new Obstacle(0, 0, 20, 600, "black"));        // Mur Gauche
-            this.game.objetsGraphiques.push(new Obstacle(780, 0, 20, 600, "black"));      // Mur Droit
+            // 2. OBSTACLES (RECTANGLES)
+            this.game.objetsGraphiques.push(new Obstacle(24.14, 65.90, 642.15, 18.39, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(23.37, 74.33, 21.46, 252.87, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(21.15, 308.12, 642.15, 18.39, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(641.07, 65.21, 21.46, 252.87, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(21.15, 609.27, 642.15, 18.39, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(639.77, 317.55, 21.15, 309.27, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(24.52, 308.43, 21.15, 309.27, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(203.91, 323.98, 21.15, 186.36, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(442.30, 435.94, 21.15, 186.36, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(654.33, 27.89, 24.21, 787.43, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(932.64, 34.87, 30.19, 787.43, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(657.24, 26.97, 642.15, 18.39, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1277.47, 28.81, 18.08, 787.43, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(655.02, 804.06, 642.15, 18.39, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(670.42, 680.77, 110.04, 21.15, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1093.87, 236.02, 52.87, 154.02, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1228.65, 514.66, 22.54, 133.29, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(988.55, 508.18, 21.67, 137.19, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1033.18, 613.95, 21.15, 195.25, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1186.74, 620.08, 22.07, 204.44, "black"));
 
-            // 3. Murs de séparation (Parcours en S)
-            // Mur inférieur (ouverture à droite)
-            this.game.objetsGraphiques.push(new Obstacle(0, 400, 650, 20, "black")); 
-            // Mur supérieur (ouverture à gauche)
-            this.game.objetsGraphiques.push(new Obstacle(150, 200, 650, 20, "black"));
+            // 3. TELEPORTEURS (VIOLETS)
+            this.game.objetsGraphiques.push(new teleporter(562.76, 100.31, 40, 40, "purple", 100, 350));
+            this.game.objetsGraphiques.push(new teleporter(565.90, 234.48, 40, 40, "purple", 800, 100));
+            this.game.objetsGraphiques.push(new teleporter(579.00, 553.33, 40, 40, "purple", 1100, 100));
+            this.game.objetsGraphiques.push(new teleporter(706.21, 737.24, 40, 40, "purple", 1100, 100));
+            this.game.objetsGraphiques.push(new teleporter(1106.90, 376.67, 25.29, 26.40, "purple", 100, 100));
 
-            // 4. CROIX ROUGE (RotatingObstacle)
-            // On crée une croix en superposant deux obstacles rotatifs à 90 degrés
-            const centerX = 400;
-            const centerY = 300;
-            const rotationSpeed = 0.03;
+            // 4. BUMPERS (ORANGE)
+            this.game.objetsGraphiques.push(new bumper(44.83, 570.88, 42.91, 38.31, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(235.63, 327.20, 44.44, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(463.22, 583.14, 33.72, 27.59, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(607.28, 324.90, 30.65, 30.65, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(389.94, 556.61, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(682.66, 630.17, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(903.83, 777.01, 32.18, 27.59, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(677.30, 444.73, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1242.53, 512.64, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1214.25, 545.67, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1192.80, 580.92, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(962.15, 508.12, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(989.81, 534.25, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1012.87, 571.88, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(961.59, 44.73, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1229.10, 43.28, 50, 50, "orange", "up"));
 
-            this.game.objetsGraphiques.push(new RotatingObstacle(centerX, centerY, 200, 20, "red", rotationSpeed, 0));
-            this.game.objetsGraphiques.push(new RotatingObstacle(centerX, centerY, 200, 20, "red", rotationSpeed, Math.PI / 2));
+            // 5. OBSTACLE ROTATIF
+            this.game.objetsGraphiques.push(new RotatingObstacle(799.62, 380.08, 300, 18.10, "black", 0.02, 1776.16));
 
-            // 5. Bumpers (Triangles orange) pour ajouter du rebond dans les coins
-            this.game.objetsGraphiques.push(new bumper(710, 510, 50, 50, "orange")); // Coin bas-droit
-            this.game.objetsGraphiques.push(new bumper(40, 310, 50, 50, "orange"));  // Coin milieu-gauche
-
-            // 6. Sortie (Portail vert)
-            this.game.fin = new fin(700, 60, 80, 80, "green", "assets/images/portal.png");
+            // 6. SORTIE (FIN)
+            this.game.fin = new fin(1096.31, 731.65, 50, 50, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
-        }
+    }
     }
 }
