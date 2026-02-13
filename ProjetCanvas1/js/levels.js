@@ -700,8 +700,6 @@ export default class Levels {
             this.game.objetsGraphiques.push(new Obstacle(655.02, 804.06, 642.15, 18.39, "black"));
             this.game.objetsGraphiques.push(new Obstacle(670.42, 680.77, 110.04, 21.15, "black"));
             this.game.objetsGraphiques.push(new Obstacle(1093.87, 236.02, 52.87, 154.02, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1228.65, 514.66, 22.54, 133.29, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(988.55, 508.18, 21.67, 137.19, "black"));
             this.game.objetsGraphiques.push(new Obstacle(1033.18, 613.95, 21.15, 195.25, "black"));
             this.game.objetsGraphiques.push(new Obstacle(1186.74, 620.08, 22.07, 204.44, "black"));
 
@@ -714,21 +712,21 @@ export default class Levels {
 
             // 4. BUMPERS (ORANGE)
             this.game.objetsGraphiques.push(new bumper(44.83, 570.88, 42.91, 38.31, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(235.63, 327.20, 44.44, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(235.63, 327.20, 44.44, 36.78, "orange", "down"));
             this.game.objetsGraphiques.push(new bumper(463.22, 583.14, 33.72, 27.59, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(607.28, 324.90, 30.65, 30.65, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(607.28, 324.90, 30.65, 30.65, "orange", "down"));
             this.game.objetsGraphiques.push(new bumper(389.94, 556.61, 50, 50, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(682.66, 630.17, 50, 50, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(903.83, 777.01, 32.18, 27.59, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(677.30, 444.73, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(677.30, 444.73, 50, 50, "orange", "right"));
             this.game.objetsGraphiques.push(new bumper(1242.53, 512.64, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(1214.25, 545.67, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(1192.80, 580.92, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(962.15, 508.12, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(989.81, 534.25, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(1012.87, 571.88, 35.25, 36.78, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(961.59, 44.73, 50, 50, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(1229.10, 43.28, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(961.59, 44.73, 50, 50, "orange", "down"));
+            this.game.objetsGraphiques.push(new bumper(1229.10, 43.28, 50, 50, "orange", "down"));
 
             // 5. OBSTACLE ROTATIF
             this.game.objetsGraphiques.push(new RotatingObstacle(799.62, 380.08, 300, 18.10, "black", 0.02, 1776.16));
@@ -736,6 +734,52 @@ export default class Levels {
             // 6. SORTIE (FIN)
             this.game.fin = new fin(1096.31, 731.65, 50, 50, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
-    }
+        } else if (levelNumber === 15) {
+            // --- NIVEAU 15 : Le Complexe des Portes Roses ---
+            
+            // 1. Joueur
+            this.game.player = new Player(693.75, 218.39);
+            this.game.player.w = 100;
+            this.game.player.h = 53.33;
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Obstacles (Murs noirs)
+            this.game.objetsGraphiques.push(new Obstacle(170.50, 87.36, 1046.74, 30.65, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(172.03, 104.21, 29.12, 688.12, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1184.37, 85.90, 29.12, 688.12, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(491.65, 286.74, 29.12, 231.26, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(491.72, 285.90, 405.98, 30.65, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(171.34, 757.93, 1046.74, 30.65, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(871.80, 286.05, 29.12, 231.26, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(878.08, 478.31, 323.07, 30.65, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(195.33, 680.00, 179.00, 25.75, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1057.61, 507.59, 10, 108.51, "black"));
+
+            // 3. Portes à évanouissement et Claviers (FadingDoors & Keypads)
+            this.game.objetsGraphiques.push(new fadingDoor(873.18, 512.64, 24.52, 249.81, "pink", 3000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(493.18, 513.49, 24.52, 249.81, "pink", 5000, 2));
+            this.game.objetsGraphiques.push(new keypad(1084.67, 429.12, 42.91, 35.25, "pink", 3000, 2));
+            this.game.objetsGraphiques.push(new keypad(299.23, 713.41, 44.44, 36.78, "pink", 3000, 1));
+
+            // 4. Bumpers (Orange)
+            this.game.objetsGraphiques.push(new bumper(1136.30, 124.43, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(203.74, 120.59, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(441.28, 438.60, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(824.90, 247.51, 36.78, 38.31, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1012.16, 555.84, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1157.62, 725.06, 28.97, 30.50, "orange", "up"));
+
+            // 5. Potions (Vitesse et Taille)
+            this.game.objetsGraphiques.push(new speedPotion(208.37, 712.20, 30, 38.18, "cyan", 5, 3000));
+            this.game.objetsGraphiques.push(new speedPotion(927.22, 326.07, 30, 38.18, "cyan", 5, 3000));
+            this.game.objetsGraphiques.push(new sizePotion(676.57, 384.23, 30, 30, "magenta", -40, -40));
+
+            // 6. Obstacle Mobile (Violet)
+            this.game.objetsGraphiques.push(new MovingObstacle(644.37, 478.89, 60, 20, "purple", 100, 0, 0.05));
+
+            // 7. Sortie
+            this.game.fin = new fin(1084.52, 517.09, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        }
     }
 }
