@@ -24,10 +24,10 @@ export default class bumper extends ObjectGraphique {
             ctx.imageSmoothingEnabled = false;
             ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
             ctx.scale(this.scale, this.scale);
-            let angle = 0;
-            if (this.direction === "right") angle = Math.PI / 2;
-            else if (this.direction === "down") angle = Math.PI;
-            else if (this.direction === "left") angle = -Math.PI / 2;
+            let angle = this.angle || 0;
+            if (this.direction === "right") angle += Math.PI / 2;
+            else if (this.direction === "down") angle += Math.PI;
+            else if (this.direction === "left") angle += -Math.PI / 2;
             
             ctx.rotate(angle);
             ctx.drawImage(this.image, -this.w / 2, -this.h / 2, this.w, this.h);

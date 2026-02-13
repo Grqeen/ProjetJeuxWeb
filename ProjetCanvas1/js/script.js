@@ -9,6 +9,7 @@ import fadingDoor from "./fadingDoor.js";
 import keypad from "./keypad.js";
 import Player from "./Player.js";
 import teleporter from "./teleporter.js";
+import Fan from "./Fan.js";
 
 // Bonne pratique : avoir une fonction appelée une fois
 // que la page est prête, que le DOM est chargé, etc.
@@ -134,7 +135,7 @@ async function init() {
     Object.assign(volumeContainer.style, {
         position: "fixed",
         bottom: "20px",
-        right: "20px",
+        left: "20px",
         display: "flex",
         alignItems: "center",
         gap: "10px",
@@ -175,6 +176,7 @@ async function init() {
         let vol = parseFloat(e.target.value);
         menuMusic.volume = vol;
         gameMusic.volume = vol;
+        if (typeof videoPlayer !== 'undefined') videoPlayer.volume = vol;
         if (vol > 0) {
             isMuted = false;
             volumeIcon.innerText = "🔊";
@@ -193,12 +195,14 @@ async function init() {
             menuMusic.volume = vol;
             gameMusic.volume = vol;
             volumeSlider.value = vol;
+            if (typeof videoPlayer !== 'undefined') videoPlayer.volume = vol;
             volumeIcon.innerText = "🔊";
         } else {
             isMuted = true;
             previousVolume = parseFloat(volumeSlider.value);
             menuMusic.volume = 0;
             gameMusic.volume = 0;
+            if (typeof videoPlayer !== 'undefined') videoPlayer.volume = 0;
             volumeSlider.value = 0;
             volumeIcon.innerText = "🔇";
         }
@@ -337,6 +341,10 @@ async function init() {
                     <label>Dest X</label><input type="number" id="propDestX">
                     <label>Dest Y</label><input type="number" id="propDestY">
                 </div>
+                <!-- Propriétés Fan -->
+                <div class="mod-group" id="divFanProps" style="display:none;">
+                    <label>Force Vent</label><input type="number" id="propFanForce" step="0.1">
+                </div>
                 
                 <div class="mod-group" style="display:flex; justify-content: space-between; margin-top:10px;">
                     <button id="btnLayerDown" style="width:48%; cursor:pointer; padding:5px;">Arr. Plan</button>
@@ -372,6 +380,7 @@ async function init() {
                 createAssetPreview(assetsContainer, "circle", "Fin", { w: 80, h: 80, type: "fin" });
                 createAssetPreview(assetsContainer, "rect", "Moving", { w: 60, h: 20, type: "moving" });
                 createAssetPreview(assetsContainer, "rect", "Teleport", { w: 40, h: 40, type: "teleporter" });
+                createAssetPreview(assetsContainer, "rect", "Ventilo", { w: 50, h: 50, type: "fan" });
             };
 
             // --- CLIC SUR LE BOUTON MODIFICATEURS ---
@@ -406,6 +415,8 @@ async function init() {
             const divTeleportProps = document.querySelector("#divTeleportProps");
             const propDestX = document.querySelector("#propDestX");
             const propDestY = document.querySelector("#propDestY");
+            const divFanProps = document.querySelector("#divFanProps");
+            const propFanForce = document.querySelector("#propFanForce");
             const btnExport = document.querySelector("#btnExportLevel");
 
             function updateInputs() {
@@ -470,10 +481,30 @@ async function init() {
                 } else {
                     divTeleportProps.style.display = "none";
                 }
+
+                // Gestion Fan
+                if (game.selectedObject instanceof Fan) {
+                    divFanProps.style.display = "block";
+                    propFanForce.value = game.selectedObject.force;
+                } else {
+                    divFanProps.style.display = "none";
+                }
             }
 
-            propW.oninput = () => { if (game.selectedObject) game.selectedObject.w = parseFloat(propW.value); };
-            propH.oninput = () => { if (game.selectedObject) game.selectedObject.h = parseFloat(propH.value); };
+            propW.oninput = () => { 
+                if (game.selectedObject) {
+                    let val = parseFloat(propW.value);
+                    if (isNaN(val) || val < 1) val = 1;
+                    game.selectedObject.w = val;
+                }
+            };
+            propH.oninput = () => { 
+                if (game.selectedObject) {
+                    let val = parseFloat(propH.value);
+                    if (isNaN(val) || val < 1) val = 1;
+                    game.selectedObject.h = val;
+                }
+            };
             propRot.oninput = () => { 
                 if (game.selectedObject) {
                     // Conversion degrés -> radians
@@ -502,6 +533,7 @@ async function init() {
             
             propDestX.oninput = () => { if (game.selectedObject instanceof teleporter) game.selectedObject.destinationX = parseFloat(propDestX.value); };
             propDestY.oninput = () => { if (game.selectedObject instanceof teleporter) game.selectedObject.destinationY = parseFloat(propDestY.value); };
+            propFanForce.oninput = () => { if (game.selectedObject instanceof Fan) game.selectedObject.force = parseFloat(propFanForce.value); };
 
             btnDelete.onclick = () => {
                 if (game.selectedObject && game.selectedObject !== game.player) {
@@ -589,8 +621,11 @@ async function init() {
                     type = "teleporter";
                     extra.destinationX = obj.destinationX;
                     extra.destinationY = obj.destinationY;
+                } else if (obj instanceof Fan) {
+                    type = "fan";
+                    extra.force = obj.force;
                 }
-                return { type, x: obj.x, y: obj.y, w: obj.w, h: obj.h, couleur: obj.couleur, ...extra };
+                return { type, x: obj.x, y: obj.y, w: obj.w, h: obj.h, couleur: obj.couleur, angle: obj.angle || 0, ...extra };
             }
 
             function createObjectFromData(data) {
@@ -617,6 +652,8 @@ async function init() {
                     newObj = new MovingObstacle(data.x, data.y, data.w, data.h, data.couleur, data.distX, data.distY, data.speed);
                 } else if (data.type === "teleporter") {
                     newObj = new teleporter(data.x, data.y, data.w, data.h, data.couleur, data.destinationX, data.destinationY);
+                } else if (data.type === "fan") {
+                    newObj = new Fan(data.x, data.y, data.w, data.h, data.couleur, data.force);
                 }
                 
                 if (newObj && data.angle && !(newObj instanceof RotatingObstacle)) {
@@ -972,6 +1009,7 @@ async function init() {
             else if (data.type === "door") ghost.style.backgroundColor = "pink";
             else if (data.type === "moving") ghost.style.backgroundColor = "purple";
             else if (data.type === "teleporter") ghost.style.backgroundColor = "blue";
+            else if (data.type === "fan") ghost.style.backgroundColor = "gray";
             else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // Default wall
 
             // Centering on mouse
@@ -1034,6 +1072,8 @@ async function init() {
                 newObj = new MovingObstacle(x - 30, y - 10, 60, 20, "purple", 100, 0, 0.05);
             } else if (draggedItem.type === "teleporter") {
                 newObj = new teleporter(x - 20, y - 20, 40, 40, "blue", 100, 100);
+            } else if (draggedItem.type === "fan") {
+                newObj = new Fan(x - 25, y - 25, 50, 50, "cyan", 2);
             }
 
             if (newObj) game.objetsGraphiques.push(newObj);
@@ -1261,6 +1301,7 @@ async function init() {
     videoPlayer.style.width = "100%";
     videoPlayer.style.height = "100%";
     videoPlayer.style.objectFit = "cover";
+    videoPlayer.volume = parseFloat(volumeSlider.value);
 
     // Création du bouton SKIP
     let skipButton = document.createElement("button");
@@ -1443,6 +1484,7 @@ async function init() {
     if (btnExitLevel) {
         btnExitLevel.onclick = () => {
             game.running = false;
+            if (game.removeCountdownOverlay) game.removeCountdownOverlay();
             menu.style.display = "flex";
             menuBackground.style.display = "block";
             if (sidebar) sidebar.style.display = "none";

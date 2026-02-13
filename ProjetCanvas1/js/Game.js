@@ -10,6 +10,7 @@ import keypad from "./keypad.js";
 import fadingDoor from "./fadingDoor.js";
 import fin from "./fin.js";
 import teleporter from "./teleporter.js";
+import Fan from "./Fan.js";
 
 export default class Game {
     objetsGraphiques = [];
@@ -46,6 +47,13 @@ export default class Game {
         this.running = false;
         this.onFinish = null; // Callback appelé quand le jeu est fini
         this.selectedObject = null; // Objet sélectionné dans l'éditeur
+
+        // Compte à rebours
+        this.countdownActive = false;
+        this.countdownValue = 3;
+        this.countdownStartTime = 0;
+        this.countdownOverlay = null;
+        this.countdownText = null;
     }
 
     async init(canvas) {
@@ -115,8 +123,18 @@ export default class Game {
         this.knockbackX = 0;
         this.knockbackY = 0;
 
-        // Reset du timer au lancement du niveau
-        this.startTime = Date.now();
+        // Gestion du compte à rebours (Seulement pour le niveau 1)
+        if (levelNumber === 1) {
+            this.countdownActive = true;
+            this.countdownValue = 3;
+            this.countdownStartTime = Date.now();
+            if (this.timerElement) this.timerElement.innerText = "00:00";
+            this.createCountdownOverlay();
+        } else {
+            this.countdownActive = false;
+            this.startTime = Date.now();
+            this.removeCountdownOverlay();
+        }
 
         if (!this.running) {
             this.running = true;
@@ -126,6 +144,8 @@ export default class Game {
 
     startCustomLevel(levelData) {
         this.currentLevel = "custom";
+        this.countdownActive = false;
+        this.removeCountdownOverlay();
         // Réinitialisation des modificateurs
         this.activeSpeedBoost = 0;
         this.speedBoostEndTime = 0;
@@ -152,11 +172,83 @@ export default class Game {
 
         // 3 - On regarde l'état du clavier, manette, souris et on met à jour
         // l'état des objets du jeu en conséquence
-        this.update();
+        if (this.countdownActive) {
+            this.drawCountdown();
+        } else {
+            this.update();
+        }
 
         // 4 - on demande au navigateur d'appeler la fonction mainAnimationLoop
         // à nouveau dans 1/60 de seconde
         requestAnimationFrame(this.mainAnimationLoop.bind(this));
+    }
+
+    createCountdownOverlay() {
+        this.removeCountdownOverlay();
+
+        this.countdownOverlay = document.createElement("div");
+        Object.assign(this.countdownOverlay.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            zIndex: "10000",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none" // Permet de cliquer à travers (ex: bouton quitter)
+        });
+
+        this.countdownText = document.createElement("div");
+        Object.assign(this.countdownText.style, {
+            fontFamily: "'Lilita One', cursive",
+            fontSize: "200px",
+            color: "white",
+            textShadow: "8px 8px 0 #000"
+        });
+
+        this.countdownOverlay.appendChild(this.countdownText);
+        document.body.appendChild(this.countdownOverlay);
+    }
+
+    removeCountdownOverlay() {
+        if (this.countdownOverlay) {
+            this.countdownOverlay.remove();
+            this.countdownOverlay = null;
+            this.countdownText = null;
+        }
+    }
+
+    drawCountdown() {
+        let now = Date.now();
+        let elapsed = now - this.countdownStartTime;
+        
+        // Logique du compte à rebours (3, 2, 1, GO)
+        if (elapsed < 1000) {
+            this.countdownValue = 3;
+        } else if (elapsed < 2000) {
+            this.countdownValue = 2;
+        } else if (elapsed < 3000) {
+            this.countdownValue = 1;
+        } else if (elapsed < 4000) {
+            this.countdownValue = "GO !";
+        } else {
+            this.countdownActive = false;
+            this.startTime = Date.now(); // On lance le vrai timer du niveau
+            this.removeCountdownOverlay();
+            return;
+        }
+
+        if (this.countdownText) {
+            this.countdownText.innerText = this.countdownValue;
+            // Animation de pulsation
+            let subTime = elapsed % 1000;
+            let scale = 1.5 - (subTime / 1000) * 0.5; 
+            if (this.countdownValue === "GO !") scale = 1 + (subTime / 1000) * 0.5;
+            this.countdownText.style.transform = `scale(${scale})`;
+        }
     }
 
     drawAllObjects() {
@@ -327,6 +419,35 @@ export default class Game {
         // Vitesse de base du joueur
         let vitesse = this.playerSpeed;
 
+        // --- GESTION DU VENT (FAN) ---
+        let windVx = 0;
+        let windVy = 0;
+        
+        this.objetsGraphiques.forEach(obj => {
+            if (obj instanceof Fan) {
+                // Calcul de la position du joueur dans le repère local du ventilateur
+                // Centre du ventilateur
+                let cx = obj.x + obj.w / 2;
+                let cy = obj.y + obj.h / 2;
+                
+                // Vecteur Joueur -> Centre
+                let dx = (this.player.x) - cx;
+                let dy = (this.player.y) - cy;
+                
+                // Rotation inverse pour aligner avec l'axe X local (direction du souffle)
+                let localX = dx * Math.cos(-obj.angle) - dy * Math.sin(-obj.angle);
+                let localY = dx * Math.sin(-obj.angle) + dy * Math.cos(-obj.angle);
+                
+                // Vérification : Le joueur est-il devant le ventilo (x > 0) et dans la portée ?
+                // Et est-il dans la largeur du flux d'air (y entre -h/2 et h/2) ?
+                if (localX > 0 && localX < obj.range && Math.abs(localY) < obj.h / 2) {
+                    // Application de la force dans la direction du ventilateur
+                    windVx += Math.cos(obj.angle) * obj.force;
+                    windVy += Math.sin(obj.angle) * obj.force;
+                }
+            }
+        });
+
         
         // Si le boost est actif
         vitesse += this.activeSpeedBoost;
@@ -345,8 +466,8 @@ export default class Game {
         if (this.inputStates.ArrowDown) inputVy = vitesse;
 
         // On ajoute le knockback à la vitesse
-        this.player.vitesseX = inputVx + this.knockbackX;
-        this.player.vitesseY = inputVy + this.knockbackY;
+        this.player.vitesseX = inputVx + this.knockbackX + windVx;
+        this.player.vitesseY = inputVy + this.knockbackY + windVy;
 
         this.player.move();
 

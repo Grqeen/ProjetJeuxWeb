@@ -7,6 +7,7 @@ import sizePotion from "./sizepotion.js";
 import fadingDoor from "./fadingDoor.js";
 import keypad from "./keypad.js";
 import teleporter from "./teleporter.js";
+import Fan from "./Fan.js";
 
 export default class Levels {
     constructor(game) {
@@ -63,6 +64,9 @@ export default class Levels {
                     break;
                 case "teleporter":
                     newObj = new teleporter(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.destinationX, objData.destinationY);
+                    break;
+                case "fan":
+                    newObj = new Fan(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.force);
                     break;
             }
             if (newObj) {

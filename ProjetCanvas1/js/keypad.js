@@ -22,7 +22,9 @@ export default class keypad extends Items {
             if (this.image.complete && this.image.naturalHeight !== 0) {
                 ctx.save();
                 ctx.imageSmoothingEnabled = false;
-                ctx.drawImage(this.image, this.x, this.y, this.w, this.h);
+                ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+                if (this.angle) ctx.rotate(this.angle);
+                ctx.drawImage(this.image, -this.w / 2, -this.h / 2, this.w, this.h);
                 ctx.restore();
             } else {
                 super.draw(ctx);
