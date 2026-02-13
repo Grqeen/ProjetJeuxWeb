@@ -780,6 +780,52 @@ export default class Levels {
             // 7. Sortie
             this.game.fin = new fin(1084.52, 517.09, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 16) {
+            // --- NIVEAU 16 : Le Labyrinthe des Plateformes Mobiles ---
+            
+            // 1. Position du Joueur
+            this.game.player = new Player(322.41, 152.58);
+            this.game.player.w = 100;
+            this.game.player.h = 53.33;
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Obstacles Fixes (Murs noirs)
+            this.game.objetsGraphiques.push(new Obstacle(124.52, 76.63, 22.99, 800, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(129.12, 78.93, 596.17, 21.46, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(448.05, 211.65, 260.38, 16.70, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(706.28, 79.85, 21.30, 594.48, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(707.89, 655.25, 349.27, 18.54, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(131.57, 853.72, 930.11, 21.46, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1037.47, 657.78, 22.68, 215.79, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(890.42, 771.34, 22.68, 91.49, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(453.26, 708.81, 122.61, 26.05, "black"));
+
+            // 3. Portes et Claviers (FadingDoor & Keypad)
+            this.game.objetsGraphiques.push(new fadingDoor(450.19, 98.85, 18.39, 116.48, "pink", 3000, 1));
+            this.game.objetsGraphiques.push(new keypad(955.17, 814.56, 42.91, 38.31, "pink", 3000, 1));
+
+            // 4. Obstacles Mobiles (Violets)
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 314.14, 60, 20, "purple", 200, 0, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 403.79, 60, 20, "purple", 200, 0, 0.037));
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 547.09, 60, 20, "purple", 200, 0, 0.07));
+            this.game.objetsGraphiques.push(new MovingObstacle(718.28, 750, 60, 20, "purple", 0, 70, 0.02));
+            this.game.objetsGraphiques.push(new MovingObstacle(809.46, 750, 60, 18.18, "purple", 0, 70, 0.01));
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 477.36, 60, 20, "purple", 200, 0, 0.02));
+
+            // 5. Obstacle Rotatif (Rouge)
+            this.game.objetsGraphiques.push(new RotatingObstacle(254.79, 747.89, 200, 20, "purple", 0.02, 1366.08));
+
+            // 6. Bumpers (Orange)
+            this.game.objetsGraphiques.push(new bumper(1010.34, 672.03, 27.59, 24.52, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(146.74, 101.15, 36.78, 33.72, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(655.08, 230.94, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(147.51, 817.62, 38.31, 38.31, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(459.39, 675.10, 36.78, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(529.89, 732.57, 27.59, 27.59, "orange", "up"));
+
+            // 7. Sortie (Fin)
+            this.game.fin = new fin(601.76, 107.89, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
         }
     }
 }
