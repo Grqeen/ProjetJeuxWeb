@@ -1,5 +1,5 @@
 import Player from "./Player.js";
-import Obstacle, { RotatingObstacle, IntermittentRotatingObstacle, MovingObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, IntermittentRotatingObstacle, MovingObstacle, CircleObstacle } from "./Obstacle.js";
 import fin from "./fin.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
@@ -12,6 +12,71 @@ import { movingObstacle } from "./Obstacle.js";
 export default class Levels {
     constructor(game) {
         this.game = game;
+        this.customLevels = new Map();
+    }
+
+    registerCustomLevel(id, data) {
+        this.customLevels.set(id, data);
+    }
+
+    loadFromJSON(data) {
+        this.game.objetsGraphiques = [];
+        this.game.playerSpeed = 5;
+
+        data.forEach(objData => {
+            let newObj;
+            switch(objData.type) {
+                case "player":
+                    this.game.player = new Player(objData.x, objData.y);
+                    this.game.player.w = objData.w;
+                    this.game.player.h = objData.h;
+                    newObj = this.game.player;
+                    break;
+                case "rect":
+                    newObj = new Obstacle(objData.x, objData.y, objData.w, objData.h, objData.couleur);
+                    break;
+                case "circle":
+                    newObj = new CircleObstacle(objData.x, objData.y, objData.r || (objData.w/2), objData.couleur);
+                    break;
+                case "rotating":
+                    newObj = new RotatingObstacle(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.angleSpeed, objData.angle);
+                    break;
+                case "bumper":
+                    newObj = new bumper(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.direction);
+                    break;
+                case "fin":
+                    newObj = new fin(objData.x, objData.y, objData.w, objData.h, objData.couleur, "assets/images/portal.png");
+                    break;
+                case "speed":
+                    newObj = new speedPotion(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.vitesse, objData.temps);
+                    break;
+                case "size":
+                    newObj = new sizePotion(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.tailleW, objData.tailleH);
+                    break;
+                case "door":
+                    newObj = new fadingDoor(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.timer, objData.id);
+                    break;
+                case "keypad":
+                    newObj = new keypad(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.temps, objData.id);
+                    break;
+                case "moving":
+                    newObj = new MovingObstacle(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.distX, objData.distY, objData.speed);
+                    break;
+                case "teleporter":
+                    newObj = new teleporter(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.destinationX, objData.destinationY);
+                    break;
+            }
+            if (newObj) {
+                if (objData.angle && !(newObj instanceof RotatingObstacle)) newObj.angle = objData.angle;
+                this.game.objetsGraphiques.push(newObj);
+            }
+        });
+
+        // Sécurité : si pas de joueur dans le JSON, on en crée un
+        if (!this.game.player) {
+            this.game.player = new Player(100, 100);
+            this.game.objetsGraphiques.push(this.game.player);
+        }
     }
 
     load(levelNumber) {
@@ -20,6 +85,23 @@ export default class Levels {
 
         // Réinitialisation de la vitesse par défaut pour tous les niveaux
         this.game.playerSpeed = 5;
+
+        // --- GESTION DES NIVEAUX IMPORTÉS ---
+        if (this.customLevels.has(levelNumber)) {
+            this.loadFromJSON(this.customLevels.get(levelNumber));
+            return;
+        }
+
+        // --- AJOUT : NIVEAU ÉDITEUR (VIDE) ---
+        if (levelNumber === 0) {
+            // On place le joueur au centre (700, 500 pour un canvas de 1400x1000)
+            this.game.player = new Player(700, 500);
+            this.game.objetsGraphiques.push(this.game.player);
+            
+            // On change le texte du niveau pour indiquer qu'on est dans l'éditeur
+            if (this.game.levelElement) this.game.levelElement.innerText = "Editeur";
+            return; // On arrête ici pour ne pas charger d'autres objets
+        }
 
         if (levelNumber === 1) {
             // --- NIVEAU 1 ---
@@ -121,34 +203,34 @@ export default class Levels {
 
             // 4. BUMPERS DES MURS (Ajustés pour ne pas toucher les coins)
             // Mur Haut : on commence après le mur gauche et on finit avant le mur droite
-            for (let x = 380; x < 1250; x += 75) {
-                this.game.objetsGraphiques.push(new bumper(x, 30, 75, 75, "orange"));
+            for (let x = 420; x < 1150; x += 75) {
+                this.game.objetsGraphiques.push(new bumper(x, 30, 75, 75, "orange", "down"));
             }
             // Mur Bas : idem
-            for (let x = 380; x < 1250; x += 75) {
-                this.game.objetsGraphiques.push(new bumper(x, 920, 75, 75, "orange"));
+            for (let x = 420; x < 1150; x += 75) {
+                this.game.objetsGraphiques.push(new bumper(x, 895, 75, 75, "orange", "up"));
             }
             // Mur Droite : on commence après le coin haut et on finit avant le coin bas
             for (let y = 80; y < 920; y += 75) {
-                this.game.objetsGraphiques.push(new bumper(1250, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(1225, y, 75, 75, "orange", "left"));
             }
             // Mur Gauche Haut
             for (let y = 80; y < 230; y += 75) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange", "right"));
             }
             // Mur Gauche Bas
             for (let y = 780; y < 920; y += 75) {
-                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(330, y, 75, 75, "orange", "right"));
             }
 
             // 5. BUMPERS DU CARRÉ CENTRAL (Même logique pour éviter les chevauchements)
             for (let x = 700; x < 900; x += 75) { // Haut et Bas (raccourcis)
-                this.game.objetsGraphiques.push(new bumper(x, 300, 75, 75, "orange"));
-                this.game.objetsGraphiques.push(new bumper(x, 650, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(x, 275, 75, 75, "orange", "up"));
+                this.game.objetsGraphiques.push(new bumper(x, 650, 75, 75, "orange", "down"));
             }
             for (let y = 350; y < 650; y += 75) { // Gauche et Droite
-                this.game.objetsGraphiques.push(new bumper(600, y, 75, 75, "orange"));
-                this.game.objetsGraphiques.push(new bumper(950, y, 75, 75, "orange"));
+                this.game.objetsGraphiques.push(new bumper(575, y, 75, 75, "orange", "left"));
+                this.game.objetsGraphiques.push(new bumper(950, y, 75, 75, "orange", "right"));
             }
 
             // 6. Sortie
@@ -188,9 +270,9 @@ export default class Levels {
             this.game.objetsGraphiques.push(new Obstacle(1100, 400, 300, 40, "red"));
 
             // 2. BUMPERS (Plafond et Sol)
-            for (let x = 0; x < 1400; x += 60) {
-                this.game.objetsGraphiques.push(new bumper(x, 0, 60, 60, "orange"));
-                this.game.objetsGraphiques.push(new bumper(x, 940, 60, 60, "orange"));
+            for (let x = 0; x < 1340; x += 60) {
+                this.game.objetsGraphiques.push(new bumper(x, 0, 60, 60, "orange", "down"));
+                this.game.objetsGraphiques.push(new bumper(x, 940, 60, 60, "orange", "up"));
             }
 
             // 3. CROIX ROTATIVES (Difficulté accrue)

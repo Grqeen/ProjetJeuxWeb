@@ -1,6 +1,6 @@
-import Obstacle, { movingObstacle, RotatingObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, CircleObstacle } from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
-import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap } from "./collisions.js";
+import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap, circleRect } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
 import bumper from "./bumper.js";
 import speedPotion from "./speedPotion.js";
@@ -45,6 +45,7 @@ export default class Game {
         this.activeSpeedBoost = 0;
         this.running = false;
         this.onFinish = null; // Callback appelé quand le jeu est fini
+        this.selectedObject = null; // Objet sélectionné dans l'éditeur
     }
 
     async init(canvas) {
@@ -67,7 +68,11 @@ export default class Game {
 
     restartLevel() {
         console.log("Sortie de zone détectée ! Retour au spawn.");
+        // Réinitialisation des modificateurs
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
         this.levels.load(this.currentLevel);
+
         this.applyRotationMultiplier();
         this.startTime = Date.now();
         this.knockbackX = 0;
@@ -93,6 +98,9 @@ export default class Game {
 
     start(levelNumber = 1) {
         // Charge le niveau demandé
+        // Réinitialisation des modificateurs
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
         this.levels.load(levelNumber);
         this.currentLevel = levelNumber;
         this.applyRotationMultiplier(); // Applique le multiplicateur aux nouveaux obstacles
@@ -110,6 +118,23 @@ export default class Game {
         // Reset du timer au lancement du niveau
         this.startTime = Date.now();
 
+        if (!this.running) {
+            this.running = true;
+            requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        }
+    }
+
+    startCustomLevel(levelData) {
+        this.currentLevel = "custom";
+        // Réinitialisation des modificateurs
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
+        this.levels.loadFromJSON(levelData);
+        this.applyRotationMultiplier();
+        if (this.levelElement) this.levelElement.innerText = "Custom";
+        this.knockbackX = 0;
+        this.knockbackY = 0;
+        this.startTime = Date.now();
         if (!this.running) {
             this.running = true;
             requestAnimationFrame(this.mainAnimationLoop.bind(this));
@@ -138,6 +163,58 @@ export default class Game {
         // Dessine tous les objets du jeu
         this.objetsGraphiques.forEach(obj => {
             obj.draw(this.ctx);
+
+            // --- DESSIN DU CONTOUR DE SÉLECTION (ÉDITEUR) ---
+            if (this.selectedObject === obj) {
+                this.ctx.save();
+                this.ctx.strokeStyle = "cyan";
+                this.ctx.lineWidth = 3;
+                this.ctx.shadowColor = "cyan";
+                this.ctx.shadowBlur = 10;
+
+                // Fonction utilitaire pour dessiner une poignée
+                const hSize = 10;
+                const drawHandle = (x, y) => this.ctx.fillRect(x - hSize/2, y - hSize/2, hSize, hSize);
+                this.ctx.fillStyle = "cyan";
+
+                if (obj instanceof RotatingObstacle) {
+                    // RotatingObstacle a son x,y au centre
+                    this.ctx.translate(obj.x, obj.y);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    // Poignées (locales)
+                    drawHandle(obj.w/2, 0); // Droite
+                    drawHandle(0, obj.h/2); // Bas
+                    drawHandle(obj.w/2, obj.h/2); // Coin
+                } else if (obj === this.player) {
+                    // Le joueur est centré (x,y au milieu)
+                    this.ctx.translate(obj.x, obj.y);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    drawHandle(obj.w/2, 0);
+                    drawHandle(0, obj.h/2);
+                    drawHandle(obj.w/2, obj.h/2);
+                } else if (obj.angle) {
+                    // Autres objets avec angle (Obstacle, Items...) ont x,y en haut à gauche
+                    this.ctx.translate(obj.x + obj.w / 2, obj.y + obj.h / 2);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    drawHandle(obj.w/2, 0);
+                    drawHandle(0, obj.h/2);
+                    drawHandle(obj.w/2, obj.h/2);
+                } else if (obj.radius) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    drawHandle(obj.x + obj.radius, obj.y); // Poignée Rayon
+                } else {
+                    this.ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                    drawHandle(obj.x + obj.w, obj.y + obj.h/2); // Droite
+                    drawHandle(obj.x + obj.w/2, obj.y + obj.h); // Bas
+                    drawHandle(obj.x + obj.w, obj.y + obj.h);   // Coin
+                }
+                this.ctx.restore();
+            }
         });
     }
 
@@ -258,6 +335,10 @@ export default class Game {
             vitesse += this.activeSpeedBoost;
         }
 
+        // Sauvegarde de la position avant déplacement
+        this.player.oldX = this.player.x;
+        this.player.oldY = this.player.y;
+
         if (this.inputStates.ArrowRight) inputVx = vitesse;
         if (this.inputStates.ArrowLeft) inputVx = -vitesse;
         if (this.inputStates.ArrowUp) inputVy = -vitesse;
@@ -347,7 +428,40 @@ export default class Game {
                 // Si l'obstacle est une porte invisible, on ne gère pas la collision
                 if (obstacle instanceof fadingDoor && !obstacle.visible) return;
 
-                if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
+                // GESTION DE LA ROTATION POUR LES MURS (OBSTACLE)
+                if (obstacle.angle && obstacle.angle !== 0) {
+                    // Si le mur est tourné, on utilise la collision OBB (Oriented Bounding Box)
+                    // Attention : Obstacle est défini par x,y (top-left), rectRotatedRectOverlap attend le centre.
+                    let centerX = obstacle.x + obstacle.w / 2;
+                    let centerY = obstacle.y + obstacle.h / 2;
+
+                    let collision = rectRotatedRectOverlap(
+                        this.player.x - this.player.w / 2,
+                        this.player.y - this.player.h / 2,
+                        this.player.w, this.player.h,
+                        centerX, centerY,
+                        obstacle.w, obstacle.h,
+                        obstacle.angle
+                    );
+
+                    if (collision) {
+                        // Réponse à la collision (repousser le joueur)
+                        let dx = this.player.x - centerX;
+                        let dy = this.player.y - centerY;
+                        let dot = dx * collision.axis.x + dy * collision.axis.y;
+
+                        if (dot < 0) {
+                            collision.axis.x *= -1;
+                            collision.axis.y *= -1;
+                        }
+                        this.player.x += collision.axis.x * (collision.overlap + 0.1);
+                        this.player.y += collision.axis.y * (collision.overlap + 0.1);
+                        // On stop la vitesse pour éviter de glisser bizarrement
+                        // this.player.vitesseX = 0; this.player.vitesseY = 0; 
+                    }
+                } 
+                // GESTION CLASSIQUE (AABB) POUR LES MURS DROITS
+                else if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     // Calcul des coordonnées des bords du joueur (x, y sont au centre)
                     let playerLeft = this.player.x - this.player.w / 2;
                     let playerRight = this.player.x + this.player.w / 2;
@@ -518,6 +632,14 @@ export default class Game {
                     this.player.x = obstacle.destinationX;
                     this.player.y = obstacle.destinationY;
                 }
+            } else if (obstacle instanceof CircleObstacle) {
+                if (circleRect(obstacle.x, obstacle.y, obstacle.radius, this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h)) {
+                    // Collision détectée ! On remet le joueur à son ancienne position
+                    this.player.x = this.player.oldX;
+                    this.player.y = this.player.oldY;
+                    this.player.vitesseX = 0;
+                    this.player.vitesseY = 0;
+                }
             }
         });
     }
@@ -539,11 +661,11 @@ export default class Game {
             }
             if (obj instanceof sizePotion) {
                 if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obj.x, obj.y, obj.w, obj.h)) {
-                    console.log("Collision avec SizePotion : Taille modifier !");
+                    console.log("Collision avec SizePotion : Taille modifiée!");
 
                     // on change la taille du joueur
-                    this.player.w += obj.tailleW;
-                    this.player.h += obj.tailleH;
+                    this.player.baseSize += obj.tailleW;
+                    this.player.updateDimensions();
                     this.objetsGraphiques.splice(i, 1);  // On retire l'objet ramassé
                 }
             }
@@ -582,6 +704,9 @@ export default class Game {
 
     // Teste si le joueur a ateint la fin du niveau
     testCollisionFin() {
+        // Si on est dans l'éditeur (Niveau 0), le portail ne fonctionne pas
+        if (this.currentLevel === 0) return false;
+
         for (let obj of this.objetsGraphiques) {
             if (obj instanceof fin) {
                 // Le joueur est un rectangle, la fin est un cercle
@@ -606,6 +731,8 @@ export default class Game {
 
         // On incrémente le niveau
         this.currentLevel++;
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
         // On essaie de charger le niveau suivant
         this.levels.load(this.currentLevel);
 

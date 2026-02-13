@@ -157,6 +157,25 @@ function rectRotatedRectOverlap(rx, ry, rw, rh, ox, oy, ow, oh, angle) {
 
     // Retourne l'axe et la profondeur pour corriger la position
     return { axis: shortestAxis, overlap: minOverlap };
+    
 }
 
+export function circleRect(cx, cy, radius, rx, ry, rw, rh) {
+    // On trouve le point sur le rectangle le plus proche du centre du cercle
+    let testX = cx;
+    let testY = cy;
+
+    if (cx < rx)         testX = rx;      // Bord gauche
+    else if (cx > rx+rw) testX = rx+rw;   // Bord droit
+    if (cy < ry)         testY = ry;      // Bord haut
+    else if (cy > ry+rh) testY = ry+rh;   // Bord bas
+
+    // On calcule la distance entre le centre du cercle et ce point le plus proche
+    let distX = cx - testX;
+    let distY = cy - testY;
+    let distance = Math.sqrt((distX * distX) + (distY * distY));
+
+    // Si la distance est inférieure au rayon, il y a collision !
+    return (distance <= radius);
+}
 export { circleCollide, rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap };

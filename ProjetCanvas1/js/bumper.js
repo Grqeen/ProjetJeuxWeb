@@ -3,48 +3,58 @@ import ObjectGraphique from "./ObjectGraphique.js";
 export default class bumper extends ObjectGraphique {
     constructor(x, y, w, h, couleur, direction = "up") {
         super(x, y, w, h, couleur);
+        this.direction = direction;
         this.image = new Image();
         this.image.src = "assets/images/bumper.png";
-
         this.scale = 1;
-        this.image.onload = () => {
-            if (this.image.naturalWidth > 0) {
-                const ratio = this.image.naturalWidth / this.image.naturalHeight;
-                this.h = this.w / ratio;
-            }
-        };
     }
 
     triggerBounce() {
-        this.scale = 1.5;
+        this.scale = 1.2;
+        setTimeout(() => {
+            this.scale = 1;
+        }, 100);
     }
 
     draw(ctx) {
-        if (this.scale > 1) {
-            this.scale -= 0.05;
-        }
-        if (this.scale < 1) this.scale = 1;
-
+        ctx.save();
+        
         if (this.image.complete && this.image.naturalHeight !== 0) {
-            ctx.save();
-            ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
-            ctx.scale(this.scale, this.scale);
+            // Dessin de l'image (Champignon)
             ctx.imageSmoothingEnabled = false;
-            ctx.drawImage(this.image, -this.w / 2, -this.h / 2, this.w, this.h);
-            ctx.restore();
-        } else {
-            ctx.save();
             ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
             ctx.scale(this.scale, this.scale);
-            ctx.translate(-(this.x + this.w / 2), -(this.y + this.h / 2));
+            let angle = 0;
+            if (this.direction === "right") angle = Math.PI / 2;
+            else if (this.direction === "down") angle = Math.PI;
+            else if (this.direction === "left") angle = -Math.PI / 2;
+            
+            ctx.rotate(angle);
+            ctx.drawImage(this.image, -this.w / 2, -this.h / 2, this.w, this.h);
+        } else {
+            // Fallback : Triangle
             ctx.fillStyle = this.couleur;
             ctx.beginPath();
-            ctx.moveTo(this.x + this.w / 2, this.y);
-            ctx.lineTo(this.x + this.w, this.y + this.h);
-            ctx.lineTo(this.x, this.y + this.h);
+            if (this.direction === "up") {
+                ctx.moveTo(this.x + this.w / 2, this.y);
+                ctx.lineTo(this.x + this.w, this.y + this.h);
+                ctx.lineTo(this.x, this.y + this.h);
+            } else if (this.direction === "left") {
+                ctx.moveTo(this.x, this.y + this.h / 2);
+                ctx.lineTo(this.x + this.w, this.y);
+                ctx.lineTo(this.x + this.w, this.y + this.h);
+            } else if (this.direction === "right") {
+                ctx.moveTo(this.x + this.w, this.y + this.h / 2);
+                ctx.lineTo(this.x, this.y + this.h);
+                ctx.lineTo(this.x, this.y);
+            } else {
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + this.w, this.y);
+                ctx.lineTo(this.x + this.w / 2, this.y + this.h);
+            }
             ctx.closePath();
             ctx.fill();
-            ctx.restore();
         }
+        ctx.restore();
     }
 }

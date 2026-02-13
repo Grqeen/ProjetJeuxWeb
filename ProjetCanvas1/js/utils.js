@@ -52,4 +52,36 @@ function drawGrid(ctx, canvas, nbLignes, nbColonnes, couleur, largeurLignes) {
     ctx.restore();
 }
 
-export { drawCircleImmediat, drawGrid };
+function getMousePos(canvas, evt) {
+    let rect = canvas.getBoundingClientRect();
+    
+    // Ratio du contenu (1400 / 1000 = 1.4)
+    let contentRatio = canvas.width / canvas.height;
+    // Ratio de l'élément HTML
+    let elementRatio = rect.width / rect.height;
+
+    let offsetX = 0;
+    let offsetY = 0;
+    let actualWidth = rect.width;
+    let actualHeight = rect.height;
+
+    if (elementRatio > contentRatio) {
+        // L'écran est plus large que le jeu -> Bandes noires à gauche/droite
+        actualWidth = rect.height * contentRatio;
+        offsetX = (rect.width - actualWidth) / 2;
+    } else {
+        // L'écran est plus haut que le jeu -> Bandes noires en haut/bas
+        actualHeight = rect.width / contentRatio;
+        offsetY = (rect.height - actualHeight) / 2;
+    }
+
+    let scaleX = canvas.width / actualWidth;
+    let scaleY = canvas.height / actualHeight;
+
+    return {
+        x: (evt.clientX - rect.left - offsetX) * scaleX,
+        y: (evt.clientY - rect.top - offsetY) * scaleY
+    };
+}
+
+export { drawCircleImmediat, drawGrid, getMousePos };
