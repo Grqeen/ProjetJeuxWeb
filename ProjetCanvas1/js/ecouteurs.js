@@ -1,7 +1,6 @@
-import { getMousePos } from "./utils.js";
-
-function initListeners(inputStates, canvas, speedInputElement) {
-    window.addEventListener('keydown', (event) => {
+function initListeners(inputStates, canvas) {
+    window.onkeydown = (event) => {
+        console.log("Touche pressée : " + event.key);
         if(event.key === "ArrowRight") {
             inputStates.ArrowRight = true;
         }
@@ -14,9 +13,10 @@ function initListeners(inputStates, canvas, speedInputElement) {
         if(event.key === "ArrowDown") {
             inputStates.ArrowDown = true;
         }
-    });
+    }
 
-    window.addEventListener('keyup', (event) => {
+    window.onkeyup = (event) => {
+        console.log("Touche relachée : " + event.key);
         if(event.key === "ArrowRight") {
             inputStates.ArrowRight = false;
         }
@@ -29,22 +29,12 @@ function initListeners(inputStates, canvas, speedInputElement) {
         if(event.key === "ArrowDown") {
             inputStates.ArrowDown = false;
         }
-    });
+    }
 
-    window.addEventListener('mousemove', (event) => {
-        let pos = getMousePos(canvas, event);
-        inputStates.mouseX = pos.x;
-        inputStates.mouseY = pos.y;
-    });
-
-    // Gestion du conflit slider / flèches
-    if (speedInputElement) {
-        speedInputElement.addEventListener("keydown", (e) => {
-            if(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
-                e.preventDefault(); 
-                speedInputElement.blur(); 
-            }
-        });
+    window.onmousemove = (event) => {
+        // get proper x and y for the mouse in the canvas
+        inputStates.mouseX = event.clientX - canvas.getBoundingClientRect().left;
+        inputStates.mouseY = event.clientY - canvas.getBoundingClientRect().top;
     }
 }
 
