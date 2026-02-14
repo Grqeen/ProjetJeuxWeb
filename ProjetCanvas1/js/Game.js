@@ -1,4 +1,4 @@
-import Obstacle, { RotatingObstacle, CircleObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, CircleObstacle, MovingObstacle } from "./Obstacle.js";
 //import ObjetSouris from "./ObjetSouris.js";
 import { rectsOverlap, circRectsOverlap, rectTriangleOverlap, rectRotatedRectOverlap, circleRect } from "./collisions.js";
 import { initListeners } from "./ecouteurs.js";
@@ -83,16 +83,35 @@ export default class Game {
         if (this.currentLevel !== 9) return;
 
         let p = this.player;
-        // Les zones valides définies dans ton levels.js pour le Niveau 9 sont :
-        // - Couloir vertical : x entre 50 et 250, y entre 50 et 950
-        // - Couloir horizontal : x entre 50 et 1350, y entre 750 et 950
+        // Définition précise des zones sûres pour le niveau 9 (basé sur la taille du joueur 80x80)
+        // Mur Gauche finit à x=82.5 -> Centre Joueur min = 122.5. Tolérance -> 110
+        // Mur Droite commence à x=257.5 -> Centre Joueur max = 217.5. Tolérance -> 230
+        // Mur Haut (Horizontal) finit à y=782.5 -> Centre Joueur min = 822.5. Tolérance -> 810
+        // Mur Bas (Horizontal) commence à y=957.5 -> Centre Joueur max = 917.5. Tolérance -> 930
 
-        let inVerticalCorridor = (p.x >= 50 && p.x <= 250 && p.y >= 50 && p.y <= 950);
-        let inHorizontalCorridor = (p.x >= 50 && p.x <= 1350 && p.y >= 750 && p.y <= 950);
+        // Zone Verticale (Le couloir du début)
+        let inVerticalCorridor = (p.x > 90 && p.x < 250 && p.y > 90 && p.y < 950);
+
+        // Zone Horizontale (Le couloir du bas)
+        // On commence à x > 110 pour inclure la jonction
+        let inHorizontalCorridor = (p.x > 90 && p.x < 1350 && p.y > 790 && p.y < 950);
 
         // Si le joueur n'est dans AUCUNE de ces deux zones, il a traversé un mur
         if (!inVerticalCorridor && !inHorizontalCorridor) {
             this.restartLevel();
+        }
+
+        // Vérification de l'écrasement (Crush)
+        // Si le joueur chevauche encore un obstacle mouvant après la résolution des collisions,
+        // c'est qu'il est coincé contre un mur -> Mort.
+        const margin = 2; // Marge pour éviter de tuer le joueur s'il touche juste le bord (contact simple)
+        for (let obj of this.objetsGraphiques) {
+            if (obj instanceof MovingObstacle) {
+                if (rectsOverlap(p.x - p.w / 2 + margin, p.y - p.h / 2 + margin, p.w - margin * 2, p.h - margin * 2, obj.x, obj.y, obj.w, obj.h)) {
+                    this.restartLevel();
+                    return;
+                }
+            }
         }
     }
 
@@ -386,6 +405,10 @@ export default class Game {
             this.restartLevel();
             return;
         }
+
+        // Pour le niveau 9, on désactive le clamping (murs invisibles)
+        // car on veut que le joueur meure s'il traverse les murs (glitch/poussée)
+        if (this.currentLevel === 9) return;
 
         // 2. Comportement normal (Murs invisibles des bords)
         // On garde le clamping pour les déplacements classiques au clavier

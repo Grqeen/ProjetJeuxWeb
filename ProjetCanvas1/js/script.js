@@ -1,6 +1,6 @@
 import Game from "./Game.js";
 import { getMousePos } from "./utils.js";
-import Obstacle, { RotatingObstacle, CircleObstacle, MovingObstacle } from "./Obstacle.js";
+import Obstacle, { RotatingObstacle, CircleObstacle, MovingObstacle, TexturedObstacle } from "./Obstacle.js";
 import bumper from "./bumper.js";
 import fin from "./fin.js";
 import speedPotion from "./speedPotion.js";
@@ -361,6 +361,7 @@ async function init() {
                 createAssetPreview(assetsContainer, "square", "Carré", { w: 60, h: 60, type: "rect" });
                 createAssetPreview(assetsContainer, "rect", "Rectangle", { w: 120, h: 40, type: "rect" });
                 createAssetPreview(assetsContainer, "rect", "Mur V", { w: 40, h: 120, type: "rect" });
+                createAssetPreview(assetsContainer, "textured", "Tuyau", { w: 50, h: 150, type: "textured", imageSrc: "assets/images/pipe_texture.png" });
                 createAssetPreview(assetsContainer, "circle", "Cercle", { r: 35, type: "circle" });
             };
 
@@ -552,6 +553,9 @@ async function init() {
 
                 if (obj instanceof Player) {
                     type = "player";
+                } else if (obj instanceof TexturedObstacle) {
+                    type = "textured";
+                    extra.imageSrc = obj.imageSrc;
                 } else if (obj instanceof CircleObstacle) {
                     type = "circle";
                     extra.r = obj.radius;
@@ -597,6 +601,8 @@ async function init() {
                 let newObj;
                 if (data.type === "rect") {
                     newObj = new Obstacle(data.x, data.y, data.w, data.h, data.couleur);
+                } else if (data.type === "textured") {
+                    newObj = new TexturedObstacle(data.x, data.y, data.w, data.h, data.imageSrc);
                 } else if (data.type === "circle") {
                     newObj = new CircleObstacle(data.x, data.y, data.r, data.couleur);
                 } else if (data.type === "rotating") {
@@ -863,6 +869,10 @@ async function init() {
             if (data.w > data.h) h = w * (data.h/data.w);
             else w = h * (data.w/data.h);
             ctx.fillRect(25 - w/2, 25 - h/2, w, h);
+        } else if (data.type === "textured") {
+            ctx.fillStyle = "#555"; // Gris foncé pour simuler le tuyau
+            ctx.fillRect(15, 5, 20, 40);
+            ctx.strokeRect(15, 5, 20, 40);
         } else if (data.type === "circle") {
             ctx.fillStyle = "white";
             ctx.beginPath();
@@ -888,8 +898,9 @@ async function init() {
             img.src = "assets/images/citron.png";
             img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "size") {
-            ctx.fillStyle = "magenta";
-            ctx.fillRect(10, 10, 30, 30);
+            let img = new Image();
+            img.src = "assets/images/orange.png";
+            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "door") {
             ctx.fillStyle = "pink";
             ctx.fillRect(20, 5, 10, 40);
@@ -955,6 +966,7 @@ async function init() {
                 ghost.style.backgroundRepeat = "no-repeat";
             }
             else if (data.type === "rotating") ghost.style.backgroundColor = "red";
+            else if (data.type === "textured") ghost.style.backgroundColor = "#555";
             else if (data.type === "fin") ghost.style.backgroundColor = "green";
             else if (data.type === "speed") {
                 ghost.style.backgroundColor = "transparent";
@@ -962,7 +974,12 @@ async function init() {
                 ghost.style.backgroundSize = "contain";
                 ghost.style.backgroundRepeat = "no-repeat";
             }
-            else if (data.type === "size") ghost.style.backgroundColor = "magenta";
+            else if (data.type === "size") {
+                ghost.style.backgroundColor = "transparent";
+                ghost.style.backgroundImage = "url('assets/images/orange.png')";
+                ghost.style.backgroundSize = "contain";
+                ghost.style.backgroundRepeat = "no-repeat";
+            }
             else if (data.type === "keypad") {
                 ghost.style.backgroundColor = "transparent";
                 ghost.style.backgroundImage = "url('assets/images/fadingdoor.png')";
@@ -1013,6 +1030,8 @@ async function init() {
 
             if (draggedItem.type === "rect") {
                 newObj = new Obstacle(x - draggedItem.w / 2, y - draggedItem.h / 2, draggedItem.w, draggedItem.h, "white");
+            } else if (draggedItem.type === "textured") {
+                newObj = new TexturedObstacle(x - draggedItem.w / 2, y - draggedItem.h / 2, draggedItem.w, draggedItem.h, draggedItem.imageSrc);
             } else if (draggedItem.type === "circle") {
                 // On crée l'obstacle circulaire avec les bonnes coordonnées
                 newObj = new CircleObstacle(x, y, draggedItem.r, "white");
