@@ -675,7 +675,7 @@ export default class Game {
                     // On cherche la porte associée à ce keypad
                     this.objetsGraphiques.forEach(o => {
                         if (o instanceof fadingDoor && o.id === obj.id) {
-                            o.visible = false; // On rend la porte invisible (on pourrait aussi la retirer du tableau)
+                            o.visible = false; // On rend la porte invisible
                             console.log("Porte " + o.id + " désactivée !");
                         }
                     });
@@ -687,6 +687,7 @@ export default class Game {
                             if (o instanceof fadingDoor && o.id === obj.id) {
                                 o.visible = true;
                                 console.log("Porte " + o.id + " réactivée !");
+                                o
                             }
                         });
                         // On remet les keypads

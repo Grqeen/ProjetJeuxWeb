@@ -762,11 +762,11 @@ export default class Levels {
             this.game.objetsGraphiques.push(new keypad(299.23, 713.41, 44.44, 36.78, "pink", 3000, 1));
 
             // 4. Bumpers (Orange)
-            this.game.objetsGraphiques.push(new bumper(1136.30, 124.43, 50, 50, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(203.74, 120.59, 50, 50, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(441.28, 438.60, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1136.30, 124.43, 50, 50, "orange", "down"));
+            this.game.objetsGraphiques.push(new bumper(203.74, 120.59, 50, 50, "orange", "down"));
+            this.game.objetsGraphiques.push(new bumper(441.28, 438.60, 50, 50, "orange", "left"));
             this.game.objetsGraphiques.push(new bumper(824.90, 247.51, 36.78, 38.31, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(1012.16, 555.84, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1012.16, 555.84, 50, 50, "orange", "left"));
             this.game.objetsGraphiques.push(new bumper(1157.62, 725.06, 28.97, 30.50, "orange", "up"));
 
             // 5. Potions (Vitesse et Taille)
@@ -816,12 +816,12 @@ export default class Levels {
             this.game.objetsGraphiques.push(new RotatingObstacle(254.79, 747.89, 200, 20, "purple", 0.02, 1366.08));
 
             // 6. Bumpers (Orange)
-            this.game.objetsGraphiques.push(new bumper(1010.34, 672.03, 27.59, 24.52, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(146.74, 101.15, 36.78, 33.72, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(655.08, 230.94, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1010.34, 672.03, 27.59, 24.52, "orange", "down"));
+            this.game.objetsGraphiques.push(new bumper(146.74, 101.15, 36.78, 33.72, "orange", "down"));
+            this.game.objetsGraphiques.push(new bumper(655.08, 230.94, 50, 50, "orange", "down"));
             this.game.objetsGraphiques.push(new bumper(147.51, 817.62, 38.31, 38.31, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(459.39, 675.10, 36.78, 36.78, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(529.89, 732.57, 27.59, 27.59, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(529.89, 732.57, 27.59, 27.59, "orange", "down"));
 
             // 7. Sortie (Fin)
             this.game.fin = new fin(601.76, 107.89, 80, 80, "green", "assets/images/portal.png");
@@ -836,24 +836,24 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Obstacles Fixes (Murs noirs)
-            this.game.objetsGraphiques.push(new Obstacle(454.87, 182.45, 21.46, 485.82, "#000000"));
-            this.game.objetsGraphiques.push(new Obstacle(16.48, 182.38, 438.31, 22.99, "#000000"));
-            this.game.objetsGraphiques.push(new Obstacle(947.66, 176.40, 21.46, 485.82, "#000000"));
-            this.game.objetsGraphiques.push(new Obstacle(38.85, 850.73, 1342.38, 25.90, "#000000"));
-            this.game.objetsGraphiques.push(new Obstacle(152.26, 353.41, 151.57, 13.64, "#000000"));
-            this.game.objetsGraphiques.push(new Obstacle(1358.47, -0.31, 21.46, 851.65, "#000000"));
-            this.game.objetsGraphiques.push(new Obstacle(1163.14, 371.19, 197.39, 15.02, "#000000"));
-            this.game.objetsGraphiques.push(new Obstacle(959.46, 175.94, 166.59, 17.93, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(454.87, 182.45, 21.46, 485.82, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(16.48, 182.38, 438.31, 22.99, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(947.66, 176.40, 21.46, 485.82, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(38.85, 850.73, 1342.38, 25.90, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(152.26, 353.41, 151.57, 13.64, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1358.47, -0.31, 21.46, 851.65, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1163.14, 371.19, 197.39, 15.02, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(959.46, 175.94, 166.59, 17.93, "black"));
 
             // 3. Obstacles Rotatifs (RotatingObstacles)
-            this.game.objetsGraphiques.push(new RotatingObstacle(707.66, 447.51, 500, 20, "#000000", 0.02, 2487.66));
-            this.game.objetsGraphiques.push(new RotatingObstacle(231.03, 516.48, 200, 20, "#000000", 0.02, 635.02));
+            this.game.objetsGraphiques.push(new RotatingObstacle(707.66, 447.51, 500, 20, "black", 0.02, 2487.66));
+            this.game.objetsGraphiques.push(new RotatingObstacle(231.03, 516.48, 200, 20, "black", 0.02, 635.02));
 
             // 4. Portes et Claviers (FadingDoors & Keypads)
             this.game.objetsGraphiques.push(new fadingDoor(163.56, -7.66, 20, 190.04, "pink", 3000, 1));
-            this.game.objetsGraphiques.push(new fadingDoor(947.51, -0.77, 21.46, 174.71, "pink", 5500, 2));
+            this.game.objetsGraphiques.push(new fadingDoor(947.51, -0.77, 21.46, 174.71, "pink", 7000, 2));
             this.game.objetsGraphiques.push(new keypad(1290.80, 70.50, 41.38, 42.91, "pink", 3000, 1));
-            this.game.objetsGraphiques.push(new keypad(198.08, 311.11, 44.44, 44.44, "pink", 3000, 2));
+            this.game.objetsGraphiques.push(new keypad(198.08, 311.11, 44.44, 44.44, "pink", 7000, 2));
 
             // 5. Obstacles Mobiles (Violets)
             this.game.objetsGraphiques.push(new MovingObstacle(1130, 521.03, 60, 20, "purple", 100, 0, 0.05));
@@ -878,6 +878,49 @@ export default class Levels {
 
             // 8. Sortie (Fin)
             this.game.fin = new fin(42.38, 50.42, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 18) {
+            // --- NIVEAU 18 : La Prison des Claviers ---
+            
+            // 1. Joueur
+            this.game.player = new Player(210.61, 406.48);
+            this.game.player.w = 100;
+            this.game.player.h = 53.33;
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Obstacles Fixes (Murs noirs)
+            this.game.objetsGraphiques.push(new Obstacle(135.25, 163.98, 1187.74, 15.33, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(138.39, 711.95, 1187.74, 15.33, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(1306.13, 164.75, 24.52, 557.85, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(136.09, 162.53, 24.52, 557.85, "black"));
+            this.game.objetsGraphiques.push(new Obstacle(328.51, 423.14, 782.99, 22.84, "black"));
+
+            // 3. Portes à évanouissement (FadingDoors)
+            this.game.objetsGraphiques.push(new fadingDoor(429.50, 180.84, 32.18, 237.55, "red", 5000, 4));
+            this.game.objetsGraphiques.push(new fadingDoor(641.07, 181.69, 32.18, 237.55, "pink", 3000, 5));
+            this.game.objetsGraphiques.push(new fadingDoor(871.72, 181.69, 32.18, 237.55, "pink", 3000, 5));
+            this.game.objetsGraphiques.push(new fadingDoor(1073.26, 183.98, 32.18, 237.55, "pink", 3000, 6));
+            this.game.objetsGraphiques.push(new fadingDoor(429.58, 448.43, 32.18, 260.38, "red", 5000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(643.37, 449.20, 32.18, 258.85, "pink", 3000, 2));
+            this.game.objetsGraphiques.push(new fadingDoor(873.26, 448.43, 32.18, 257.32, "pink", 3000, 2));
+            this.game.objetsGraphiques.push(new fadingDoor(1073.26, 446.13, 32.18, 258.85, "pink", 3000, 3));
+
+            // 4. Claviers (Keypads)
+            this.game.objetsGraphiques.push(new keypad(751.57, 564.21, 35.25, 35.25, "pink", 5000, 4));
+            this.game.objetsGraphiques.push(new keypad(974.56, 560.38, 35.25, 35.25, "pink", 3000, 6));
+            this.game.objetsGraphiques.push(new keypad(976.09, 279.16, 35.25, 35.25, "pink", 3000, 3));
+            this.game.objetsGraphiques.push(new keypad(753.87, 284.52, 35.25, 35.25, "pink", 3000, 1));
+            this.game.objetsGraphiques.push(new keypad(317.09, 281.46, 35.25, 35.25, "pink", 5000, 1));
+            this.game.objetsGraphiques.push(new keypad(537.01, 286.05, 35.25, 35.25, "pink", 3000, 2));
+            this.game.objetsGraphiques.push(new keypad(318.54, 563.37, 35.25, 35.25, "pink", 3000, 4));
+            this.game.objetsGraphiques.push(new keypad(533.18, 563.45, 35.25, 35.25, "pink", 3000, 5));
+
+            // 5. Potions de vitesse (SpeedPotions)
+            this.game.objetsGraphiques.push(new speedPotion(796.88, 650.33, 30, 40.86, "cyan", 5, 3000));
+            this.game.objetsGraphiques.push(new speedPotion(803.08, 189.10, 30, 38.18, "cyan", 5, 3000));
+
+            // 6. Sortie (Fin)
+            this.game.fin = new fin(1186.44, 389.12, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         }
     }
