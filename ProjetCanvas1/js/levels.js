@@ -373,8 +373,8 @@ export default class Levels {
             this.game.objetsGraphiques.push(new bumper(980, 700, 50, 50, "yellow", "up"));
 
             // Porte et Fin
-            this.game.objetsGraphiques.push(new keypad(700, 740, 25, 25, "orange", 3000, 88));
-            this.game.objetsGraphiques.push(new fadingDoor(roomRight, 200, 10, 610, "orange", 3000, 88)); // Porte sur le mur de droite
+            this.game.objetsGraphiques.push(new keypad(700, 740, 25, 25, "orange", 10000, 88));
+            this.game.objetsGraphiques.push(new fadingDoor(roomRight, 200, 10, 610, "orange", 10000, 88)); // Porte sur le mur de droite
             this.game.fin = new fin(1250, 500, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 9) {
