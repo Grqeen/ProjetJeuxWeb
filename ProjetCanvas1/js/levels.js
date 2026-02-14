@@ -826,6 +826,59 @@ export default class Levels {
             // 7. Sortie (Fin)
             this.game.fin = new fin(601.76, 107.89, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
+        } else if (levelNumber === 17) {
+            // --- NIVEAU 17 : Le Labyrinthe des Portes et Rotations ---
+            
+            // 1. Position du Joueur
+            this.game.player = new Player(320.88, 85.67);
+            this.game.player.w = 100;
+            this.game.player.h = 53.33;
+            this.game.objetsGraphiques.push(this.game.player);
+
+            // 2. Obstacles Fixes (Murs noirs)
+            this.game.objetsGraphiques.push(new Obstacle(454.87, 182.45, 21.46, 485.82, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(16.48, 182.38, 438.31, 22.99, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(947.66, 176.40, 21.46, 485.82, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(38.85, 850.73, 1342.38, 25.90, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(152.26, 353.41, 151.57, 13.64, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(1358.47, -0.31, 21.46, 851.65, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(1163.14, 371.19, 197.39, 15.02, "#000000"));
+            this.game.objetsGraphiques.push(new Obstacle(959.46, 175.94, 166.59, 17.93, "#000000"));
+
+            // 3. Obstacles Rotatifs (RotatingObstacles)
+            this.game.objetsGraphiques.push(new RotatingObstacle(707.66, 447.51, 500, 20, "#000000", 0.02, 2487.66));
+            this.game.objetsGraphiques.push(new RotatingObstacle(231.03, 516.48, 200, 20, "#000000", 0.02, 635.02));
+
+            // 4. Portes et Claviers (FadingDoors & Keypads)
+            this.game.objetsGraphiques.push(new fadingDoor(163.56, -7.66, 20, 190.04, "pink", 3000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(947.51, -0.77, 21.46, 174.71, "pink", 5500, 2));
+            this.game.objetsGraphiques.push(new keypad(1290.80, 70.50, 41.38, 42.91, "pink", 3000, 1));
+            this.game.objetsGraphiques.push(new keypad(198.08, 311.11, 44.44, 44.44, "pink", 3000, 2));
+
+            // 5. Obstacles Mobiles (Violets)
+            this.game.objetsGraphiques.push(new MovingObstacle(1130, 521.03, 60, 20, "purple", 100, 0, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(690, 439.04, 50, 20, "purple", 200, 0, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(669.23, 70, 60, 20, "purple", 0, 50, 0.05));
+
+            // 6. Bumpers (Orange)
+            this.game.objetsGraphiques.push(new bumper(11.40, 202.59, 50, 50, "orange", "down"));
+            this.game.objetsGraphiques.push(new bumper(1107.66, 818.39, 35.25, 32.18, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(964.66, 581.90, 50, 50, "orange", "right"));
+            this.game.objetsGraphiques.push(new bumper(1308.72, 384.96, 50, 50, "orange", "left"));
+            this.game.objetsGraphiques.push(new bumper(1096.17, 145.59, 27.59, 29.12, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1198.85, 345.59, 29.12, 29.12, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(440.23, 147.89, 36.78, 33.72, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(912.26, 615.33, 38.31, 32.18, "orange", "left"));
+            this.game.objetsGraphiques.push(new bumper(56.61, 806.42, 50, 50, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1331.49, 3.14, 27.59, 29.12, "orange", "down"));
+
+            // 7. Téléporteur et Potion
+            this.game.objetsGraphiques.push(new teleporter(979.69, 206.13, 29.12, 26.05, "#ae00ff", 300, 500));
+            this.game.objetsGraphiques.push(new speedPotion(234.87, 796.69, 33.72, 42.39, "cyan", 5, 3000));
+
+            // 8. Sortie (Fin)
+            this.game.fin = new fin(42.38, 50.42, 80, 80, "green", "assets/images/portal.png");
+            this.game.objetsGraphiques.push(this.game.fin);
         }
     }
 }
