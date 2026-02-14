@@ -587,7 +587,7 @@ export default class Game {
                     this.player.vitesseX = 0;
                     this.player.vitesseY = 0;
                 }
-            }else if (obstacle instanceof movingObstacle) {
+            }else if (obstacle instanceof MovingObstacle) {
                 if (rectsOverlap(this.player.x - this.player.w / 2, this.player.y - this.player.h / 2, this.player.w, this.player.h, obstacle.x, obstacle.y, obstacle.w, obstacle.h)) {
                     console.log("Collision avec obstacle mobile");
                     // On repousse le joueur vers l'extérieur du centre de rotation
@@ -618,7 +618,7 @@ export default class Game {
                 }
                 // on gère aussi la collision de l'obstacle mobile avec les autres obstacles mobiles pour qu'ils puissent rebondir dessus
                 this.objetsGraphiques.forEach(o => {
-                    if (o instanceof movingObstacle && o !== obstacle) {
+                    if (o instanceof MovingObstacle && o !== obstacle) {
                         if (rectsOverlap(obstacle.x, obstacle.y, obstacle.w, obstacle.h, o.x, o.y, o.w, o.h)) {
                             // Inverse la direction de l'obstacle mobile
                             obstacle.moveX = -obstacle.moveX;
