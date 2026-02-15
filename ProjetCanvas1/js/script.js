@@ -4,7 +4,6 @@ import Obstacle, {
   RotatingObstacle,
   CircleObstacle,
   MovingObstacle,
-  TexturedObstacle,
 } from "./Obstacle.js";
 import bumper from "./bumper.js";
 import fin from "./fin.js";
@@ -245,7 +244,14 @@ async function init() {
     while (true) {
         game.levels.load(maxLevels + 1);
         if (game.objetsGraphiques.length === 0) break;
-        maxLevels++;
+    maxLevels++;
+  }
+  game.objetsGraphiques = []; // reset
+  console.log("Niveaux détectés : " + maxLevels);
+
+  // bouton story
+  if (exitBtn) exitBtn.innerText = "Story";
+
   const unlockAudio = () => {
     if (currentMusicState === "menu" && menuMusic.paused) {
       menuMusic.play().catch(() => {});
@@ -255,124 +261,8 @@ async function init() {
     document.removeEventListener("click", unlockAudio);
     document.removeEventListener("keydown", unlockAudio);
   };
-
   document.addEventListener("click", unlockAudio);
   document.addEventListener("keydown", unlockAudio);
-
-  // autoplay
-  playMusic("menu");
-
-  // volume
-  let volumeContainer = document.createElement("div");
-  volumeContainer.id = "volumeContainer";
-  Object.assign(volumeContainer.style, {
-    position: "fixed",
-    bottom: "20px",
-    right: "20px",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    zIndex: "10000", // z-index haut
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    padding: "8px 15px",
-    borderRadius: "25px",
-    backdropFilter: "blur(5px)",
-    border: "1px solid rgba(255,255,255,0.3)",
-  });
-
-  let volumeSlider = document.createElement("input");
-  volumeSlider.type = "range";
-  volumeSlider.id = "volumeSlider";
-  volumeSlider.min = "0";
-  volumeSlider.max = "1";
-  volumeSlider.step = "0.01";
-  volumeSlider.value = "0.5";
-  volumeSlider.style.width = "80px";
-  volumeSlider.style.cursor = "pointer";
-  volumeSlider.style.accentColor = "#ffcc00";
-
-  let volumeIcon = document.createElement("span");
-  volumeIcon.innerText = "🔊";
-  volumeIcon.style.fontSize = "24px";
-  volumeIcon.style.cursor = "pointer";
-  volumeIcon.style.userSelect = "none";
-  volumeIcon.style.color = "white";
-
-  volumeContainer.appendChild(volumeSlider);
-  volumeContainer.appendChild(volumeIcon);
-  document.body.appendChild(volumeContainer);
-
-  let previousVolume = 0.5;
-  let isMuted = false;
-
-  volumeSlider.oninput = (e) => {
-    let vol = parseFloat(e.target.value);
-    menuMusic.volume = vol;
-    gameMusic.volume = vol;
-    if (vol > 0) {
-      isMuted = false;
-      volumeIcon.innerText = "🔊";
-      previousVolume = vol;
-    } else {
-      isMuted = true;
-      volumeIcon.innerText = "🔇";
-    }
-  };
-
-  volumeIcon.onclick = () => {
-    if (isMuted) {
-      isMuted = false;
-      let vol = previousVolume || 0.5;
-      if (vol === 0) vol = 0.5;
-      menuMusic.volume = vol;
-      gameMusic.volume = vol;
-      volumeSlider.value = vol;
-      volumeIcon.innerText = "🔊";
-    } else {
-      isMuted = true;
-      previousVolume = parseFloat(volumeSlider.value);
-      menuMusic.volume = 0;
-      gameMusic.volume = 0;
-      volumeSlider.value = 0;
-      volumeIcon.innerText = "🔇";
-    }
-  };
-
-  // init jeu
-  let game = new Game(canvas);
-  game.levelElement = document.querySelector("#level");
-  game.timerElement = document.querySelector("#timerValue");
-  await game.init();
-
-  // modificateurs
-  const setupModifier = (rangeId, onChange) => {
-    let range = document.querySelector(rangeId);
-    if (range) {
-      range.oninput = () => {
-        onChange(parseFloat(range.value));
-      };
-    }
-  };
-
-  setupModifier("#speedRange", (val) => (game.playerSpeed = val));
-  setupModifier("#rotRange", (val) => {
-    game.rotationMultiplier = val;
-    game.applyRotationMultiplier();
-  });
-  setupModifier("#bumpRange", (val) => (game.bumperForce = val));
-
-  // detecte niveaux
-  let maxLevels = 0;
-  while (true) {
-    game.levels.load(maxLevels + 1);
-    if (game.objetsGraphiques.length === 0) break;
-    maxLevels++;
-  }
-  game.objetsGraphiques = []; // reset
-  console.log("Niveaux détectés : " + maxLevels);
-
-  // bouton story
-  if (exitBtn) exitBtn.innerText = "Story";
 
   // scores
   let bestTimes = {}; // temps
@@ -434,7 +324,6 @@ async function init() {
   // Variable globale pour stocker l'objet en cours de déplacement
   let draggedItem = null;
 
-  // Dans js/script.js, à l'intérieur de editorBtn.onclick
   editorBtn.onclick = () => {
     menu.style.display = "none";
     menuBackground.style.display = "none";
@@ -793,457 +682,6 @@ async function init() {
                 }
                 return newObj;
             }
-      const assetsContainer = document.querySelector("#editorAssetsContainer");
-
-      // bouton mur
-      document.querySelector("#btnEditorWall").onclick = () => {
-        assetsContainer.innerHTML = ""; // vide
-        // types
-        createAssetPreview(assetsContainer, "square", "Carré", {
-          w: 60,
-          h: 60,
-          type: "rect",
-        });
-        createAssetPreview(assetsContainer, "rect", "Rectangle", {
-          w: 120,
-          h: 40,
-          type: "rect",
-        });
-        createAssetPreview(assetsContainer, "rect", "Mur V", {
-          w: 40,
-          h: 120,
-          type: "rect",
-        });
-        createAssetPreview(assetsContainer, "textured", "Tuyau", {
-          w: 50,
-          h: 150,
-          type: "textured",
-          imageSrc: "assets/images/pipe_texture.png",
-        });
-        createAssetPreview(assetsContainer, "circle", "Cercle", {
-          r: 35,
-          type: "circle",
-        });
-      };
-
-      // bouton obstacle
-      document.querySelector("#btnEditorObstacle").onclick = () => {
-        assetsContainer.innerHTML = "";
-        createAssetPreview(assetsContainer, "triangle", "Bumper", {
-          w: 50,
-          h: 50,
-          type: "bumper",
-        });
-        createAssetPreview(assetsContainer, "rect", "Croix", {
-          w: 200,
-          h: 20,
-          type: "rotating",
-        });
-        createAssetPreview(assetsContainer, "circle", "Fin", {
-          w: 80,
-          h: 80,
-          type: "fin",
-        });
-        createAssetPreview(assetsContainer, "rect", "Moving", {
-          w: 60,
-          h: 20,
-          type: "moving",
-        });
-        createAssetPreview(assetsContainer, "rect", "Teleport", {
-          w: 40,
-          h: 40,
-          type: "teleporter",
-        });
-      };
-
-      // bouton modifs
-      document.querySelector("#btnEditorModifiers").onclick = () => {
-        assetsContainer.innerHTML = "";
-        createAssetPreview(assetsContainer, "square", "Vitesse", {
-          w: 30,
-          h: 30,
-          type: "speed",
-        });
-        createAssetPreview(assetsContainer, "square", "Taille", {
-          w: 30,
-          h: 30,
-          type: "size",
-        });
-        createAssetPreview(assetsContainer, "rect", "Porte", {
-          w: 20,
-          h: 100,
-          type: "door",
-        });
-        createAssetPreview(assetsContainer, "square", "Clé", {
-          w: 30,
-          h: 30,
-          type: "keypad",
-        });
-      };
-
-      document.querySelector("#btnExitEditor").onclick = () =>
-        location.reload();
-
-      // inputs
-      const propW = document.querySelector("#propW");
-      const propH = document.querySelector("#propH");
-      const propRot = document.querySelector("#propRot");
-      const propColor = document.querySelector("#propColor");
-      const btnLayerUp = document.querySelector("#btnLayerUp");
-      const btnLayerDown = document.querySelector("#btnLayerDown");
-      const propRotSpeed = document.querySelector("#propRotSpeed");
-      const divRotSpeed = document.querySelector("#divRotSpeed");
-      const propLinkId = document.querySelector("#propLinkId");
-      const divLinkId = document.querySelector("#divLinkId");
-      const btnDelete = document.querySelector("#btnDeleteObj");
-      const propsPanel = document.querySelector("#editorProperties");
-
-      const divMoveProps = document.querySelector("#divMoveProps");
-      const propDistX = document.querySelector("#propDistX");
-      const propDistY = document.querySelector("#propDistY");
-      const propMoveSpeed = document.querySelector("#propMoveSpeed");
-      const divTeleportProps = document.querySelector("#divTeleportProps");
-      const propDestX = document.querySelector("#propDestX");
-      const propDestY = document.querySelector("#propDestY");
-      const btnExport = document.querySelector("#btnExportLevel");
-
-      function updateInputs() {
-        if (!game.selectedObject) {
-          propsPanel.style.display = "none";
-          return;
-        }
-        propsPanel.style.display = "block";
-
-        // pas supprimer joueur
-        if (game.selectedObject === game.player) {
-          btnDelete.style.display = "none";
-        } else {
-          btnDelete.style.display = "block";
-        }
-
-        propW.value = Math.round(game.selectedObject.w);
-        propH.value = Math.round(game.selectedObject.h);
-        // rad deg
-        let angleDeg = (game.selectedObject.angle || 0) * (180 / Math.PI);
-        propRot.value = Math.round(angleDeg);
-
-        // couleur
-        let c = game.selectedObject.couleur || "#000000";
-        // nom vers hex
-        if (!c.startsWith("#")) {
-          c = colorMap[c.toLowerCase()] || "#000000";
-        }
-        propColor.value = c;
-
-        // vitesse rot
-        if (game.selectedObject.angleSpeed !== undefined) {
-          divRotSpeed.style.display = "block";
-          propRotSpeed.value = game.selectedObject.angleSpeed;
-        } else {
-          divRotSpeed.style.display = "none";
-        }
-
-        // id liaison
-        if (game.selectedObject.id !== undefined) {
-          divLinkId.style.display = "block";
-          propLinkId.value = game.selectedObject.id;
-        } else {
-          divLinkId.style.display = "none";
-        }
-
-        // obstacle mobile
-        if (game.selectedObject instanceof MovingObstacle) {
-          divMoveProps.style.display = "block";
-          propDistX.value = game.selectedObject.distX;
-          propDistY.value = game.selectedObject.distY;
-          propMoveSpeed.value = game.selectedObject.speed;
-        } else {
-          divMoveProps.style.display = "none";
-        }
-
-        // teleporter
-        if (game.selectedObject instanceof teleporter) {
-          divTeleportProps.style.display = "block";
-          propDestX.value = game.selectedObject.destinationX;
-          propDestY.value = game.selectedObject.destinationY;
-        } else {
-          divTeleportProps.style.display = "none";
-        }
-      }
-
-      propW.oninput = () => {
-        if (game.selectedObject)
-          game.selectedObject.w = parseFloat(propW.value);
-      };
-      propH.oninput = () => {
-        if (game.selectedObject)
-          game.selectedObject.h = parseFloat(propH.value);
-      };
-      propRot.oninput = () => {
-        if (game.selectedObject) {
-          // deg rad
-          game.selectedObject.angle =
-            parseFloat(propRot.value) * (Math.PI / 180);
-        }
-      };
-      propColor.oninput = () => {
-        if (game.selectedObject) game.selectedObject.couleur = propColor.value;
-      };
-      propRotSpeed.oninput = () => {
-        if (
-          game.selectedObject &&
-          game.selectedObject.angleSpeed !== undefined
-        ) {
-          game.selectedObject.angleSpeed = parseFloat(propRotSpeed.value);
-          if (game.selectedObject.initialAngleSpeed !== undefined) {
-            game.selectedObject.initialAngleSpeed = parseFloat(
-              propRotSpeed.value,
-            );
-          }
-        }
-      };
-      propLinkId.oninput = () => {
-        if (game.selectedObject && game.selectedObject.id !== undefined) {
-          game.selectedObject.id = parseInt(propLinkId.value);
-        }
-      };
-      propDistX.oninput = () => {
-        if (game.selectedObject instanceof MovingObstacle)
-          game.selectedObject.distX = parseFloat(propDistX.value);
-      };
-      propDistY.oninput = () => {
-        if (game.selectedObject instanceof MovingObstacle)
-          game.selectedObject.distY = parseFloat(propDistY.value);
-      };
-      propMoveSpeed.oninput = () => {
-        if (game.selectedObject instanceof MovingObstacle)
-          game.selectedObject.speed = parseFloat(propMoveSpeed.value);
-      };
-
-      propDestX.oninput = () => {
-        if (game.selectedObject instanceof teleporter)
-          game.selectedObject.destinationX = parseFloat(propDestX.value);
-      };
-      propDestY.oninput = () => {
-        if (game.selectedObject instanceof teleporter)
-          game.selectedObject.destinationY = parseFloat(propDestY.value);
-      };
-
-      btnDelete.onclick = () => {
-        if (game.selectedObject && game.selectedObject !== game.player) {
-          const index = game.objetsGraphiques.indexOf(game.selectedObject);
-          if (index > -1) {
-            game.objetsGraphiques.splice(index, 1);
-            game.selectedObject = null;
-            updateInputs();
-          }
-        }
-      };
-
-      // calques
-      btnLayerUp.onclick = () => {
-        if (game.selectedObject) {
-          const idx = game.objetsGraphiques.indexOf(game.selectedObject);
-          if (idx < game.objetsGraphiques.length - 1) {
-            // echange suivant
-            [game.objetsGraphiques[idx], game.objetsGraphiques[idx + 1]] = [
-              game.objetsGraphiques[idx + 1],
-              game.objetsGraphiques[idx],
-            ];
-          }
-        }
-      };
-      btnLayerDown.onclick = () => {
-        if (game.selectedObject) {
-          const idx = game.objetsGraphiques.indexOf(game.selectedObject);
-          if (idx > 0) {
-            // echange precedent
-            [game.objetsGraphiques[idx], game.objetsGraphiques[idx - 1]] = [
-              game.objetsGraphiques[idx - 1],
-              game.objetsGraphiques[idx],
-            ];
-          }
-        }
-      };
-
-      // touche suppr
-      window.addEventListener("keydown", (e) => {
-        if (e.key === "Delete") {
-          // pas suppr input
-          if (document.activeElement.tagName === "INPUT") return;
-          btnDelete.click();
-        }
-      });
-
-      // copier coller
-      let clipboard = null;
-
-      function getObjectData(obj) {
-        let type = "rect";
-        let extra = {};
-
-        if (obj instanceof Player) {
-          type = "player";
-        } else if (obj instanceof TexturedObstacle) {
-          type = "textured";
-          extra.imageSrc = obj.imageSrc;
-        } else if (obj instanceof CircleObstacle) {
-          type = "circle";
-          extra.r = obj.radius;
-        } else if (obj instanceof RotatingObstacle) {
-          type = "rotating";
-          extra.angleSpeed = obj.initialAngleSpeed || obj.angleSpeed;
-          extra.angle = obj.angle;
-        } else if (obj instanceof bumper) {
-          type = "bumper";
-          extra.direction = obj.direction;
-        } else if (obj instanceof fin) {
-          type = "fin";
-        } else if (obj instanceof speedPotion) {
-          type = "speed";
-          extra.vitesse = obj.vitesse;
-          extra.temps = obj.temps;
-        } else if (obj instanceof sizePotion) {
-          type = "size";
-          extra.tailleW = obj.tailleW;
-          extra.tailleH = obj.tailleH;
-        } else if (obj instanceof fadingDoor) {
-          type = "door";
-          extra.timer = obj.timer;
-          extra.id = obj.id;
-        } else if (obj instanceof keypad) {
-          type = "keypad";
-          extra.temps = obj.temps;
-          extra.id = obj.id;
-        } else if (obj instanceof MovingObstacle) {
-          type = "moving";
-          extra.distX = obj.distX;
-          extra.distY = obj.distY;
-          extra.speed = obj.speed;
-        } else if (obj instanceof teleporter) {
-          type = "teleporter";
-          extra.destinationX = obj.destinationX;
-          extra.destinationY = obj.destinationY;
-        }
-        return {
-          type,
-          x: obj.x,
-          y: obj.y,
-          w: obj.w,
-          h: obj.h,
-          couleur: obj.couleur,
-          ...extra,
-        };
-      }
-
-      function createObjectFromData(data) {
-        let newObj;
-        if (data.type === "rect") {
-          newObj = new Obstacle(data.x, data.y, data.w, data.h, data.couleur);
-        } else if (data.type === "textured") {
-          newObj = new TexturedObstacle(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.imageSrc,
-          );
-        } else if (data.type === "circle") {
-          newObj = new CircleObstacle(data.x, data.y, data.r, data.couleur);
-        } else if (data.type === "rotating") {
-          newObj = new RotatingObstacle(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.couleur,
-            data.angleSpeed,
-            data.angle,
-          );
-        } else if (data.type === "bumper") {
-          newObj = new bumper(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.couleur,
-            data.direction,
-          );
-        } else if (data.type === "fin") {
-          newObj = new fin(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.couleur,
-            "assets/images/portal.png",
-          );
-        } else if (data.type === "speed") {
-          newObj = new speedPotion(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.couleur,
-            data.vitesse,
-            data.temps,
-          );
-        } else if (data.type === "size") {
-          newObj = new sizePotion(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.couleur,
-            data.tailleW,
-            data.tailleH,
-          );
-        } else if (data.type === "door") {
-          newObj = new fadingDoor(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.timer,
-            data.id,
-          );
-        } else if (data.type === "keypad") {
-          newObj = new keypad(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.temps,
-            data.id,
-          );
-        } else if (data.type === "moving") {
-          newObj = new MovingObstacle(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.couleur,
-            data.distX,
-            data.distY,
-            data.speed,
-          );
-        } else if (data.type === "teleporter") {
-          newObj = new teleporter(
-            data.x,
-            data.y,
-            data.w,
-            data.h,
-            data.couleur,
-            data.destinationX,
-            data.destinationY,
-          );
-        }
-
-        if (newObj && data.angle && !(newObj instanceof RotatingObstacle)) {
-          newObj.angle = data.angle;
-        }
-        return newObj;
-      }
 
       window.addEventListener("keydown", (e) => {
         // ctrl c
@@ -1272,38 +710,6 @@ async function init() {
         const levelData = game.objetsGraphiques.map((obj) =>
           getObjectData(obj),
         );
-
-            // Colors based on type
-            if (data.type === "bumper") {
-                ghost.style.backgroundColor = "transparent";
-                ghost.style.backgroundImage = "url('assets/images/bumper.png')";
-                ghost.style.backgroundSize = "contain";
-                ghost.style.backgroundRepeat = "no-repeat";
-            }
-            else if (data.type === "rotating") ghost.style.backgroundColor = "red";
-            else if (data.type === "fin") ghost.style.backgroundColor = "green";
-            else if (data.type === "speed") {
-                ghost.style.backgroundColor = "transparent";
-                ghost.style.backgroundImage = "url('assets/images/citron.png')";
-                ghost.style.backgroundSize = "contain";
-                ghost.style.backgroundRepeat = "no-repeat";
-            }
-            else if (data.type === "size") ghost.style.backgroundColor = "magenta";
-            else if (data.type === "keypad") {
-                ghost.style.backgroundColor = "transparent";
-                ghost.style.backgroundImage = "url('assets/images/fadingdoor.png')";
-                ghost.style.backgroundSize = "contain";
-                ghost.style.backgroundRepeat = "no-repeat";
-            }
-            else if (data.type === "door") ghost.style.backgroundColor = "pink";
-            else if (data.type === "moving") ghost.style.backgroundColor = "purple";
-            else if (data.type === "teleporter") ghost.style.backgroundColor = "blue";
-            else if (data.type === "fan") ghost.style.backgroundColor = "gray";
-            else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // Default wall
-
-            // Centering on mouse
-            ghost.style.left = (e.clientX - w / 2) + "px";
-            ghost.style.top = (e.clientY - h / 2) + "px";
         const blob = new Blob([JSON.stringify(levelData, null, 2)], {
           type: "application/json",
         });
@@ -1423,37 +829,6 @@ async function init() {
         let pos = getMousePos(canvas, e);
         let x = pos.x;
         let y = pos.y;
-
-        // Si on lâche la souris sur le canvas
-        if (x > 0 && x < canvas.width && y > 0 && y < canvas.height) {
-            let newObj;
-            // Note : Les classes sont maintenant importées en haut du fichier
-
-            if (draggedItem.type === "rect") {
-                newObj = new Obstacle(x - draggedItem.w / 2, y - draggedItem.h / 2, draggedItem.w, draggedItem.h, "white");
-            } else if (draggedItem.type === "circle") {
-                // On crée l'obstacle circulaire avec les bonnes coordonnées
-                newObj = new CircleObstacle(x, y, draggedItem.r, "white");
-            } else if (draggedItem.type === "bumper") {
-                newObj = new bumper(x - 25, y - 25, 50, 50, "orange", "up");
-            } else if (draggedItem.type === "rotating") {
-                newObj = new RotatingObstacle(x, y, draggedItem.w, draggedItem.h, "red", 0.02);
-            } else if (draggedItem.type === "fin") {
-                newObj = new fin(x - 40, y - 40, 80, 80, "green", "assets/images/portal.png");
-            } else if (draggedItem.type === "speed") {
-                newObj = new speedPotion(x - 15, y - 15, 30, 30, "cyan", 5, 3000);
-            } else if (draggedItem.type === "size") {
-                newObj = new sizePotion(x - 15, y - 15, 30, 30, "magenta", -40, -40);
-            } else if (draggedItem.type === "door") {
-                newObj = new fadingDoor(x - 10, y - 50, 20, 100, "pink", 3000, 1);
-            } else if (draggedItem.type === "keypad") {
-                newObj = new keypad(x - 15, y - 15, 30, 30, "pink", 3000, 1);
-            } else if (draggedItem.type === "moving") {
-                newObj = new MovingObstacle(x - 30, y - 10, 60, 20, "purple", 100, 0, 0.05);
-            } else if (draggedItem.type === "teleporter") {
-                newObj = new teleporter(x - 20, y - 20, 40, 40, "blue", 100, 100);
-            } else if (draggedItem.type === "fan") {
-                newObj = new Fan(x - 25, y - 25, 50, 50, "cyan", 2);
         // resize
         if (resizingHandle && game.selectedObject) {
           let obj = game.selectedObject;
@@ -1568,10 +943,6 @@ async function init() {
       if (data.w > data.h) h = w * (data.h / data.w);
       else w = h * (data.w / data.h);
       ctx.fillRect(25 - w / 2, 25 - h / 2, w, h);
-    } else if (data.type === "textured") {
-      ctx.fillStyle = "#555"; // gris
-      ctx.fillRect(15, 5, 20, 40);
-      ctx.strokeRect(15, 5, 20, 40);
     } else if (data.type === "circle") {
       ctx.fillStyle = "white";
       ctx.beginPath();
@@ -1616,6 +987,11 @@ async function init() {
       let img = new Image();
       img.src = "assets/images/teleporter.png";
       img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    } else if (data.type === "fan") {
+      ctx.fillStyle = "cyan";
+      ctx.fillRect(10, 10, 30, 30);
+      ctx.fillStyle = "black";
+      ctx.fillText("Fan", 15, 28);
     }
 
     div.appendChild(cvs);
@@ -1664,7 +1040,6 @@ async function init() {
         ghost.style.backgroundSize = "contain";
         ghost.style.backgroundRepeat = "no-repeat";
       } else if (data.type === "rotating") ghost.style.backgroundColor = "red";
-      else if (data.type === "textured") ghost.style.backgroundColor = "#555";
       else if (data.type === "fin") ghost.style.backgroundColor = "green";
       else if (data.type === "speed") {
         ghost.style.backgroundColor = "transparent";
@@ -1692,6 +1067,8 @@ async function init() {
         ghost.style.backgroundImage = "url('assets/images/teleporter.png')";
         ghost.style.backgroundSize = "contain";
         ghost.style.backgroundRepeat = "no-repeat";
+      } else if (data.type === "fan") {
+        ghost.style.backgroundColor = "cyan";
       } else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // mur defaut
 
       // centre souris
@@ -1738,14 +1115,6 @@ async function init() {
           draggedItem.h,
           "white",
         );
-      } else if (draggedItem.type === "textured") {
-        newObj = new TexturedObstacle(
-          x - draggedItem.w / 2,
-          y - draggedItem.h / 2,
-          draggedItem.w,
-          draggedItem.h,
-          draggedItem.imageSrc,
-        );
       } else if (draggedItem.type === "circle") {
         // cercle
         newObj = new CircleObstacle(x, y, draggedItem.r, "white");
@@ -1790,6 +1159,14 @@ async function init() {
         );
       } else if (draggedItem.type === "teleporter") {
         newObj = new teleporter(x - 20, y - 20, 40, 40, "blue", 100, 100);
+      } else if (draggedItem.type === "fan") {
+        newObj = new Fan(
+            x - 25,
+            y - 25,
+            50,
+            50,
+            "cyan",
+            2);
       }
 
       if (newObj) game.objetsGraphiques.push(newObj);
@@ -1836,151 +1213,6 @@ async function init() {
 
   blobImage.onmouseenter = () => {
     blobImage.src = gifSource;
-    blobImage.id = "blobMenuImage";
-    menu.appendChild(blobImage);
-
-    // Génération de la version statique (pause)
-    let staticSource = "";
-    let tempImg = new Image();
-    tempImg.src = gifSource;
-    tempImg.onload = () => {
-        let c = document.createElement("canvas");
-        c.width = tempImg.width;
-        c.height = tempImg.height;
-        c.getContext("2d").drawImage(tempImg, 0, 0);
-        staticSource = c.toDataURL();
-        blobImage.src = staticSource; // On met en pause par défaut
-    };
-
-    blobImage.onmouseenter = () => {
-        blobImage.src = gifSource;
-    };
-    blobImage.onmouseleave = () => {
-        if (staticSource) blobImage.src = staticSource;
-    };
-
-    // Création dynamique du menu des niveaux (Basé sur maxLevels)
-    let levelsMenu = document.createElement("div");
-    levelsMenu.id = "level-selection";
-    levelsMenu.style.display = "none";
-
-    // Conteneur pour les boutons de niveaux (Centré)
-    let levelButtonsContainer = document.createElement("div");
-    levelButtonsContainer.id = "levels-container";
-    levelsMenu.appendChild(levelButtonsContainer);
-
-    // Bouton Retour
-    let btnBack = document.createElement("button");
-    btnBack.id = "back-to-menu";
-    btnBack.innerText = "Retour au Menu";
-    levelsMenu.appendChild(btnBack);
-
-    // Bouton Suivant
-    let btnNextLevels = document.createElement("button");
-    btnNextLevels.id = "next-levels";
-    btnNextLevels.innerText = "Suivant >";
-    levelsMenu.insertBefore(btnNextLevels, btnBack); // On l'insère avant le bouton retour
-
-    // --- BOUTON IMPORTER JSON ---
-    let btnImport = document.createElement("button");
-    btnImport.id = "btnImportLevel";
-    btnImport.innerText = "Importer JSON";
-    // Style identique aux autres boutons
-    btnImport.className = "menu-style-button"; 
-    btnImport.style.marginTop = "10px";
-    btnImport.style.backgroundColor = "#2196F3"; // Bleu
-    btnImport.style.color = "white";
-    btnImport.style.borderColor = "#0b7dda";
-    
-    levelsMenu.appendChild(btnImport);
-
-    let fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = ".json";
-    fileInput.style.display = "none";
-    document.body.appendChild(fileInput);
-
-    btnImport.onclick = () => fileInput.click();
-
-    fileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = JSON.parse(e.target.result);
-                
-                maxLevels++;
-                game.levels.registerCustomLevel(maxLevels, data);
-                currentLevelPage = Math.floor((maxLevels - 1) / levelsPerPage);
-                renderLevelButtons();
-                updateLeaderboards();
-                alert("Niveau importé avec succès ! (Niveau " + maxLevels + ")");
-            } catch (err) {
-                console.error("Erreur JSON", err);
-                alert("Fichier invalide !");
-            }
-        };
-        reader.readAsText(file);
-        fileInput.value = ""; // Reset
-    };
-
-    document.body.appendChild(levelsMenu);
-
-    // --- LOGIQUE DE PAGINATION ---
-    let currentLevelPage = 0;
-    const levelsPerPage = 10;
-
-    function renderLevelButtons() {
-        levelButtonsContainer.innerHTML = "";
-
-        let start = currentLevelPage * levelsPerPage + 1;
-        let end = Math.min(start + levelsPerPage - 1, maxLevels);
-
-        let leftCol = document.createElement("div");
-        leftCol.className = "levelColumn";
-        let rightCol = document.createElement("div");
-        rightCol.className = "levelColumn";
-
-        for (let i = start; i <= end; i++) {
-            let btn = document.createElement("button");
-            btn.className = "level-button";
-            btn.dataset.level = i;
-            btn.innerText = i; // Juste le chiffre
-
-            btn.onclick = () => {
-                levelsMenu.style.display = "none";
-                winMenu.style.display = "none";
-                menuBackground.style.display = "none";
-                if (sidebar) sidebar.style.display = "flex";
-                resizeCanvas();
-                playMusic("game");
-                game.lives = 3; // Reset des vies
-                updateLives();
-                game.start(i);
-            };
-
-            // 5 premiers à gauche, les autres à droite
-            if (i < start + 5) {
-                leftCol.appendChild(btn);
-            } else {
-                rightCol.appendChild(btn);
-            }
-        }
-
-        levelButtonsContainer.appendChild(leftCol);
-        levelButtonsContainer.appendChild(rightCol);
-
-        // Gestion visibilité bouton Suivant
-        btnNextLevels.style.display = (end < maxLevels) ? "block" : "none";
-
-        // Gestion bouton Retour (Devient "Précédent" si page > 0)
-        if (currentLevelPage > 0) {
-            btnBack.innerText = "< Précédent";
-        } else {
-            btnBack.innerText = "Retour au Menu";
-        }
-    }
   };
   blobImage.onmouseleave = () => {
     if (staticSource) blobImage.src = staticSource;
@@ -2064,30 +1296,6 @@ async function init() {
     let start = currentLevelPage * levelsPerPage + 1;
     let end = Math.min(start + levelsPerPage - 1, maxLevels);
 
-    let videoPlayer = document.createElement("video");
-    videoPlayer.src = "assets/video/Blob_Escape_Lore.mp4";
-    videoPlayer.style.width = "100%";
-    videoPlayer.style.height = "100%";
-    videoPlayer.style.objectFit = "cover";
-    videoPlayer.volume = parseFloat(volumeSlider.value);
-
-    // Création du bouton SKIP
-    let skipButton = document.createElement("button");
-    skipButton.innerText = "SKIP >>";
-    Object.assign(skipButton.style, {
-        position: "absolute",
-        bottom: "30px",
-        right: "30px",
-        zIndex: "2001",
-        fontSize: "40px",
-        fontFamily: "'Lilita One', cursive",
-        color: "white",
-        background: "transparent",
-        border: "none",
-        cursor: "pointer",
-        textShadow: "3px 3px 0 #000",
-        transition: "all 0.3s ease"
-    });
     let leftCol = document.createElement("div");
     leftCol.className = "levelColumn";
     let rightCol = document.createElement("div");
@@ -2106,6 +1314,8 @@ async function init() {
         if (sidebar) sidebar.style.display = "flex";
         resizeCanvas();
         playMusic("game");
+        game.lives = 3;
+        updateLives();
         game.start(i);
       };
 
@@ -2186,6 +1396,7 @@ async function init() {
   videoPlayer.style.width = "100%";
   videoPlayer.style.height = "100%";
   videoPlayer.style.objectFit = "cover";
+  if (typeof volumeSlider !== 'undefined') videoPlayer.volume = parseFloat(volumeSlider.value);
 
   // skip
   let skipButton = document.createElement("button");
@@ -2244,19 +1455,7 @@ async function init() {
       if (callback) callback();
     };
 
-    startBtn.onclick = () => {
-        winMenu.style.display = "none"; // On cache le menu si on relance
-        playVideo(() => {
-            if (sidebar) sidebar.style.display = "flex";
-            resizeCanvas();
-            playMusic("game");
-            game.lives = 3; // Reset des vies au démarrage
-            updateLives();
-            game.start(1); // Lance le niveau 1 par défaut
-        });
-    };
     videoPlayer.onended = endVideo;
-
     // click skip
     videoPlayer.onclick = endVideo;
     skipButton.onclick = (e) => {
@@ -2317,6 +1516,8 @@ async function init() {
       if (sidebar) sidebar.style.display = "flex";
       resizeCanvas();
       playMusic("game");
+      game.lives = 3;
+      updateLives();
       game.start(1); // niveau 1
     });
   };
@@ -2347,54 +1548,6 @@ async function init() {
     playMusic("menu");
   };
 
-    // Gestion des boutons du menu de victoire
-    document.querySelector("#btnWinRestart").onclick = () => {
-        winMenu.style.display = "none";
-        menuBackground.style.display = "none";
-        if (sidebar) sidebar.style.display = "flex";
-        resizeCanvas();
-        playMusic("game");
-        game.lives = 3;
-        updateLives();
-        game.start(1);
-    };
-    document.querySelector("#btnWinHome").onclick = () => {
-        winMenu.style.display = "none";
-        menu.style.display = "flex";
-        resizeCanvas();
-    };
-
-    // Gestion du bouton Recommencer (Sidebar)
-    restartBtn.onclick = () => {
-        restartBtn.blur(); // Enlève le focus pour ne pas gêner les contrôles clavier
-        
-        if (game.lives > 0) {
-            game.lives--; // On enlève une vie
-            updateLives();
-            
-            if (game.lives === 0) {
-                // Game Over
-                alert("Game Over ! Vous n'avez plus de vies.");
-                if (btnExitLevel) btnExitLevel.click(); // Retour au menu
-            } else {
-                // On recommence le niveau
-                game.start(game.currentLevel);
-            }
-        }
-    };
-
-    // Gestion du bouton Quitter (Sidebar)
-    if (btnExitLevel) {
-        btnExitLevel.onclick = () => {
-            game.running = false;
-            if (game.removeCountdownOverlay) game.removeCountdownOverlay();
-            menu.style.display = "flex";
-            menuBackground.style.display = "block";
-            if (sidebar) sidebar.style.display = "none";
-            resizeCanvas();
-            playMusic("menu");
-        };
-    }
   // retour
   document.querySelector("#btnLeaderboardBack").onclick = () => {
     leaderboardMenu.style.display = "none";
@@ -2409,6 +1562,8 @@ async function init() {
     if (sidebar) sidebar.style.display = "flex";
     resizeCanvas();
     playMusic("game");
+    game.lives = 3;
+    updateLives();
     game.start(1);
   };
   document.querySelector("#btnWinHome").onclick = () => {
@@ -2420,13 +1575,23 @@ async function init() {
   // restart
   restartBtn.onclick = () => {
     restartBtn.blur(); // blur
-    game.start(game.currentLevel);
+    if (game.lives > 0) {
+      game.lives--;
+      updateLives();
+      if (game.lives === 0) {
+        alert("Game Over !");
+        if (btnExitLevel) btnExitLevel.click();
+      } else {
+        game.start(game.currentLevel);
+      }
+    }
   };
 
   // quitter
   if (btnExitLevel) {
     btnExitLevel.onclick = () => {
       game.running = false;
+      if (game.removeCountdownOverlay) game.removeCountdownOverlay();
       menu.style.display = "flex";
       menuBackground.style.display = "block";
       if (sidebar) sidebar.style.display = "none";

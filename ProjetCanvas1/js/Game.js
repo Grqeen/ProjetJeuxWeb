@@ -64,44 +64,10 @@ export default class Game {
         this.countdownOverlay = null;
         this.countdownText = null;
         this.lives = 3; // Nombre de vies initial
-  objetsGraphiques = [];
 
-  constructor(canvas, scoreElement) {
-    this.canvas = canvas;
-    this.timerElement = null; // timer
-    this.onLevelComplete = null; // score
-    this.startTime = 0; // debut
-    this.levelElement = null; // affichage niveau
-    // clavier
-    this.inputStates = {
-      mouseX: 0,
-      mouseY: 0,
-      ArrowRight: false,
-      ArrowLeft: false,
-      ArrowUp: false,
-      ArrowDown: false,
-    };
+    }
 
-    // options
-    this.playerSpeed = 5;
-    this.rotationMultiplier = 1;
-    this.bumperForce = 25;
-
-    // recul
-    this.knockbackX = 0;
-    this.knockbackY = 0;
-
-    // boost
-    this.speedBoostTimeout = null;
-    this.speedBoostEndTime = 0;
-    this.activeSpeedBoost = 0;
-    this.running = false;
-    this.onFinish = null; // fin jeu
-    this.selectedObject = null; // selection
-    this.levelUpdate = null; // logique specifique niveau
-  }
-
-  async init(canvas) {
+    async init(canvas) {
     this.ctx = this.canvas.getContext("2d");
 
     // niveaux
@@ -161,25 +127,6 @@ export default class Game {
     }
   }
 
-  startCustomLevel(levelData) {
-    this.currentLevel = "custom";
-    // reset
-    this.activeSpeedBoost = 0;
-    this.speedBoostEndTime = 0;
-    this.levelUpdate = null;
-    this.levels.loadFromJSON(levelData);
-    this.updateBackground();
-    this.applyRotationMultiplier();
-    if (this.levelElement) this.levelElement.innerText = "Custom";
-    this.knockbackX = 0;
-    this.knockbackY = 0;
-    this.startTime = Date.now();
-    if (!this.running) {
-      this.running = true;
-      requestAnimationFrame(this.mainAnimationLoop.bind(this));
-    }
-  }
-
   updateBackground() {
     if (this.currentLevel >= 11) {
       this.canvas.style.backgroundImage =
@@ -188,84 +135,6 @@ export default class Game {
       this.canvas.style.backgroundImage =
         "url('assets/images/gameBackground.png')";
     }
-  }
-
-  mainAnimationLoop() {
-    if (!this.running) return;
-    // efface
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-    // dessine
-    this.drawAllObjects();
-
-    // update
-    this.update();
-
-    // boucle
-    requestAnimationFrame(this.mainAnimationLoop.bind(this));
-  }
-
-  drawAllObjects() {
-    // dessine tout
-    this.objetsGraphiques.forEach((obj) => {
-      obj.draw(this.ctx);
-
-      // selection
-      if (this.selectedObject === obj) {
-        this.ctx.save();
-        this.ctx.strokeStyle = "cyan";
-        this.ctx.lineWidth = 3;
-        this.ctx.shadowColor = "cyan";
-        this.ctx.shadowBlur = 10;
-
-        // poignee
-        const hSize = 10;
-        const drawHandle = (x, y) =>
-          this.ctx.fillRect(x - hSize / 2, y - hSize / 2, hSize, hSize);
-        this.ctx.fillStyle = "cyan";
-
-        if (obj instanceof RotatingObstacle) {
-          // centre
-          this.ctx.translate(obj.x, obj.y);
-          this.ctx.rotate(obj.angle);
-          this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
-          // poignees
-          drawHandle(obj.w / 2, 0); // Droite
-          drawHandle(0, obj.h / 2); // Bas
-          drawHandle(obj.w / 2, obj.h / 2); // Coin
-        } else if (obj === this.player) {
-          // joueur centre
-          this.ctx.translate(obj.x, obj.y);
-          this.ctx.rotate(obj.angle);
-          this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
-          drawHandle(obj.w / 2, 0);
-          drawHandle(0, obj.h / 2);
-          drawHandle(obj.w / 2, obj.h / 2);
-        } else if (obj.angle) {
-          // autres objets
-          this.ctx.translate(obj.x + obj.w / 2, obj.y + obj.h / 2);
-          this.ctx.rotate(obj.angle);
-          this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
-          drawHandle(obj.w / 2, 0);
-          drawHandle(0, obj.h / 2);
-          drawHandle(obj.w / 2, obj.h / 2);
-        } else if (obj.radius) {
-          this.ctx.beginPath();
-          this.ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
-          this.ctx.stroke();
-          drawHandle(obj.x + obj.radius, obj.y); // poignee rayon
-        } else {
-          // translate
-          this.ctx.translate(obj.x, obj.y);
-          this.ctx.strokeRect(0, 0, obj.w, obj.h);
-          // poignees locales
-          drawHandle(obj.w, obj.h / 2); // Droite
-          drawHandle(obj.w / 2, obj.h); // Bas
-          drawHandle(obj.w, obj.h); // Coin
-        }
-        this.ctx.restore();
-      }
-    });
   }
 
   update() {
@@ -286,6 +155,7 @@ export default class Game {
     if (this.testCollisionFin()) {
       this.nextLevel();
     }
+  }
 
     startCustomLevel(levelData) {
         this.currentLevel = "custom";
@@ -453,24 +323,6 @@ export default class Game {
                 this.ctx.restore();
             }
         });
-    }
-    // timer
-    if (this.timerElement && this.running) {
-      let elapsed = Date.now() - this.startTime;
-      let seconds = Math.floor(elapsed / 1000);
-      let ms = Math.floor((elapsed % 1000) / 10);
-      this.timerElement.innerText = `${seconds}.${ms.toString().padStart(2, "0")}`;
-    }
-
-    // clavier virtuel
-    if (this.keyUp)
-      this.keyUp.classList.toggle("active", !!this.inputStates.ArrowUp);
-    if (this.keyDown)
-      this.keyDown.classList.toggle("active", !!this.inputStates.ArrowDown);
-    if (this.keyLeft)
-      this.keyLeft.classList.toggle("active", !!this.inputStates.ArrowLeft);
-    if (this.keyRight)
-      this.keyRight.classList.toggle("active", !!this.inputStates.ArrowRight);
   }
 
   movePlayer() {
@@ -491,26 +343,10 @@ export default class Game {
     this.player.oldX = this.player.x;
     this.player.oldY = this.player.y;
 
-    if (this.inputStates.ArrowRight) inputVx = vitesse;
-    if (this.inputStates.ArrowLeft) inputVx = -vitesse;
-    if (this.inputStates.ArrowUp) inputVy = -vitesse;
-    if (this.inputStates.ArrowDown) inputVy = vitesse;
-
-    // recul
-    this.player.vitesseX = inputVx + this.knockbackX;
-    this.player.vitesseY = inputVy + this.knockbackY;
-
-    this.player.move();
-
-    // friction
-    this.knockbackX *= 0.9;
-    this.knockbackY *= 0.9;
-    if (Math.abs(this.knockbackX) < 0.1) this.knockbackX = 0;
-    if (Math.abs(this.knockbackY) < 0.1) this.knockbackY = 0;
-
-        // Vitesse de base du joueur
-        let vitesse = this.playerSpeed;
-
+        if (this.inputStates.ArrowRight) inputVx = vitesse;
+        if (this.inputStates.ArrowLeft) inputVx = -vitesse;
+        if (this.inputStates.ArrowUp) inputVy = -vitesse;
+        if (this.inputStates.ArrowDown) inputVy = vitesse;
         // --- GESTION DU VENT (FAN) ---
         let windVx = 0;
         let windVy = 0;
@@ -540,13 +376,20 @@ export default class Game {
             }
         });
 
-        
-        // Si le boost est actif
-        vitesse += this.activeSpeedBoost;
-        // Si le boost est actif (temps actuel < temps de fin du boost)
-        if (Date.now() < this.speedBoostEndTime) {
-            vitesse += this.activeSpeedBoost;
-        }
+    // recul
+    this.player.vitesseX = inputVx + this.knockbackX + windVx;
+    this.player.vitesseY = inputVy + this.knockbackY + windVy;
+
+    this.player.move();
+
+    // friction
+    this.knockbackX *= 0.9;
+    this.knockbackY *= 0.9;
+    if (Math.abs(this.knockbackX) < 0.1) this.knockbackX = 0;
+    if (Math.abs(this.knockbackY) < 0.1) this.knockbackY = 0;
+
+    // timer et clavier virtuel
+    this.updateUI();
     this.testCollisionsPlayer();
   }
 
@@ -557,9 +400,6 @@ export default class Game {
     // obstacles
     //this.testCollisionPlayerObstacles();
 
-        // On ajoute le knockback à la vitesse
-        this.player.vitesseX = inputVx + this.knockbackX + windVx;
-        this.player.vitesseY = inputVy + this.knockbackY + windVy;
     // collisions
     this.handleCollisionObstacle();
 
@@ -1112,5 +952,25 @@ export default class Game {
         obj.angleSpeed = obj.initialAngleSpeed * this.rotationMultiplier;
       }
     });
+  }
+
+  updateUI() {
+      // timer
+      if (this.timerElement && this.running) {
+          let elapsed = Date.now() - this.startTime;
+          let seconds = Math.floor(elapsed / 1000);
+          let ms = Math.floor((elapsed % 1000) / 10);
+          this.timerElement.innerText = `${seconds}.${ms.toString().padStart(2, "0")}`;
+      }
+
+      // clavier virtuel
+      if (this.keyUp)
+          this.keyUp.classList.toggle("active", !!this.inputStates.ArrowUp);
+      if (this.keyDown)
+          this.keyDown.classList.toggle("active", !!this.inputStates.ArrowDown);
+      if (this.keyLeft)
+          this.keyLeft.classList.toggle("active", !!this.inputStates.ArrowLeft);
+      if (this.keyRight)
+          this.keyRight.classList.toggle("active", !!this.inputStates.ArrowRight);
   }
 }

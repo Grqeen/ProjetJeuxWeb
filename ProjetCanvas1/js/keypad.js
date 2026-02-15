@@ -30,17 +30,5 @@ export default class keypad extends Items {
                 super.draw(ctx);
             }
         }
-  draw(ctx) {
-    if (this.visible) {
-      if (this.image.complete && this.image.naturalHeight !== 0) {
-        ctx.save();
-        ctx.imageSmoothingEnabled = false;
-        ctx.translate(this.x, this.y);
-        ctx.drawImage(this.image, 0, 0, this.w, this.h);
-        ctx.restore();
-      } else {
-        super.draw(ctx);
-      }
     }
-  }
 }
