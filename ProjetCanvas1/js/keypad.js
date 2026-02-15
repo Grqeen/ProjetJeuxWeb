@@ -1,8 +1,8 @@
 import Items from "./Items.js";
 
 export default class keypad extends Items {
-    constructor(x, y, w, h, couleur, temps, id) {
-        super(x, y, w, h, couleur);
+    constructor(x, y, w, h, temps, id) {
+        super(x, y, w, h, "red");
         this.temps = temps;
         this.id = id;
         this.visible = true;

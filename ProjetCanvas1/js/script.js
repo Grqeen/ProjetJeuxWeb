@@ -616,9 +616,9 @@ async function init() {
                 } else if (data.type === "size") {
                     newObj = new sizePotion(data.x, data.y, data.w, data.h, data.couleur, data.tailleW, data.tailleH);
                 } else if (data.type === "door") {
-                    newObj = new fadingDoor(data.x, data.y, data.w, data.h, data.couleur, data.timer, data.id);
+                    newObj = new fadingDoor(data.x, data.y, data.w, data.h, data.timer, data.id);
                 } else if (data.type === "keypad") {
-                    newObj = new keypad(data.x, data.y, data.w, data.h, data.couleur, data.temps, data.id);
+                    newObj = new keypad(data.x, data.y, data.w, data.h, data.temps, data.id);
                 } else if (data.type === "moving") {
                     newObj = new MovingObstacle(data.x, data.y, data.w, data.h, data.couleur, data.distX, data.distY, data.speed);
                 } else if (data.type === "teleporter") {
@@ -902,8 +902,9 @@ async function init() {
             img.src = "assets/images/orange.png";
             img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "door") {
-            ctx.fillStyle = "pink";
-            ctx.fillRect(20, 5, 10, 40);
+            let img = new Image();
+            img.src = "assets/images/laser.png";
+            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         } else if (data.type === "keypad") {
             let img = new Image();
             img.src = "assets/images/fadingdoor.png";
@@ -913,10 +914,9 @@ async function init() {
             ctx.fillRect(10, 20, 30, 10);
             ctx.fillText("↔", 20, 15);
         } else if (data.type === "teleporter") {
-            ctx.fillStyle = "blue";
-            ctx.fillRect(10, 10, 30, 30);
-            ctx.strokeStyle = "white";
-            ctx.strokeRect(15, 15, 20, 20);
+            let img = new Image();
+            img.src = "assets/images/teleporter.png";
+            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
         }
 
         div.appendChild(cvs);
@@ -986,9 +986,19 @@ async function init() {
                 ghost.style.backgroundSize = "contain";
                 ghost.style.backgroundRepeat = "no-repeat";
             }
-            else if (data.type === "door") ghost.style.backgroundColor = "pink";
+            else if (data.type === "door") {
+                ghost.style.backgroundColor = "transparent";
+                ghost.style.backgroundImage = "url('assets/images/laser.png')";
+                ghost.style.backgroundSize = "100% 100%";
+                ghost.style.backgroundRepeat = "no-repeat";
+            }
             else if (data.type === "moving") ghost.style.backgroundColor = "purple";
-            else if (data.type === "teleporter") ghost.style.backgroundColor = "blue";
+            else if (data.type === "teleporter") {
+                ghost.style.backgroundColor = "transparent";
+                ghost.style.backgroundImage = "url('assets/images/teleporter.png')";
+                ghost.style.backgroundSize = "contain";
+                ghost.style.backgroundRepeat = "no-repeat";
+            }
             else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // Default wall
 
             // Centering on mouse
@@ -1046,9 +1056,9 @@ async function init() {
             } else if (draggedItem.type === "size") {
                 newObj = new sizePotion(x - 15, y - 15, 30, 30, "magenta", -40, -40);
             } else if (draggedItem.type === "door") {
-                newObj = new fadingDoor(x - 10, y - 50, 20, 100, "pink", 3000, 1);
+                newObj = new fadingDoor(x - 10, y - 50, 20, 100, 3000, 1);
             } else if (draggedItem.type === "keypad") {
-                newObj = new keypad(x - 15, y - 15, 30, 30, "pink", 3000, 1);
+                newObj = new keypad(x - 15, y - 15, 30, 30, 3000, 1);
             } else if (draggedItem.type === "moving") {
                 newObj = new MovingObstacle(x - 30, y - 10, 60, 20, "purple", 100, 0, 0.05);
             } else if (draggedItem.type === "teleporter") {
