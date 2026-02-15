@@ -1,6 +1,11 @@
 import Game from "./Game.js";
 import { getMousePos } from "./utils.js";
-import Obstacle, { RotatingObstacle, CircleObstacle, MovingObstacle } from "./Obstacle.js";
+import Obstacle, {
+  RotatingObstacle,
+  CircleObstacle,
+  MovingObstacle,
+  TexturedObstacle,
+} from "./Obstacle.js";
 import bumper from "./bumper.js";
 import fin from "./fin.js";
 import speedPotion from "./speedPotion.js";
@@ -11,31 +16,39 @@ import Player from "./Player.js";
 import teleporter from "./teleporter.js";
 import Fan from "./Fan.js";
 
-// Bonne pratique : avoir une fonction appelée une fois
-// que la page est prête, que le DOM est chargé, etc.
+// init
 window.onload = init;
 
-// Mapping des couleurs nommées vers Hex pour l'input color
+// couleurs
 const colorMap = {
-    "red": "#ff0000", "white": "#ffffff", "black": "#000000", "orange": "#ffa500", 
-    "blue": "#0000ff", "purple": "#800080", "green": "#008000", "yellow": "#ffff00", 
-    "cyan": "#00ffff", "magenta": "#ff00ff", "pink": "#ffc0cb", "gray": "#808080"
+  red: "#ff0000",
+  white: "#ffffff",
+  black: "#000000",
+  orange: "#ffa500",
+  blue: "#0000ff",
+  purple: "#800080",
+  green: "#008000",
+  yellow: "#ffff00",
+  cyan: "#00ffff",
+  magenta: "#ff00ff",
+  pink: "#ffc0cb",
+  gray: "#808080",
 };
 
 async function init() {
-    // Force le scroll en haut au chargement (fix pour le bug de rafraîchissement)
-    window.scrollTo(0, 0);
+  // scroll haut
+  window.scrollTo(0, 0);
 
-    let canvas = document.querySelector("#myCanvas");
-    let menu = document.querySelector("#gameMenu");
-    let startBtn = document.querySelector("#startButton");
-    let exitBtn = document.querySelector("#exitButton");
-    let levelsBtn = document.querySelector("#LevelsButton");
-    let sidebar = document.querySelector("#sidebar");
+  let canvas = document.querySelector("#myCanvas");
+  let menu = document.querySelector("#gameMenu");
+  let startBtn = document.querySelector("#startButton");
+  let exitBtn = document.querySelector("#exitButton");
+  let levelsBtn = document.querySelector("#LevelsButton");
+  let sidebar = document.querySelector("#sidebar");
 
-    // --- RECONSTRUCTION DE LA SIDEBAR (Déplacé au début pour l'init du jeu) ---
-    if (sidebar) {
-        sidebar.innerHTML = `
+  // sidebar
+  if (sidebar) {
+    sidebar.innerHTML = `
             <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #ccc; padding-bottom: 20px;">
                 <h2 style="font-family: 'Lilita One', cursive; color: #333; font-size: 30px;">Niveau <span id="level">1</span></h2>
             </div>
@@ -88,51 +101,35 @@ async function init() {
             </div>
             <button id="btnExitLevel" class="menu-style-button" style="margin-top: auto; margin-bottom: 20px; align-self: center; background-color: #ff4444; color: white;">Quitter</button>
         `;
+  }
+  let restartBtn = document.querySelector("#restartBtn");
+  let btnExitLevel = document.querySelector("#btnExitLevel");
+
+  // musique
+  const menuMusic = new Audio("assets/sounds/menu.mp3");
+  menuMusic.loop = true;
+  menuMusic.volume = 0.5;
+  const gameMusic = new Audio("assets/sounds/ingame.mp3");
+  gameMusic.loop = true;
+  gameMusic.volume = 0.5;
+
+  let currentMusicState = "stop";
+
+  function playMusic(state) {
+    currentMusicState = state;
+    if (state === "menu") {
+      gameMusic.pause();
+      gameMusic.currentTime = 0;
+      menuMusic.play().catch(() => {});
+    } else if (state === "game") {
+      menuMusic.pause();
+      menuMusic.currentTime = 0;
+      gameMusic.play().catch(() => {});
+    } else if (state === "stop") {
+      menuMusic.pause();
+      gameMusic.pause();
     }
-    let restartBtn = document.querySelector("#restartBtn");
-    let btnExitLevel = document.querySelector("#btnExitLevel");
-
-    // --- GESTION MUSIQUE ---
-    const menuMusic = new Audio("assets/sounds/menu.mp3");
-    menuMusic.loop = true;
-    menuMusic.volume = 0.5;
-    const gameMusic = new Audio("assets/sounds/ingame.mp3");
-    gameMusic.loop = true;
-    gameMusic.volume = 0.5;
-
-    let currentMusicState = "stop";
-
-    function playMusic(state) {
-        currentMusicState = state;
-        if (state === "menu") {
-            gameMusic.pause();
-            gameMusic.currentTime = 0;
-            menuMusic.play().catch(() => {});
-        } else if (state === "game") {
-            menuMusic.pause();
-            menuMusic.currentTime = 0;
-            gameMusic.play().catch(() => {});
-        } else if (state === "stop") {
-            menuMusic.pause();
-            gameMusic.pause();
-        }
-    }
-
-    const unlockAudio = () => {
-        if (currentMusicState === "menu" && menuMusic.paused) {
-            menuMusic.play().catch(() => {});
-        } else if (currentMusicState === "game" && gameMusic.paused) {
-            gameMusic.play().catch(() => {});
-        }
-        document.removeEventListener("click", unlockAudio);
-        document.removeEventListener("keydown", unlockAudio);
-    };
-
-    document.addEventListener("click", unlockAudio);
-    document.addEventListener("keydown", unlockAudio);
-
-    // Tentative de lancement immédiat de la musique (Autoplay)
-    playMusic("menu");
+  }
 
     // --- GESTION DU VOLUME (UI) ---
     let volumeContainer = document.createElement("div");
@@ -249,80 +246,202 @@ async function init() {
         game.levels.load(maxLevels + 1);
         if (game.objetsGraphiques.length === 0) break;
         maxLevels++;
+  const unlockAudio = () => {
+    if (currentMusicState === "menu" && menuMusic.paused) {
+      menuMusic.play().catch(() => {});
+    } else if (currentMusicState === "game" && gameMusic.paused) {
+      gameMusic.play().catch(() => {});
     }
-    game.objetsGraphiques = []; // Reset après détection
-    console.log("Niveaux détectés : " + maxLevels);
+    document.removeEventListener("click", unlockAudio);
+    document.removeEventListener("keydown", unlockAudio);
+  };
 
-    // Renommage du bouton Histoire en Story
-    if (exitBtn) exitBtn.innerText = "Story";
+  document.addEventListener("click", unlockAudio);
+  document.addEventListener("keydown", unlockAudio);
 
-    // --- GESTION DES MEILLEURS SCORES ---
-    let bestTimes = {}; // Stocke les meilleurs temps : { 1: 12.5, 2: 10.0 }
+  // autoplay
+  playMusic("menu");
 
-    function updateLeaderboards() {
-        // Fonction pour générer le HTML des lignes du tableau
-        const generateRows = () => {
-            let html = "";
-            let total = 0;
-            let count = 0;
-            for (let level = 1; level <= maxLevels; level++) {
-                let time = bestTimes[level];
-                if (time) {
-                    total += time;
-                    count++;
-                    html += `<tr><td>${level}</td><td>${time.toFixed(2)}s</td></tr>`;
-                } else {
-                    html += `<tr><td>${level}</td><td>-</td></tr>`;
-                }
-            }
-            // Ajout de la ligne TOTAL
-            let totalDisplay = (count === maxLevels && maxLevels > 0) ? total.toFixed(2) + "s" : "-";
-            html += `<tr style="border-top: 2px solid #ffcc00; font-weight: bold;"><td>TOTAL</td><td>${totalDisplay}</td></tr>`;
-            return html;
-        };
+  // volume
+  let volumeContainer = document.createElement("div");
+  volumeContainer.id = "volumeContainer";
+  Object.assign(volumeContainer.style, {
+    position: "fixed",
+    bottom: "20px",
+    right: "20px",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    zIndex: "10000", // z-index haut
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    padding: "8px 15px",
+    borderRadius: "25px",
+    backdropFilter: "blur(5px)",
+    border: "1px solid rgba(255,255,255,0.3)",
+  });
 
-        // 2. Mise à jour du leaderboard du Menu Principal
-        let menuTable = document.querySelector("#menuLeaderboardTable tbody");
-        if (menuTable) menuTable.innerHTML = generateRows();
+  let volumeSlider = document.createElement("input");
+  volumeSlider.type = "range";
+  volumeSlider.id = "volumeSlider";
+  volumeSlider.min = "0";
+  volumeSlider.max = "1";
+  volumeSlider.step = "0.01";
+  volumeSlider.value = "0.5";
+  volumeSlider.style.width = "80px";
+  volumeSlider.style.cursor = "pointer";
+  volumeSlider.style.accentColor = "#ffcc00";
+
+  let volumeIcon = document.createElement("span");
+  volumeIcon.innerText = "🔊";
+  volumeIcon.style.fontSize = "24px";
+  volumeIcon.style.cursor = "pointer";
+  volumeIcon.style.userSelect = "none";
+  volumeIcon.style.color = "white";
+
+  volumeContainer.appendChild(volumeSlider);
+  volumeContainer.appendChild(volumeIcon);
+  document.body.appendChild(volumeContainer);
+
+  let previousVolume = 0.5;
+  let isMuted = false;
+
+  volumeSlider.oninput = (e) => {
+    let vol = parseFloat(e.target.value);
+    menuMusic.volume = vol;
+    gameMusic.volume = vol;
+    if (vol > 0) {
+      isMuted = false;
+      volumeIcon.innerText = "🔊";
+      previousVolume = vol;
+    } else {
+      isMuted = true;
+      volumeIcon.innerText = "🔇";
     }
-    // ------------------------------------
+  };
 
-    // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
-    let menuTextContainer = document.createElement("div");
-    menuTextContainer.id = "menuTextContainer";
-
-    // On déplace les éléments existants du menu dans le conteneur de texte
-    while (menu.firstChild) {
-        menuTextContainer.appendChild(menu.firstChild);
+  volumeIcon.onclick = () => {
+    if (isMuted) {
+      isMuted = false;
+      let vol = previousVolume || 0.5;
+      if (vol === 0) vol = 0.5;
+      menuMusic.volume = vol;
+      gameMusic.volume = vol;
+      volumeSlider.value = vol;
+      volumeIcon.innerText = "🔊";
+    } else {
+      isMuted = true;
+      previousVolume = parseFloat(volumeSlider.value);
+      menuMusic.volume = 0;
+      gameMusic.volume = 0;
+      volumeSlider.value = 0;
+      volumeIcon.innerText = "🔇";
     }
-    menu.appendChild(menuTextContainer);
+  };
 
-    // Création du bouton LeaderBoard
-    let leaderboardBtn = document.createElement("button");
-    leaderboardBtn.id = "leaderboardButton";
-    leaderboardBtn.innerText = "LeaderBoard";
-    // On l'insère avant le bouton Exit (qui est le dernier enfant pour l'instant)
-    menuTextContainer.insertBefore(leaderboardBtn, exitBtn);
+  // init jeu
+  let game = new Game(canvas);
+  game.levelElement = document.querySelector("#level");
+  game.timerElement = document.querySelector("#timerValue");
+  await game.init();
 
-    // --- CRÉATION DU BOUTON BLOB EDITOR ---
-    let editorBtn = document.createElement("button");
-    editorBtn.id = "editorButton";
-    editorBtn.innerText = "Blob Editor";
+  // modificateurs
+  const setupModifier = (rangeId, onChange) => {
+    let range = document.querySelector(rangeId);
+    if (range) {
+      range.oninput = () => {
+        onChange(parseFloat(range.value));
+      };
+    }
+  };
 
-    // On l'ajoute à la fin du conteneur pour qu'il soit SOUS le bouton Story
-    menuTextContainer.appendChild(editorBtn);
+  setupModifier("#speedRange", (val) => (game.playerSpeed = val));
+  setupModifier("#rotRange", (val) => {
+    game.rotationMultiplier = val;
+    game.applyRotationMultiplier();
+  });
+  setupModifier("#bumpRange", (val) => (game.bumperForce = val));
 
-    // Variable globale pour stocker l'objet en cours de déplacement
-    let draggedItem = null;
+  // detecte niveaux
+  let maxLevels = 0;
+  while (true) {
+    game.levels.load(maxLevels + 1);
+    if (game.objetsGraphiques.length === 0) break;
+    maxLevels++;
+  }
+  game.objetsGraphiques = []; // reset
+  console.log("Niveaux détectés : " + maxLevels);
 
-    // Dans js/script.js, à l'intérieur de editorBtn.onclick
-    editorBtn.onclick = () => {
-        menu.style.display = "none";
-        menuBackground.style.display = "none";
-        if (sidebar) {
-            playMusic("menu");
-            sidebar.style.display = "flex";
-            sidebar.innerHTML = `
+  // bouton story
+  if (exitBtn) exitBtn.innerText = "Story";
+
+  // scores
+  let bestTimes = {}; // temps
+
+  function updateLeaderboards() {
+    // html tableau
+    const generateRows = () => {
+      let html = "";
+      let total = 0;
+      let count = 0;
+      for (let level = 1; level <= maxLevels; level++) {
+        let time = bestTimes[level];
+        if (time) {
+          total += time;
+          count++;
+          html += `<tr><td>${level}</td><td>${time.toFixed(2)}s</td></tr>`;
+        } else {
+          html += `<tr><td>${level}</td><td>-</td></tr>`;
+        }
+      }
+      // Ajout de la ligne TOTAL
+      let totalDisplay =
+        count === maxLevels && maxLevels > 0 ? total.toFixed(2) + "s" : "-";
+      html += `<tr style="border-top: 2px solid #ffcc00; font-weight: bold;"><td>TOTAL</td><td>${totalDisplay}</td></tr>`;
+      return html;
+    };
+
+    // 2. Mise à jour du leaderboard du Menu Principal
+    let menuTable = document.querySelector("#menuLeaderboardTable tbody");
+    if (menuTable) menuTable.innerHTML = generateRows();
+  }
+  // ------------------------------------
+
+  // Restructuration du menu pour la nouvelle DA (Texte gauche, Image droite)
+  let menuTextContainer = document.createElement("div");
+  menuTextContainer.id = "menuTextContainer";
+
+  // On déplace les éléments existants du menu dans le conteneur de texte
+  while (menu.firstChild) {
+    menuTextContainer.appendChild(menu.firstChild);
+  }
+  menu.appendChild(menuTextContainer);
+
+  // Création du bouton LeaderBoard
+  let leaderboardBtn = document.createElement("button");
+  leaderboardBtn.id = "leaderboardButton";
+  leaderboardBtn.innerText = "LeaderBoard";
+  // On l'insère avant le bouton Exit (qui est le dernier enfant pour l'instant)
+  menuTextContainer.insertBefore(leaderboardBtn, exitBtn);
+
+  // --- CRÉATION DU BOUTON BLOB EDITOR ---
+  let editorBtn = document.createElement("button");
+  editorBtn.id = "editorButton";
+  editorBtn.innerText = "Blob Editor";
+
+  // On l'ajoute à la fin du conteneur pour qu'il soit SOUS le bouton Story
+  menuTextContainer.appendChild(editorBtn);
+
+  // Variable globale pour stocker l'objet en cours de déplacement
+  let draggedItem = null;
+
+  // Dans js/script.js, à l'intérieur de editorBtn.onclick
+  editorBtn.onclick = () => {
+    menu.style.display = "none";
+    menuBackground.style.display = "none";
+    if (sidebar) {
+      playMusic("menu");
+      sidebar.style.display = "flex";
+      sidebar.innerHTML = `
             <div id="editorHeader" style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding-top: 20px;">
                 <button id="btnEditorWall" class="menu-style-button">Mur</button>
                 <button id="btnEditorObstacle" class="menu-style-button">Obstacle</button>
@@ -674,328 +793,485 @@ async function init() {
                 }
                 return newObj;
             }
+      const assetsContainer = document.querySelector("#editorAssetsContainer");
 
-            window.addEventListener("keydown", (e) => {
-                // Ctrl+C
-                if (e.ctrlKey && e.key === 'c') {
-                    if (game.selectedObject && game.selectedObject !== game.player) {
-                        clipboard = getObjectData(game.selectedObject);
-                    }
-                }
-                // Ctrl+V
-                if (e.ctrlKey && e.key === 'v') {
-                    if (clipboard) {
-                        let newObj = createObjectFromData(clipboard);
-                        if (newObj) {
-                            newObj.x += 20; // Décalage pour voir la copie
-                            newObj.y += 20;
-                            game.objetsGraphiques.push(newObj);
-                            game.selectedObject = newObj;
-                            updateInputs();
-                        }
-                    }
-                }
-            });
+      // bouton mur
+      document.querySelector("#btnEditorWall").onclick = () => {
+        assetsContainer.innerHTML = ""; // vide
+        // types
+        createAssetPreview(assetsContainer, "square", "Carré", {
+          w: 60,
+          h: 60,
+          type: "rect",
+        });
+        createAssetPreview(assetsContainer, "rect", "Rectangle", {
+          w: 120,
+          h: 40,
+          type: "rect",
+        });
+        createAssetPreview(assetsContainer, "rect", "Mur V", {
+          w: 40,
+          h: 120,
+          type: "rect",
+        });
+        createAssetPreview(assetsContainer, "textured", "Tuyau", {
+          w: 50,
+          h: 150,
+          type: "textured",
+          imageSrc: "assets/images/pipe_texture.png",
+        });
+        createAssetPreview(assetsContainer, "circle", "Cercle", {
+          r: 35,
+          type: "circle",
+        });
+      };
 
-            // --- EXPORT DU NIVEAU EN JSON ---
-            btnExport.onclick = () => {
-                const levelData = game.objetsGraphiques.map(obj => getObjectData(obj));
+      // bouton obstacle
+      document.querySelector("#btnEditorObstacle").onclick = () => {
+        assetsContainer.innerHTML = "";
+        createAssetPreview(assetsContainer, "triangle", "Bumper", {
+          w: 50,
+          h: 50,
+          type: "bumper",
+        });
+        createAssetPreview(assetsContainer, "rect", "Croix", {
+          w: 200,
+          h: 20,
+          type: "rotating",
+        });
+        createAssetPreview(assetsContainer, "circle", "Fin", {
+          w: 80,
+          h: 80,
+          type: "fin",
+        });
+        createAssetPreview(assetsContainer, "rect", "Moving", {
+          w: 60,
+          h: 20,
+          type: "moving",
+        });
+        createAssetPreview(assetsContainer, "rect", "Teleport", {
+          w: 40,
+          h: 40,
+          type: "teleporter",
+        });
+      };
 
-                const blob = new Blob([JSON.stringify(levelData, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const downloadAnchorNode = document.createElement('a');
-                downloadAnchorNode.setAttribute("href", url);
-                downloadAnchorNode.setAttribute("download", "mon_niveau_blob.json");
-                document.body.appendChild(downloadAnchorNode);
-                downloadAnchorNode.click();
-                downloadAnchorNode.remove();
-                URL.revokeObjectURL(url);
-            };
+      // bouton modifs
+      document.querySelector("#btnEditorModifiers").onclick = () => {
+        assetsContainer.innerHTML = "";
+        createAssetPreview(assetsContainer, "square", "Vitesse", {
+          w: 30,
+          h: 30,
+          type: "speed",
+        });
+        createAssetPreview(assetsContainer, "square", "Taille", {
+          w: 30,
+          h: 30,
+          type: "size",
+        });
+        createAssetPreview(assetsContainer, "rect", "Porte", {
+          w: 20,
+          h: 100,
+          type: "door",
+        });
+        createAssetPreview(assetsContainer, "square", "Clé", {
+          w: 30,
+          h: 30,
+          type: "keypad",
+        });
+      };
 
-            // Variables pour le déplacement d'objets existants
-            let isDraggingSelected = false;
-            let dragOffsetX = 0;
-            let dragOffsetY = 0;
-            let resizingHandle = null; // 'right', 'bottom', 'corner', 'radius'
+      document.querySelector("#btnExitEditor").onclick = () =>
+        location.reload();
 
-            // --- SÉLECTION D'OBJET SUR LE CANVAS ---
-            canvas.onmousedown = (e) => {
-                if (draggedItem) return; // Si on est en train de drag depuis le menu, on ignore
+      // inputs
+      const propW = document.querySelector("#propW");
+      const propH = document.querySelector("#propH");
+      const propRot = document.querySelector("#propRot");
+      const propColor = document.querySelector("#propColor");
+      const btnLayerUp = document.querySelector("#btnLayerUp");
+      const btnLayerDown = document.querySelector("#btnLayerDown");
+      const propRotSpeed = document.querySelector("#propRotSpeed");
+      const divRotSpeed = document.querySelector("#divRotSpeed");
+      const propLinkId = document.querySelector("#propLinkId");
+      const divLinkId = document.querySelector("#divLinkId");
+      const btnDelete = document.querySelector("#btnDeleteObj");
+      const propsPanel = document.querySelector("#editorProperties");
 
-                let pos = getMousePos(canvas, e);
-                let x = pos.x;
-                let y = pos.y;
+      const divMoveProps = document.querySelector("#divMoveProps");
+      const propDistX = document.querySelector("#propDistX");
+      const propDistY = document.querySelector("#propDistY");
+      const propMoveSpeed = document.querySelector("#propMoveSpeed");
+      const divTeleportProps = document.querySelector("#divTeleportProps");
+      const propDestX = document.querySelector("#propDestX");
+      const propDestY = document.querySelector("#propDestY");
+      const btnExport = document.querySelector("#btnExportLevel");
 
-                // 1. Vérifier si on clique sur une poignée de redimensionnement
-                if (game.selectedObject) {
-                    let obj = game.selectedObject;
-                    let cx, cy, angle = obj.angle || 0;
-
-                    // Calcul du centre et de l'angle pour la transformation locale (Objets centrés)
-                    if (obj instanceof RotatingObstacle || obj instanceof Player) {
-                        cx = obj.x; cy = obj.y;
-                    } else if (obj.radius) {
-                        cx = obj.x; cy = obj.y; angle = 0;
-                    } else {
-                        // Obstacle standard (x,y top-left) -> Centre calculé
-                        cx = obj.x + obj.w/2;
-                        cy = obj.y + obj.h/2;
-                    }
-
-                    // Transformation de la souris en coordonnées locales
-                    let dx = x - cx;
-                    let dy = y - cy;
-                    let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
-                    let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
-
-                    // Test de collision avec les poignées (Seuil ~10px)
-                    let hitDist = 12;
-                    
-                    if (obj.radius) {
-                        if (Math.hypot(localX - obj.radius, localY) < hitDist) resizingHandle = 'radius';
-                    } else {
-                        let hw = obj.w/2;
-                        let hh = obj.h/2;
-                        if (Math.hypot(localX - hw, localY - hh) < hitDist) resizingHandle = 'corner';
-                        else if (Math.hypot(localX - hw, localY) < hitDist) resizingHandle = 'right';
-                        else if (Math.hypot(localX, localY - hh) < hitDist) resizingHandle = 'bottom';
-                    }
-
-                    if (resizingHandle) return; // On commence le redimensionnement, on arrête là
-                }
-
-                // On cherche l'objet sous la souris (en partant de la fin pour avoir le dessus)
-                game.selectedObject = null;
-                for (let i = game.objetsGraphiques.length - 1; i >= 0; i--) {
-                    let obj = game.objetsGraphiques[i];
-                    
-                    // Détection précise selon le type d'objet (Centré vs Top-Left)
-                    let isCentered = (obj instanceof Player || obj instanceof RotatingObstacle || obj instanceof CircleObstacle);
-                    let minX, maxX, minY, maxY;
-
-                    if (isCentered) {
-                        let hw = (obj instanceof CircleObstacle) ? obj.radius : obj.w / 2;
-                        let hh = (obj instanceof CircleObstacle) ? obj.radius : obj.h / 2;
-                        minX = obj.x - hw; maxX = obj.x + hw;
-                        minY = obj.y - hh; maxY = obj.y + hh;
-                    } else {
-                        minX = obj.x; maxX = obj.x + obj.w;
-                        minY = obj.y; maxY = obj.y + obj.h;
-                    }
-
-                    if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
-                        game.selectedObject = obj;
-                        break;
-                    }
-                }
-                updateInputs();
-
-                // Initialisation du déplacement si un objet est sélectionné
-                if (game.selectedObject) {
-                    isDraggingSelected = true;
-                    dragOffsetX = x - game.selectedObject.x;
-                    dragOffsetY = y - game.selectedObject.y;
-                }
-            };
-
-            canvas.onmousemove = (e) => {
-                let pos = getMousePos(canvas, e);
-                let x = pos.x;
-                let y = pos.y;
-
-                // Gestion du redimensionnement
-                if (resizingHandle && game.selectedObject) {
-                    let obj = game.selectedObject;
-                    let cx, cy, angle = obj.angle || 0;
-
-                    if (obj instanceof RotatingObstacle || obj instanceof Player) {
-                        cx = obj.x; cy = obj.y;
-                    } else if (obj.radius) {
-                        cx = obj.x; cy = obj.y; angle = 0;
-                    } else {
-                        cx = obj.x + obj.w/2;
-                        cy = obj.y + obj.h/2;
-                    }
-
-                    let dx = x - cx;
-                    let dy = y - cy;
-                    let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
-                    let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
-
-                    if (resizingHandle === 'radius') {
-                        obj.radius = Math.max(10, localX);
-                    } else {
-                        // On redimensionne (localX est la demi-largeur depuis le centre)
-                        if (resizingHandle === 'right' || resizingHandle === 'corner') {
-                            let newW = Math.max(10, Math.abs(localX) * 2);
-                            
-                            // Pour les obstacles définis par Top-Left, changer W déplace le centre.
-                            // On compense pour que le centre reste fixe pendant le resize.
-                            if (!(obj instanceof RotatingObstacle || obj instanceof Player)) {
-                                let oldW = obj.w;
-                                obj.w = newW;
-                                obj.x -= (newW - oldW) / 2;
-                            } else {
-                                obj.w = newW;
-                            }
-                        }
-                        if (resizingHandle === 'bottom' || resizingHandle === 'corner') {
-                            let newH = Math.max(10, Math.abs(localY) * 2);
-                            
-                            if (!(obj instanceof RotatingObstacle || obj instanceof Player)) {
-                                let oldH = obj.h;
-                                obj.h = newH;
-                                obj.y -= (newH - oldH) / 2;
-                            } else {
-                                obj.h = newH;
-                            }
-                        }
-                    }
-                    updateInputs();
-                    return;
-                }
-
-                if (isDraggingSelected && game.selectedObject) {
-                    game.selectedObject.x = x - dragOffsetX;
-                    game.selectedObject.y = y - dragOffsetY;
-                    // Pour MovingObstacle, il faut mettre à jour le point de départ de l'animation
-                    if (game.selectedObject instanceof MovingObstacle) {
-                        game.selectedObject.startX = game.selectedObject.x;
-                        game.selectedObject.startY = game.selectedObject.y;
-                    }
-                }
-            };
-
-            canvas.onmouseup = () => {
-                isDraggingSelected = false;
-                resizingHandle = null;
-            };
-
-            document.addEventListener("mouseup", () => {
-                isDraggingSelected = false;
-                resizingHandle = null;
-            });
+      function updateInputs() {
+        if (!game.selectedObject) {
+          propsPanel.style.display = "none";
+          return;
         }
-        resizeCanvas();
-        game.start(0);
-    };
+        propsPanel.style.display = "block";
 
-    // Fonction pour créer les icônes cliquables dans la sidebar
-    function createAssetPreview(container, cssClass, label, data) {
-        const div = document.createElement("div");
-        div.className = `asset-preview`;
-        
-        // Ajustement du style pour que le texte soit bien visible en dessous
-        div.style.width = "80px";
-        div.style.height = "auto";
-        div.style.minHeight = "80px";
-        div.style.padding = "5px";
+        // pas supprimer joueur
+        if (game.selectedObject === game.player) {
+          btnDelete.style.display = "none";
+        } else {
+          btnDelete.style.display = "block";
+        }
 
-        div.style.display = "flex";
-        div.style.flexDirection = "column";
-        div.style.alignItems = "center";
-        div.style.justifyContent = "center";
-        div.style.gap = "5px";
-        
-        // Canvas de prévisualisation (réduit légèrement pour laisser place au texte)
-        const cvs = document.createElement("canvas");
-        cvs.width = 50;
-        cvs.height = 50;
-        const ctx = cvs.getContext("2d");
+        propW.value = Math.round(game.selectedObject.w);
+        propH.value = Math.round(game.selectedObject.h);
+        // rad deg
+        let angleDeg = (game.selectedObject.angle || 0) * (180 / Math.PI);
+        propRot.value = Math.round(angleDeg);
 
-        // Dessin selon le type
-        ctx.clearRect(0, 0, 50, 50);
-        
+        // couleur
+        let c = game.selectedObject.couleur || "#000000";
+        // nom vers hex
+        if (!c.startsWith("#")) {
+          c = colorMap[c.toLowerCase()] || "#000000";
+        }
+        propColor.value = c;
+
+        // vitesse rot
+        if (game.selectedObject.angleSpeed !== undefined) {
+          divRotSpeed.style.display = "block";
+          propRotSpeed.value = game.selectedObject.angleSpeed;
+        } else {
+          divRotSpeed.style.display = "none";
+        }
+
+        // id liaison
+        if (game.selectedObject.id !== undefined) {
+          divLinkId.style.display = "block";
+          propLinkId.value = game.selectedObject.id;
+        } else {
+          divLinkId.style.display = "none";
+        }
+
+        // obstacle mobile
+        if (game.selectedObject instanceof MovingObstacle) {
+          divMoveProps.style.display = "block";
+          propDistX.value = game.selectedObject.distX;
+          propDistY.value = game.selectedObject.distY;
+          propMoveSpeed.value = game.selectedObject.speed;
+        } else {
+          divMoveProps.style.display = "none";
+        }
+
+        // teleporter
+        if (game.selectedObject instanceof teleporter) {
+          divTeleportProps.style.display = "block";
+          propDestX.value = game.selectedObject.destinationX;
+          propDestY.value = game.selectedObject.destinationY;
+        } else {
+          divTeleportProps.style.display = "none";
+        }
+      }
+
+      propW.oninput = () => {
+        if (game.selectedObject)
+          game.selectedObject.w = parseFloat(propW.value);
+      };
+      propH.oninput = () => {
+        if (game.selectedObject)
+          game.selectedObject.h = parseFloat(propH.value);
+      };
+      propRot.oninput = () => {
+        if (game.selectedObject) {
+          // deg rad
+          game.selectedObject.angle =
+            parseFloat(propRot.value) * (Math.PI / 180);
+        }
+      };
+      propColor.oninput = () => {
+        if (game.selectedObject) game.selectedObject.couleur = propColor.value;
+      };
+      propRotSpeed.oninput = () => {
+        if (
+          game.selectedObject &&
+          game.selectedObject.angleSpeed !== undefined
+        ) {
+          game.selectedObject.angleSpeed = parseFloat(propRotSpeed.value);
+          if (game.selectedObject.initialAngleSpeed !== undefined) {
+            game.selectedObject.initialAngleSpeed = parseFloat(
+              propRotSpeed.value,
+            );
+          }
+        }
+      };
+      propLinkId.oninput = () => {
+        if (game.selectedObject && game.selectedObject.id !== undefined) {
+          game.selectedObject.id = parseInt(propLinkId.value);
+        }
+      };
+      propDistX.oninput = () => {
+        if (game.selectedObject instanceof MovingObstacle)
+          game.selectedObject.distX = parseFloat(propDistX.value);
+      };
+      propDistY.oninput = () => {
+        if (game.selectedObject instanceof MovingObstacle)
+          game.selectedObject.distY = parseFloat(propDistY.value);
+      };
+      propMoveSpeed.oninput = () => {
+        if (game.selectedObject instanceof MovingObstacle)
+          game.selectedObject.speed = parseFloat(propMoveSpeed.value);
+      };
+
+      propDestX.oninput = () => {
+        if (game.selectedObject instanceof teleporter)
+          game.selectedObject.destinationX = parseFloat(propDestX.value);
+      };
+      propDestY.oninput = () => {
+        if (game.selectedObject instanceof teleporter)
+          game.selectedObject.destinationY = parseFloat(propDestY.value);
+      };
+
+      btnDelete.onclick = () => {
+        if (game.selectedObject && game.selectedObject !== game.player) {
+          const index = game.objetsGraphiques.indexOf(game.selectedObject);
+          if (index > -1) {
+            game.objetsGraphiques.splice(index, 1);
+            game.selectedObject = null;
+            updateInputs();
+          }
+        }
+      };
+
+      // calques
+      btnLayerUp.onclick = () => {
+        if (game.selectedObject) {
+          const idx = game.objetsGraphiques.indexOf(game.selectedObject);
+          if (idx < game.objetsGraphiques.length - 1) {
+            // echange suivant
+            [game.objetsGraphiques[idx], game.objetsGraphiques[idx + 1]] = [
+              game.objetsGraphiques[idx + 1],
+              game.objetsGraphiques[idx],
+            ];
+          }
+        }
+      };
+      btnLayerDown.onclick = () => {
+        if (game.selectedObject) {
+          const idx = game.objetsGraphiques.indexOf(game.selectedObject);
+          if (idx > 0) {
+            // echange precedent
+            [game.objetsGraphiques[idx], game.objetsGraphiques[idx - 1]] = [
+              game.objetsGraphiques[idx - 1],
+              game.objetsGraphiques[idx],
+            ];
+          }
+        }
+      };
+
+      // touche suppr
+      window.addEventListener("keydown", (e) => {
+        if (e.key === "Delete") {
+          // pas suppr input
+          if (document.activeElement.tagName === "INPUT") return;
+          btnDelete.click();
+        }
+      });
+
+      // copier coller
+      let clipboard = null;
+
+      function getObjectData(obj) {
+        let type = "rect";
+        let extra = {};
+
+        if (obj instanceof Player) {
+          type = "player";
+        } else if (obj instanceof TexturedObstacle) {
+          type = "textured";
+          extra.imageSrc = obj.imageSrc;
+        } else if (obj instanceof CircleObstacle) {
+          type = "circle";
+          extra.r = obj.radius;
+        } else if (obj instanceof RotatingObstacle) {
+          type = "rotating";
+          extra.angleSpeed = obj.initialAngleSpeed || obj.angleSpeed;
+          extra.angle = obj.angle;
+        } else if (obj instanceof bumper) {
+          type = "bumper";
+          extra.direction = obj.direction;
+        } else if (obj instanceof fin) {
+          type = "fin";
+        } else if (obj instanceof speedPotion) {
+          type = "speed";
+          extra.vitesse = obj.vitesse;
+          extra.temps = obj.temps;
+        } else if (obj instanceof sizePotion) {
+          type = "size";
+          extra.tailleW = obj.tailleW;
+          extra.tailleH = obj.tailleH;
+        } else if (obj instanceof fadingDoor) {
+          type = "door";
+          extra.timer = obj.timer;
+          extra.id = obj.id;
+        } else if (obj instanceof keypad) {
+          type = "keypad";
+          extra.temps = obj.temps;
+          extra.id = obj.id;
+        } else if (obj instanceof MovingObstacle) {
+          type = "moving";
+          extra.distX = obj.distX;
+          extra.distY = obj.distY;
+          extra.speed = obj.speed;
+        } else if (obj instanceof teleporter) {
+          type = "teleporter";
+          extra.destinationX = obj.destinationX;
+          extra.destinationY = obj.destinationY;
+        }
+        return {
+          type,
+          x: obj.x,
+          y: obj.y,
+          w: obj.w,
+          h: obj.h,
+          couleur: obj.couleur,
+          ...extra,
+        };
+      }
+
+      function createObjectFromData(data) {
+        let newObj;
         if (data.type === "rect") {
-            ctx.fillStyle = "white";
-            let w = Math.min(40, data.w);
-            let h = Math.min(40, data.h);
-            if (data.w > data.h) h = w * (data.h/data.w);
-            else w = h * (data.w/data.h);
-            ctx.fillRect(25 - w/2, 25 - h/2, w, h);
+          newObj = new Obstacle(data.x, data.y, data.w, data.h, data.couleur);
+        } else if (data.type === "textured") {
+          newObj = new TexturedObstacle(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.imageSrc,
+          );
         } else if (data.type === "circle") {
-            ctx.fillStyle = "white";
-            ctx.beginPath();
-            ctx.arc(25, 25, 18, 0, Math.PI*2);
-            ctx.fill();
-        } else if (data.type === "bumper") {
-            // Prévisualisation avec l'image du champignon
-            let img = new Image();
-            img.src = "assets/images/bumper.png";
-            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+          newObj = new CircleObstacle(data.x, data.y, data.r, data.couleur);
         } else if (data.type === "rotating") {
-            ctx.fillStyle = "red";
-            ctx.translate(25, 25);
-            ctx.rotate(Math.PI/4);
-            ctx.fillRect(-20, -4, 40, 8);
-            ctx.fillRect(-4, -20, 8, 40);
+          newObj = new RotatingObstacle(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.couleur,
+            data.angleSpeed,
+            data.angle,
+          );
+        } else if (data.type === "bumper") {
+          newObj = new bumper(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.couleur,
+            data.direction,
+          );
         } else if (data.type === "fin") {
-            let img = new Image();
-            img.src = "assets/images/portal.png";
-            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+          newObj = new fin(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.couleur,
+            "assets/images/portal.png",
+          );
         } else if (data.type === "speed") {
-            let img = new Image();
-            img.src = "assets/images/citron.png";
-            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+          newObj = new speedPotion(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.couleur,
+            data.vitesse,
+            data.temps,
+          );
         } else if (data.type === "size") {
-            ctx.fillStyle = "magenta";
-            ctx.fillRect(10, 10, 30, 30);
+          newObj = new sizePotion(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.couleur,
+            data.tailleW,
+            data.tailleH,
+          );
         } else if (data.type === "door") {
-            ctx.fillStyle = "pink";
-            ctx.fillRect(20, 5, 10, 40);
+          newObj = new fadingDoor(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.timer,
+            data.id,
+          );
         } else if (data.type === "keypad") {
-            let img = new Image();
-            img.src = "assets/images/fadingdoor.png";
-            img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+          newObj = new keypad(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.temps,
+            data.id,
+          );
         } else if (data.type === "moving") {
-            ctx.fillStyle = "purple";
-            ctx.fillRect(10, 20, 30, 10);
-            ctx.fillText("↔", 20, 15);
+          newObj = new MovingObstacle(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.couleur,
+            data.distX,
+            data.distY,
+            data.speed,
+          );
         } else if (data.type === "teleporter") {
-            ctx.fillStyle = "blue";
-            ctx.fillRect(10, 10, 30, 30);
-            ctx.strokeStyle = "white";
-            ctx.strokeRect(15, 15, 20, 20);
+          newObj = new teleporter(
+            data.x,
+            data.y,
+            data.w,
+            data.h,
+            data.couleur,
+            data.destinationX,
+            data.destinationY,
+          );
         }
 
-        div.appendChild(cvs);
-        
-        const lbl = document.createElement("span");
-        lbl.innerText = label;
-        lbl.style.fontSize = "11px";
-        lbl.style.pointerEvents = "none";
-        lbl.style.textAlign = "center";
-        div.appendChild(lbl);
+        if (newObj && data.angle && !(newObj instanceof RotatingObstacle)) {
+          newObj.angle = data.angle;
+        }
+        return newObj;
+      }
 
-        // Début du Drag
-        div.onmousedown = (e) => {
-            draggedItem = data;
-            document.body.style.cursor = "grabbing";
-
-            // --- GHOST ELEMENT (Visual Feedback) ---
-            const ghost = document.createElement("div");
-            ghost.style.position = "fixed";
-            ghost.style.pointerEvents = "none";
-            ghost.style.zIndex = "10000";
-            ghost.style.opacity = "0.8";
-            ghost.style.border = "2px solid white";
-            ghost.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
-            
-            // Dimensions & Style
-            let w, h;
-            if (data.r) {
-                w = data.r * 2;
-                h = data.r * 2;
-                ghost.style.borderRadius = "50%";
-            } else {
-                w = data.w;
-                h = data.h;
+      window.addEventListener("keydown", (e) => {
+        // ctrl c
+        if (e.ctrlKey && e.key === "c") {
+          if (game.selectedObject && game.selectedObject !== game.player) {
+            clipboard = getObjectData(game.selectedObject);
+          }
+        }
+        // ctrl v
+        if (e.ctrlKey && e.key === "v") {
+          if (clipboard) {
+            let newObj = createObjectFromData(clipboard);
+            if (newObj) {
+              newObj.x += 20; // decalage
+              newObj.y += 20;
+              game.objetsGraphiques.push(newObj);
+              game.selectedObject = newObj;
+              updateInputs();
             }
-            
-            if (data.type === "fin") ghost.style.borderRadius = "50%";
+          }
+        }
+      });
 
-            ghost.style.width = w + "px";
-            ghost.style.height = h + "px";
+      // export json
+      btnExport.onclick = () => {
+        const levelData = game.objetsGraphiques.map((obj) =>
+          getObjectData(obj),
+        );
 
             // Colors based on type
             if (data.type === "bumper") {
@@ -1028,31 +1304,122 @@ async function init() {
             // Centering on mouse
             ghost.style.left = (e.clientX - w / 2) + "px";
             ghost.style.top = (e.clientY - h / 2) + "px";
+        const blob = new Blob([JSON.stringify(levelData, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const downloadAnchorNode = document.createElement("a");
+        downloadAnchorNode.setAttribute("href", url);
+        downloadAnchorNode.setAttribute("download", "mon_niveau_blob.json");
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+        URL.revokeObjectURL(url);
+      };
 
-            document.body.appendChild(ghost);
+      // variables drag
+      let isDraggingSelected = false;
+      let dragOffsetX = 0;
+      let dragOffsetY = 0;
+      let resizingHandle = null;
 
-            const moveGhost = (ev) => {
-                ghost.style.left = (ev.clientX - w / 2) + "px";
-                ghost.style.top = (ev.clientY - h / 2) + "px";
-            };
-            
-            const removeGhost = () => {
-                if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
-                document.removeEventListener("mousemove", moveGhost);
-                document.removeEventListener("mouseup", removeGhost);
-            };
+      // selection
+      canvas.onmousedown = (e) => {
+        if (draggedItem) return; // ignore drag menu
 
-            document.addEventListener("mousemove", moveGhost);
-            document.addEventListener("mouseup", removeGhost);
-        };
+        let pos = getMousePos(canvas, e);
+        let x = pos.x;
+        let y = pos.y;
 
-        container.appendChild(div);
-    }
+        // check poignee
+        if (game.selectedObject) {
+          let obj = game.selectedObject;
+          let cx,
+            cy,
+            angle = obj.angle || 0;
 
-    // --- GESTION DU DROP SUR LE CANVAS ---
-    document.addEventListener("mouseup", async (e) => {
-        if (!draggedItem) return;
+          // calcul local
+          if (obj instanceof RotatingObstacle || obj instanceof Player) {
+            cx = obj.x;
+            cy = obj.y;
+          } else if (obj.radius) {
+            cx = obj.x;
+            cy = obj.y;
+            angle = 0;
+          } else {
+            // standard
+            cx = obj.x + obj.w / 2;
+            cy = obj.y + obj.h / 2;
+          }
 
+          // souris locale
+          let dx = x - cx;
+          let dy = y - cy;
+          let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+          let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+
+          // collision poignee
+          let hitDist = 12;
+
+          if (obj.radius) {
+            if (Math.hypot(localX - obj.radius, localY) < hitDist)
+              resizingHandle = "radius";
+          } else {
+            let hw = obj.w / 2;
+            let hh = obj.h / 2;
+            if (Math.hypot(localX - hw, localY - hh) < hitDist)
+              resizingHandle = "corner";
+            else if (Math.hypot(localX - hw, localY) < hitDist)
+              resizingHandle = "right";
+            else if (Math.hypot(localX, localY - hh) < hitDist)
+              resizingHandle = "bottom";
+          }
+
+          if (resizingHandle) return; // resize start
+        }
+
+        // cherche objet
+        game.selectedObject = null;
+        for (let i = game.objetsGraphiques.length - 1; i >= 0; i--) {
+          let obj = game.objetsGraphiques[i];
+
+          // detection type
+          let isCentered =
+            obj instanceof Player ||
+            obj instanceof RotatingObstacle ||
+            obj instanceof CircleObstacle;
+          let minX, maxX, minY, maxY;
+
+          if (isCentered) {
+            let hw = obj instanceof CircleObstacle ? obj.radius : obj.w / 2;
+            let hh = obj instanceof CircleObstacle ? obj.radius : obj.h / 2;
+            minX = obj.x - hw;
+            maxX = obj.x + hw;
+            minY = obj.y - hh;
+            maxY = obj.y + hh;
+          } else {
+            minX = obj.x;
+            maxX = obj.x + obj.w;
+            minY = obj.y;
+            maxY = obj.y + obj.h;
+          }
+
+          if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+            game.selectedObject = obj;
+            break;
+          }
+        }
+        updateInputs();
+
+        // init drag
+        if (game.selectedObject) {
+          isDraggingSelected = true;
+          dragOffsetX = x - game.selectedObject.x;
+          dragOffsetY = y - game.selectedObject.y;
+        }
+      };
+
+      canvas.onmousemove = (e) => {
         let pos = getMousePos(canvas, e);
         let x = pos.x;
         let y = pos.y;
@@ -1087,19 +1454,355 @@ async function init() {
                 newObj = new teleporter(x - 20, y - 20, 40, 40, "blue", 100, 100);
             } else if (draggedItem.type === "fan") {
                 newObj = new Fan(x - 25, y - 25, 50, 50, "cyan", 2);
-            }
+        // resize
+        if (resizingHandle && game.selectedObject) {
+          let obj = game.selectedObject;
+          let cx,
+            cy,
+            angle = obj.angle || 0;
 
-            if (newObj) game.objetsGraphiques.push(newObj);
+          if (obj instanceof RotatingObstacle || obj instanceof Player) {
+            cx = obj.x;
+            cy = obj.y;
+          } else if (obj.radius) {
+            cx = obj.x;
+            cy = obj.y;
+            angle = 0;
+          } else {
+            cx = obj.x + obj.w / 2;
+            cy = obj.y + obj.h / 2;
+          }
+
+          let dx = x - cx;
+          let dy = y - cy;
+          let localX = dx * Math.cos(-angle) - dy * Math.sin(-angle);
+          let localY = dx * Math.sin(-angle) + dy * Math.cos(-angle);
+
+          if (resizingHandle === "radius") {
+            obj.radius = Math.max(10, localX);
+          } else {
+            // resize w
+            if (resizingHandle === "right" || resizingHandle === "corner") {
+              let newW = Math.max(10, Math.abs(localX) * 2);
+
+              // fix centre
+              if (!(obj instanceof RotatingObstacle || obj instanceof Player)) {
+                let oldW = obj.w;
+                obj.w = newW;
+                obj.x -= (newW - oldW) / 2;
+              } else {
+                obj.w = newW;
+              }
+            }
+            if (resizingHandle === "bottom" || resizingHandle === "corner") {
+              let newH = Math.max(10, Math.abs(localY) * 2);
+
+              if (!(obj instanceof RotatingObstacle || obj instanceof Player)) {
+                let oldH = obj.h;
+                obj.h = newH;
+                obj.y -= (newH - oldH) / 2;
+              } else {
+                obj.h = newH;
+              }
+            }
+          }
+          updateInputs();
+          return;
         }
 
-        draggedItem = null;
-        document.body.style.cursor = "default";
-    });
-    // Création de l'écran LeaderBoard (caché par défaut)
-    let leaderboardMenu = document.createElement("div");
-    leaderboardMenu.id = "leaderboardMenu";
-    leaderboardMenu.style.display = "none";
-    leaderboardMenu.innerHTML = `
+        if (isDraggingSelected && game.selectedObject) {
+          game.selectedObject.x = x - dragOffsetX;
+          game.selectedObject.y = y - dragOffsetY;
+          // update start
+          if (game.selectedObject instanceof MovingObstacle) {
+            game.selectedObject.startX = game.selectedObject.x;
+            game.selectedObject.startY = game.selectedObject.y;
+          }
+        }
+      };
+
+      canvas.onmouseup = () => {
+        isDraggingSelected = false;
+        resizingHandle = null;
+      };
+
+      document.addEventListener("mouseup", () => {
+        isDraggingSelected = false;
+        resizingHandle = null;
+      });
+    }
+    resizeCanvas();
+    game.start(0);
+  };
+
+  // Fonction pour créer les icônes cliquables dans la sidebar
+  function createAssetPreview(container, cssClass, label, data) {
+    const div = document.createElement("div");
+    div.className = `asset-preview`;
+
+    // Ajustement du style pour que le texte soit bien visible en dessous
+    div.style.width = "80px";
+    div.style.height = "auto";
+    div.style.minHeight = "80px";
+    div.style.padding = "5px";
+
+    div.style.display = "flex";
+    div.style.flexDirection = "column";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.gap = "5px";
+
+    // canvas preview
+    const cvs = document.createElement("canvas");
+    cvs.width = 50;
+    cvs.height = 50;
+    const ctx = cvs.getContext("2d");
+
+    // dessin
+    ctx.clearRect(0, 0, 50, 50);
+
+    if (data.type === "rect") {
+      ctx.fillStyle = "white";
+      let w = Math.min(40, data.w);
+      let h = Math.min(40, data.h);
+      if (data.w > data.h) h = w * (data.h / data.w);
+      else w = h * (data.w / data.h);
+      ctx.fillRect(25 - w / 2, 25 - h / 2, w, h);
+    } else if (data.type === "textured") {
+      ctx.fillStyle = "#555"; // gris
+      ctx.fillRect(15, 5, 20, 40);
+      ctx.strokeRect(15, 5, 20, 40);
+    } else if (data.type === "circle") {
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(25, 25, 18, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (data.type === "bumper") {
+      // image
+      let img = new Image();
+      img.src = "assets/images/bumper.png";
+      img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    } else if (data.type === "rotating") {
+      ctx.fillStyle = "red";
+      ctx.translate(25, 25);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-20, -4, 40, 8);
+      ctx.fillRect(-4, -20, 8, 40);
+    } else if (data.type === "fin") {
+      let img = new Image();
+      img.src = "assets/images/portal.png";
+      img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    } else if (data.type === "speed") {
+      let img = new Image();
+      img.src = "assets/images/citron.png";
+      img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    } else if (data.type === "size") {
+      let img = new Image();
+      img.src = "assets/images/orange.png";
+      img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    } else if (data.type === "door") {
+      let img = new Image();
+      img.src = "assets/images/laser.png";
+      img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    } else if (data.type === "keypad") {
+      let img = new Image();
+      img.src = "assets/images/fadingdoor.png";
+      img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    } else if (data.type === "moving") {
+      ctx.fillStyle = "purple";
+      ctx.fillRect(10, 20, 30, 10);
+      ctx.fillText("↔", 20, 15);
+    } else if (data.type === "teleporter") {
+      let img = new Image();
+      img.src = "assets/images/teleporter.png";
+      img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
+    }
+
+    div.appendChild(cvs);
+
+    const lbl = document.createElement("span");
+    lbl.innerText = label;
+    lbl.style.fontSize = "11px";
+    lbl.style.pointerEvents = "none";
+    lbl.style.textAlign = "center";
+    div.appendChild(lbl);
+
+    // start drag
+    div.onmousedown = (e) => {
+      draggedItem = data;
+      document.body.style.cursor = "grabbing";
+
+      // ghost
+      const ghost = document.createElement("div");
+      ghost.style.position = "fixed";
+      ghost.style.pointerEvents = "none";
+      ghost.style.zIndex = "10000";
+      ghost.style.opacity = "0.8";
+      ghost.style.border = "2px solid white";
+      ghost.style.boxShadow = "0 0 10px rgba(0,0,0,0.5)";
+
+      // style
+      let w, h;
+      if (data.r) {
+        w = data.r * 2;
+        h = data.r * 2;
+        ghost.style.borderRadius = "50%";
+      } else {
+        w = data.w;
+        h = data.h;
+      }
+
+      if (data.type === "fin") ghost.style.borderRadius = "50%";
+
+      ghost.style.width = w + "px";
+      ghost.style.height = h + "px";
+
+      // couleurs
+      if (data.type === "bumper") {
+        ghost.style.backgroundColor = "transparent";
+        ghost.style.backgroundImage = "url('assets/images/bumper.png')";
+        ghost.style.backgroundSize = "contain";
+        ghost.style.backgroundRepeat = "no-repeat";
+      } else if (data.type === "rotating") ghost.style.backgroundColor = "red";
+      else if (data.type === "textured") ghost.style.backgroundColor = "#555";
+      else if (data.type === "fin") ghost.style.backgroundColor = "green";
+      else if (data.type === "speed") {
+        ghost.style.backgroundColor = "transparent";
+        ghost.style.backgroundImage = "url('assets/images/citron.png')";
+        ghost.style.backgroundSize = "contain";
+        ghost.style.backgroundRepeat = "no-repeat";
+      } else if (data.type === "size") {
+        ghost.style.backgroundColor = "transparent";
+        ghost.style.backgroundImage = "url('assets/images/orange.png')";
+        ghost.style.backgroundSize = "contain";
+        ghost.style.backgroundRepeat = "no-repeat";
+      } else if (data.type === "keypad") {
+        ghost.style.backgroundColor = "transparent";
+        ghost.style.backgroundImage = "url('assets/images/fadingdoor.png')";
+        ghost.style.backgroundSize = "contain";
+        ghost.style.backgroundRepeat = "no-repeat";
+      } else if (data.type === "door") {
+        ghost.style.backgroundColor = "transparent";
+        ghost.style.backgroundImage = "url('assets/images/laser.png')";
+        ghost.style.backgroundSize = "100% 100%";
+        ghost.style.backgroundRepeat = "no-repeat";
+      } else if (data.type === "moving") ghost.style.backgroundColor = "purple";
+      else if (data.type === "teleporter") {
+        ghost.style.backgroundColor = "transparent";
+        ghost.style.backgroundImage = "url('assets/images/teleporter.png')";
+        ghost.style.backgroundSize = "contain";
+        ghost.style.backgroundRepeat = "no-repeat";
+      } else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // mur defaut
+
+      // centre souris
+      ghost.style.left = e.clientX - w / 2 + "px";
+      ghost.style.top = e.clientY - h / 2 + "px";
+
+      document.body.appendChild(ghost);
+
+      const moveGhost = (ev) => {
+        ghost.style.left = ev.clientX - w / 2 + "px";
+        ghost.style.top = ev.clientY - h / 2 + "px";
+      };
+
+      const removeGhost = () => {
+        if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+        document.removeEventListener("mousemove", moveGhost);
+        document.removeEventListener("mouseup", removeGhost);
+      };
+
+      document.addEventListener("mousemove", moveGhost);
+      document.addEventListener("mouseup", removeGhost);
+    };
+
+    container.appendChild(div);
+  }
+
+  // drop
+  document.addEventListener("mouseup", async (e) => {
+    if (!draggedItem) return;
+
+    let pos = getMousePos(canvas, e);
+    let x = pos.x;
+    let y = pos.y;
+
+    // drop canvas
+    if (x > 0 && x < canvas.width && y > 0 && y < canvas.height) {
+      let newObj;
+
+      if (draggedItem.type === "rect") {
+        newObj = new Obstacle(
+          x - draggedItem.w / 2,
+          y - draggedItem.h / 2,
+          draggedItem.w,
+          draggedItem.h,
+          "white",
+        );
+      } else if (draggedItem.type === "textured") {
+        newObj = new TexturedObstacle(
+          x - draggedItem.w / 2,
+          y - draggedItem.h / 2,
+          draggedItem.w,
+          draggedItem.h,
+          draggedItem.imageSrc,
+        );
+      } else if (draggedItem.type === "circle") {
+        // cercle
+        newObj = new CircleObstacle(x, y, draggedItem.r, "white");
+      } else if (draggedItem.type === "bumper") {
+        newObj = new bumper(x - 25, y - 25, 50, 50, "orange", "up");
+      } else if (draggedItem.type === "rotating") {
+        newObj = new RotatingObstacle(
+          x,
+          y,
+          draggedItem.w,
+          draggedItem.h,
+          "red",
+          0.02,
+        );
+      } else if (draggedItem.type === "fin") {
+        newObj = new fin(
+          x - 40,
+          y - 40,
+          80,
+          80,
+          "green",
+          "assets/images/portal.png",
+        );
+      } else if (draggedItem.type === "speed") {
+        newObj = new speedPotion(x - 15, y - 15, 30, 30, "cyan", 5, 3000);
+      } else if (draggedItem.type === "size") {
+        newObj = new sizePotion(x - 15, y - 15, 30, 30, "magenta", -40, -40);
+      } else if (draggedItem.type === "door") {
+        newObj = new fadingDoor(x - 10, y - 50, 20, 100, 3000, 1);
+      } else if (draggedItem.type === "keypad") {
+        newObj = new keypad(x - 15, y - 15, 30, 30, 3000, 1);
+      } else if (draggedItem.type === "moving") {
+        newObj = new MovingObstacle(
+          x - 30,
+          y - 10,
+          60,
+          20,
+          "purple",
+          100,
+          0,
+          0.05,
+        );
+      } else if (draggedItem.type === "teleporter") {
+        newObj = new teleporter(x - 20, y - 20, 40, 40, "blue", 100, 100);
+      }
+
+      if (newObj) game.objetsGraphiques.push(newObj);
+    }
+
+    draggedItem = null;
+    document.body.style.cursor = "default";
+  });
+  // leaderboard
+  let leaderboardMenu = document.createElement("div");
+  leaderboardMenu.id = "leaderboardMenu";
+  leaderboardMenu.style.display = "none";
+  leaderboardMenu.innerHTML = `
         <h1>Meilleurs Temps</h1>
         <div id="leaderboardListContainer">
             <table id="menuLeaderboardTable">
@@ -1109,11 +1812,29 @@ async function init() {
         </div>
         <button id="btnLeaderboardBack">Retour</button>
     `;
-    document.body.appendChild(leaderboardMenu);
+  document.body.appendChild(leaderboardMenu);
 
-    // Ajout de l'image (blob) sur la droite
-    let blobImage = document.createElement("img");
-    let gifSource = "assets/images/blobMenu.gif";
+  // image blob
+  let blobImage = document.createElement("img");
+  let gifSource = "assets/images/blobMenu.gif";
+  blobImage.src = gifSource;
+  blobImage.id = "blobMenuImage";
+  menu.appendChild(blobImage);
+
+  // pause gif
+  let staticSource = "";
+  let tempImg = new Image();
+  tempImg.src = gifSource;
+  tempImg.onload = () => {
+    let c = document.createElement("canvas");
+    c.width = tempImg.width;
+    c.height = tempImg.height;
+    c.getContext("2d").drawImage(tempImg, 0, 0);
+    staticSource = c.toDataURL();
+    blobImage.src = staticSource; // pause defaut
+  };
+
+  blobImage.onmouseenter = () => {
     blobImage.src = gifSource;
     blobImage.id = "blobMenuImage";
     menu.appendChild(blobImage);
@@ -1260,56 +1981,88 @@ async function init() {
             btnBack.innerText = "Retour au Menu";
         }
     }
+  };
+  blobImage.onmouseleave = () => {
+    if (staticSource) blobImage.src = staticSource;
+  };
 
-    btnNextLevels.onclick = () => {
-        currentLevelPage++;
+  // menu niveaux
+  let levelsMenu = document.createElement("div");
+  levelsMenu.id = "level-selection";
+  levelsMenu.style.display = "none";
+
+  // conteneur
+  let levelButtonsContainer = document.createElement("div");
+  levelButtonsContainer.id = "levels-container";
+  levelsMenu.appendChild(levelButtonsContainer);
+
+  // retour
+  let btnBack = document.createElement("button");
+  btnBack.id = "back-to-menu";
+  btnBack.innerText = "Retour au Menu";
+  levelsMenu.appendChild(btnBack);
+
+  // suivant
+  let btnNextLevels = document.createElement("button");
+  btnNextLevels.id = "next-levels";
+  btnNextLevels.innerText = "Suivant >";
+  levelsMenu.insertBefore(btnNextLevels, btnBack); // avant retour
+
+  // import json
+  let btnImport = document.createElement("button");
+  btnImport.id = "btnImportLevel";
+  btnImport.innerText = "Importer JSON";
+  // style
+  btnImport.className = "menu-style-button";
+  btnImport.style.marginTop = "10px";
+  btnImport.style.backgroundColor = "#2196F3"; // Bleu
+  btnImport.style.color = "white";
+  btnImport.style.borderColor = "#0b7dda";
+
+  levelsMenu.appendChild(btnImport);
+
+  let fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".json";
+  fileInput.style.display = "none";
+  document.body.appendChild(fileInput);
+
+  btnImport.onclick = () => fileInput.click();
+
+  fileInput.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+
+        maxLevels++;
+        game.levels.registerCustomLevel(maxLevels, data);
+        currentLevelPage = Math.floor((maxLevels - 1) / levelsPerPage);
         renderLevelButtons();
+        updateLeaderboards();
+        alert("Niveau importé avec succès ! (Niveau " + maxLevels + ")");
+      } catch (err) {
+        console.error("Erreur JSON", err);
+        alert("Fichier invalide !");
+      }
     };
+    reader.readAsText(file);
+    fileInput.value = ""; // reset
+  };
 
-    btnBack.onclick = () => {
-        if (currentLevelPage > 0) {
-            currentLevelPage--;
-            renderLevelButtons();
-        } else {
-            levelsMenu.style.display = "none";
-            menu.style.display = "flex";
-            resizeCanvas();
-        }
-    };
+  document.body.appendChild(levelsMenu);
 
-    // Premier affichage
-    renderLevelButtons();
+  // pagination
+  let currentLevelPage = 0;
+  const levelsPerPage = 10;
 
-    // Création de l'arrière-plan du menu
-    let menuBackground = document.createElement("div");
-    menuBackground.id = "menuBackground";
-    document.body.appendChild(menuBackground);
+  function renderLevelButtons() {
+    levelButtonsContainer.innerHTML = "";
 
-    // Création du menu de victoire
-    let winMenu = document.createElement("div");
-    winMenu.id = "winMenu";
-    winMenu.style.display = "none";
-    winMenu.innerHTML = `
-        <h1>BRAVO !</h1>
-        <button id="btnWinRestart">Rejouer</button>
-        <button id="btnWinHome">Menu Principal</button>
-    `;
-    document.body.appendChild(winMenu);
-
-    // --- CONFIGURATION VIDÉO ---
-    let videoContainer = document.createElement("div");
-    Object.assign(videoContainer.style, {
-        display: "none",
-        position: "fixed",
-        top: "0",
-        left: "0",
-        width: "100%",
-        height: "100%",
-        backgroundColor: "black",
-        zIndex: "2000",
-        alignItems: "center",
-        justifyContent: "center"
-    });
+    let start = currentLevelPage * levelsPerPage + 1;
+    let end = Math.min(start + levelsPerPage - 1, maxLevels);
 
     let videoPlayer = document.createElement("video");
     videoPlayer.src = "assets/video/Blob_Escape_Lore.mp4";
@@ -1335,100 +2088,160 @@ async function init() {
         textShadow: "3px 3px 0 #000",
         transition: "all 0.3s ease"
     });
+    let leftCol = document.createElement("div");
+    leftCol.className = "levelColumn";
+    let rightCol = document.createElement("div");
+    rightCol.className = "levelColumn";
 
-    // Effets de survol (identiques au menu)
-    skipButton.onmouseenter = () => {
-        skipButton.style.transform = "scale(1.1) rotate(-3deg)";
-        skipButton.style.color = "#ffcc00";
-        skipButton.style.textShadow = "3px 3px 0 #b8860b";
-    };
-    skipButton.onmouseleave = () => {
-        skipButton.style.transform = "scale(1) rotate(0deg)";
-        skipButton.style.color = "white";
-        skipButton.style.textShadow = "3px 3px 0 #000";
-    };
+    for (let i = start; i <= end; i++) {
+      let btn = document.createElement("button");
+      btn.className = "level-button";
+      btn.dataset.level = i;
+      btn.innerText = i; // chiffre
 
-    videoContainer.appendChild(videoPlayer);
-    videoContainer.appendChild(skipButton);
-    document.body.appendChild(videoContainer);
-
-    function playVideo(callback) {
-        playMusic("stop");
-        menu.style.display = "none";
-        menuBackground.style.display = "none";
+      btn.onclick = () => {
         levelsMenu.style.display = "none";
-        leaderboardMenu.style.display = "none";
         winMenu.style.display = "none";
-        if (sidebar) sidebar.style.display = "none";
-
-        videoContainer.style.display = "flex";
-        videoPlayer.currentTime = 0;
-        videoPlayer.play().catch(e => console.log("Erreur lecture vidéo", e));
-
-        const endVideo = () => {
-            videoPlayer.pause();
-            videoContainer.style.display = "none";
-            // Nettoyage des événements
-            videoPlayer.onended = null;
-            videoPlayer.onclick = null;
-            skipButton.onclick = null;
-            if (callback) callback();
-        };
-
-        videoPlayer.onended = endVideo;
-
-        // Clic pour passer la vidéo (Bouton ou Vidéo)
-        videoPlayer.onclick = endVideo;
-        skipButton.onclick = (e) => {
-            e.stopPropagation();
-            endVideo();
-        };
-    }
-
-    function resizeCanvas() {
-        // 1. On fixe une taille INTERNE constante (Pratique "Pro")
-        // Tes coordonnées dans levels.js ne bougeront plus jamais !
-        canvas.width = 1400;
-        canvas.height = 1000;
-
-        let sidebarWidth = 450;
-        // On calcule l'espace disponible
-        let availableWidth = window.innerWidth - (sidebar.style.display !== "none" ? sidebarWidth : 0);
-
-        // 2. On utilise le CSS pour "étirer" ou "réduire" l'image sans couper le jeu
-        canvas.style.width = availableWidth + "px";
-        canvas.style.height = window.innerHeight + "px";
-
-        // Garde les proportions (évite d'écraser le dessin)
-        canvas.style.objectFit = "contain";
-    }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    // Initialisation de l'affichage du leaderboard (pour afficher les niveaux vides au début)
-    updateLeaderboards();
-
-    // Configuration du callback pour les scores
-    game.onLevelComplete = (level, time) => {
-        // Si pas de temps enregistré ou si le nouveau temps est meilleur (plus petit)
-        if (!bestTimes[level] || time < bestTimes[level]) {
-            bestTimes[level] = time;
-            updateLeaderboards();
-        }
-    };
-
-    // Configuration du callback de fin de jeu
-    game.onFinish = () => {
-        menu.style.display = "none";
-        sidebar.style.display = "none";
-        menuBackground.style.display = "block";
-        winMenu.style.display = "block";
+        menuBackground.style.display = "none";
+        if (sidebar) sidebar.style.display = "flex";
         resizeCanvas();
-        playMusic("menu");
+        playMusic("game");
+        game.start(i);
+      };
 
-        // Débloque les modificateurs une fois le jeu terminé
-        let modifiers = document.querySelectorAll("#modifiersContainer input");
-        modifiers.forEach(input => input.disabled = false);
+      // colonnes
+      if (i < start + 5) {
+        leftCol.appendChild(btn);
+      } else {
+        rightCol.appendChild(btn);
+      }
+    }
+
+    levelButtonsContainer.appendChild(leftCol);
+    levelButtonsContainer.appendChild(rightCol);
+
+    // bouton suivant
+    btnNextLevels.style.display = end < maxLevels ? "block" : "none";
+
+    // bouton retour
+    if (currentLevelPage > 0) {
+      btnBack.innerText = "< Précédent";
+    } else {
+      btnBack.innerText = "Retour au Menu";
+    }
+  }
+
+  btnNextLevels.onclick = () => {
+    currentLevelPage++;
+    renderLevelButtons();
+  };
+
+  btnBack.onclick = () => {
+    if (currentLevelPage > 0) {
+      currentLevelPage--;
+      renderLevelButtons();
+    } else {
+      levelsMenu.style.display = "none";
+      menu.style.display = "flex";
+      resizeCanvas();
+    }
+  };
+
+  // affichage
+  renderLevelButtons();
+
+  // bg menu
+  let menuBackground = document.createElement("div");
+  menuBackground.id = "menuBackground";
+  document.body.appendChild(menuBackground);
+
+  // menu win
+  let winMenu = document.createElement("div");
+  winMenu.id = "winMenu";
+  winMenu.style.display = "none";
+  winMenu.innerHTML = `
+        <h1>BRAVO !</h1>
+        <button id="btnWinRestart">Rejouer</button>
+        <button id="btnWinHome">Menu Principal</button>
+    `;
+  document.body.appendChild(winMenu);
+
+  // video
+  let videoContainer = document.createElement("div");
+  Object.assign(videoContainer.style, {
+    display: "none",
+    position: "fixed",
+    top: "0",
+    left: "0",
+    width: "100%",
+    height: "100%",
+    backgroundColor: "black",
+    zIndex: "2000",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+
+  let videoPlayer = document.createElement("video");
+  videoPlayer.src = "assets/video/Blob_Escape_Lore.mp4";
+  videoPlayer.style.width = "100%";
+  videoPlayer.style.height = "100%";
+  videoPlayer.style.objectFit = "cover";
+
+  // skip
+  let skipButton = document.createElement("button");
+  skipButton.innerText = "SKIP >>";
+  Object.assign(skipButton.style, {
+    position: "absolute",
+    bottom: "30px",
+    right: "30px",
+    zIndex: "2001",
+    fontSize: "40px",
+    fontFamily: "'Lilita One', cursive",
+    color: "white",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    textShadow: "3px 3px 0 #000",
+    transition: "all 0.3s ease",
+  });
+
+  // hover
+  skipButton.onmouseenter = () => {
+    skipButton.style.transform = "scale(1.1) rotate(-3deg)";
+    skipButton.style.color = "#ffcc00";
+    skipButton.style.textShadow = "3px 3px 0 #b8860b";
+  };
+  skipButton.onmouseleave = () => {
+    skipButton.style.transform = "scale(1) rotate(0deg)";
+    skipButton.style.color = "white";
+    skipButton.style.textShadow = "3px 3px 0 #000";
+  };
+
+  videoContainer.appendChild(videoPlayer);
+  videoContainer.appendChild(skipButton);
+  document.body.appendChild(videoContainer);
+
+  function playVideo(callback) {
+    playMusic("stop");
+    menu.style.display = "none";
+    menuBackground.style.display = "none";
+    levelsMenu.style.display = "none";
+    leaderboardMenu.style.display = "none";
+    winMenu.style.display = "none";
+    if (sidebar) sidebar.style.display = "none";
+
+    videoContainer.style.display = "flex";
+    videoPlayer.currentTime = 0;
+    videoPlayer.play().catch((e) => console.log("Erreur lecture vidéo", e));
+
+    const endVideo = () => {
+      videoPlayer.pause();
+      videoContainer.style.display = "none";
+      // clean
+      videoPlayer.onended = null;
+      videoPlayer.onclick = null;
+      skipButton.onclick = null;
+      if (callback) callback();
     };
 
     startBtn.onclick = () => {
@@ -1442,39 +2255,97 @@ async function init() {
             game.start(1); // Lance le niveau 1 par défaut
         });
     };
+    videoPlayer.onended = endVideo;
 
-    // Gestion du bouton Story (anciennement Exit/Histoire)
-    exitBtn.onclick = () => {
-        playVideo(() => {
-            menu.style.display = "flex";
-            menuBackground.style.display = "block";
-            resizeCanvas();
-            playMusic("menu");
-        });
+    // click skip
+    videoPlayer.onclick = endVideo;
+    skipButton.onclick = (e) => {
+      e.stopPropagation();
+      endVideo();
     };
+  }
 
-    // Gestion du bouton Levels
-    levelsBtn.onclick = () => {
-        menu.style.display = "none";
-        levelsMenu.style.display = "flex";
-        resizeCanvas();
-        playMusic("menu");
-    };
+  function resizeCanvas() {
+    // taille fixe
+    canvas.width = 1400;
+    canvas.height = 1000;
 
-    // Gestion du bouton LeaderBoard
-    leaderboardBtn.onclick = () => {
-        menu.style.display = "none";
-        leaderboardMenu.style.display = "block";
-        resizeCanvas();
-        playMusic("menu");
-    };
+    let sidebarWidth = 450;
+    // espace dispo
+    let availableWidth =
+      window.innerWidth - (sidebar.style.display !== "none" ? sidebarWidth : 0);
 
-    // Gestion du bouton Retour du LeaderBoard
-    document.querySelector("#btnLeaderboardBack").onclick = () => {
-        leaderboardMenu.style.display = "none";
-        menu.style.display = "flex";
-        resizeCanvas();
-    };
+    // css stretch
+    canvas.style.width = availableWidth + "px";
+    canvas.style.height = window.innerHeight + "px";
+
+    // proportions
+    canvas.style.objectFit = "contain";
+  }
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  // init leaderboard
+  updateLeaderboards();
+
+  // callback scores
+  game.onLevelComplete = (level, time) => {
+    // meilleur temps
+    if (!bestTimes[level] || time < bestTimes[level]) {
+      bestTimes[level] = time;
+      updateLeaderboards();
+    }
+  };
+
+  // callback fin
+  game.onFinish = () => {
+    menu.style.display = "none";
+    sidebar.style.display = "none";
+    menuBackground.style.display = "block";
+    winMenu.style.display = "block";
+    resizeCanvas();
+    playMusic("menu");
+
+    // unlock modifs
+    let modifiers = document.querySelectorAll("#modifiersContainer input");
+    modifiers.forEach((input) => (input.disabled = false));
+  };
+
+  startBtn.onclick = () => {
+    winMenu.style.display = "none"; // cache menu
+    playVideo(() => {
+      if (sidebar) sidebar.style.display = "flex";
+      resizeCanvas();
+      playMusic("game");
+      game.start(1); // niveau 1
+    });
+  };
+
+  // story
+  exitBtn.onclick = () => {
+    playVideo(() => {
+      menu.style.display = "flex";
+      menuBackground.style.display = "block";
+      resizeCanvas();
+      playMusic("menu");
+    });
+  };
+
+  // levels
+  levelsBtn.onclick = () => {
+    menu.style.display = "none";
+    levelsMenu.style.display = "flex";
+    resizeCanvas();
+    playMusic("menu");
+  };
+
+  // leaderboard
+  leaderboardBtn.onclick = () => {
+    menu.style.display = "none";
+    leaderboardMenu.style.display = "block";
+    resizeCanvas();
+    playMusic("menu");
+  };
 
     // Gestion des boutons du menu de victoire
     document.querySelector("#btnWinRestart").onclick = () => {
@@ -1524,4 +2395,43 @@ async function init() {
             playMusic("menu");
         };
     }
+  // retour
+  document.querySelector("#btnLeaderboardBack").onclick = () => {
+    leaderboardMenu.style.display = "none";
+    menu.style.display = "flex";
+    resizeCanvas();
+  };
+
+  // boutons win
+  document.querySelector("#btnWinRestart").onclick = () => {
+    winMenu.style.display = "none";
+    menuBackground.style.display = "none";
+    if (sidebar) sidebar.style.display = "flex";
+    resizeCanvas();
+    playMusic("game");
+    game.start(1);
+  };
+  document.querySelector("#btnWinHome").onclick = () => {
+    winMenu.style.display = "none";
+    menu.style.display = "flex";
+    resizeCanvas();
+  };
+
+  // restart
+  restartBtn.onclick = () => {
+    restartBtn.blur(); // blur
+    game.start(game.currentLevel);
+  };
+
+  // quitter
+  if (btnExitLevel) {
+    btnExitLevel.onclick = () => {
+      game.running = false;
+      menu.style.display = "flex";
+      menuBackground.style.display = "block";
+      if (sidebar) sidebar.style.display = "none";
+      resizeCanvas();
+      playMusic("menu");
+    };
+  }
 }
