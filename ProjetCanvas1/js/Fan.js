@@ -1,6 +1,6 @@
-import ObjectGraphique from "./ObjectGraphique.js";
+import Obstacle from "./Obstacle.js";
 
-export default class Fan extends ObjectGraphique {
+export default class Fan extends Obstacle {
     constructor(x, y, w, h, couleur, force = 1) {
         super(x, y, w, h, couleur);
         this.force = force;
