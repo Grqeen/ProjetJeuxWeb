@@ -122,6 +122,7 @@ export default class Game {
         this.speedBoostEndTime = 0;
         this.levels.load(levelNumber);
         this.currentLevel = levelNumber;
+        this.updateBackground();
         this.applyRotationMultiplier(); // Applique le multiplicateur aux nouveaux obstacles
 
         if (this.levelElement) {
@@ -149,6 +150,7 @@ export default class Game {
         this.activeSpeedBoost = 0;
         this.speedBoostEndTime = 0;
         this.levels.loadFromJSON(levelData);
+        this.updateBackground();
         this.applyRotationMultiplier();
         if (this.levelElement) this.levelElement.innerText = "Custom";
         this.knockbackX = 0;
@@ -157,6 +159,14 @@ export default class Game {
         if (!this.running) {
             this.running = true;
             requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        }
+    }
+
+    updateBackground() {
+        if (this.currentLevel >= 11) {
+            this.canvas.style.backgroundImage = "url('assets/images/gameBackgroundPrison.png')";
+        } else {
+            this.canvas.style.backgroundImage = "url('assets/images/gameBackground.png')";
         }
     }
 
@@ -768,6 +778,7 @@ export default class Game {
             // On reset le timer pour le nouveau niveau
             this.startTime = Date.now();
 
+            this.updateBackground();
             if (this.levelElement) this.levelElement.innerText = this.currentLevel;
         }
     }

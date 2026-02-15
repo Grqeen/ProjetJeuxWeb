@@ -57,10 +57,10 @@ export default class Levels {
                     newObj = new sizePotion(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.tailleW, objData.tailleH);
                     break;
                 case "door":
-                    newObj = new fadingDoor(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.timer, objData.id);
+                    newObj = new fadingDoor(objData.x, objData.y, objData.w, objData.h, objData.timer, objData.id);
                     break;
                 case "keypad":
-                    newObj = new keypad(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.temps, objData.id);
+                    newObj = new keypad(objData.x, objData.y, objData.w, objData.h, objData.temps, objData.id);
                     break;
                 case "moving":
                     newObj = new MovingObstacle(objData.x, objData.y, objData.w, objData.h, objData.couleur, objData.distX, objData.distY, objData.speed);
@@ -268,12 +268,10 @@ export default class Levels {
                 let mapping = [0, 1, 2, 3, 4].sort(() => Math.random() - 0.5);
                 for (let i = 0; i < 5; i++) {
                     let doorId = (rowIndex * 10) + i;
-                    this.game.objetsGraphiques.push(new fadingDoor(i * doorWidth, y, doorWidth, 40, colors[i], 5000, doorId));
+                    this.game.objetsGraphiques.push(new fadingDoor(i * doorWidth, y, doorWidth, 70, 5000, doorId, Math.PI / 2));
                     let targetDoorId = (rowIndex * 10) + mapping[i];
-                    this.game.objetsGraphiques.push(new keypad(150 + (i * 270), y - 120, 35, 35, colors[i], 5000, targetDoorId));
+                    this.game.objetsGraphiques.push(new keypad(150 + (i * 270), y - 120, 35, 35, 5000, targetDoorId));
                 }
-                this.game.objetsGraphiques.push(new Obstacle(0, y, 5, 40, "black"));
-                this.game.objetsGraphiques.push(new Obstacle(1395, y, 5, 40, "black"));
             });
             this.game.fin = new fin(700, 920, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
@@ -373,8 +371,8 @@ export default class Levels {
             this.game.objetsGraphiques.push(new bumper(980, 700, 50, 50, "yellow", "up"));
 
             // Porte et Fin
-            this.game.objetsGraphiques.push(new keypad(700, 740, 25, 25, "orange", 10000, 88));
-            this.game.objetsGraphiques.push(new fadingDoor(roomRight, 200, 10, 610, "orange", 10000, 88)); // Porte sur le mur de droite
+            this.game.objetsGraphiques.push(new keypad(700, 740, 25, 25, 10000, 88));
+            this.game.objetsGraphiques.push(new fadingDoor(roomRight, 200, 100, 610, 10000, 88)); // Porte sur le mur de droite
             this.game.fin = new fin(1250, 500, 80, 80, "green", "assets/images/portal.png");
             this.game.objetsGraphiques.push(this.game.fin);
         } else if (levelNumber === 9) {
@@ -451,28 +449,27 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player); //
 
             // 2. Murs extérieurs (Bordures noires - Obstacles)
-            this.game.objetsGraphiques.push(new Obstacle(0, 50, 1320, 20, "black"));        // Plafond
-            this.game.objetsGraphiques.push(new Obstacle(0, 800, 1320, 20, "black"));      // Sol
-            this.game.objetsGraphiques.push(new Obstacle(0, 70, 20, 730, "black"));        // Mur Gauche
-            this.game.objetsGraphiques.push(new Obstacle(780, 200, 20, 600, "black"));      // Mur Droit
-            this.game.objetsGraphiques.push(new Obstacle(200, 400, 20, 250, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(500, 550, 20, 250, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(1300, 50, 20, 750, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(800, 200, 300, 20, "black"));      
-            this.game.objetsGraphiques.push(new Obstacle(900, 500, 250, 20, "black"));      
+            this.game.objetsGraphiques.push(new PipeObstacle(650, -600, 20, 1320, Math.PI / 2));        // Plafond
+            this.game.objetsGraphiques.push(new PipeObstacle(650, 150, 20, 1320, Math.PI / 2));      // Sol
+            this.game.objetsGraphiques.push(new PipeObstacle(0, 70, 20, 730));        // Mur Gauche
+            this.game.objetsGraphiques.push(new PipeObstacle(780, 215, 20, 590));      // Mur Droit
+            this.game.objetsGraphiques.push(new PipeObstacle(200, 405, 20, 250));      
+            this.game.objetsGraphiques.push(new PipeObstacle(500, 555, 20, 250));      
+            this.game.objetsGraphiques.push(new PipeObstacle(1300, 50, 20, 750));     // mur droite 
+            this.game.objetsGraphiques.push(new PipeObstacle(1015, 385, 20, 250, Math.PI / 2));      
 
 
             // 3. Murs intérieurs (Chicanes pour créer le "S")
             // Premier mur : part de la gauche et s'arrête pour laisser un passage à droite
-            this.game.objetsGraphiques.push(new Obstacle(0, 400, 600, 20, "black")); 
+            this.game.objetsGraphiques.push(new PipeObstacle(305, 110, 20, 600, Math.PI / 2)); 
             // Deuxième mur : part de la droite et s'arrête pour laisser un passage à gauche
-            this.game.objetsGraphiques.push(new Obstacle(200, 200, 600, 20, "black"));
+            this.game.objetsGraphiques.push(new PipeObstacle(650, -240, 20, 900, Math.PI / 2));
 
             // ajout de potion de vitesse
             this.game.objetsGraphiques.push(new speedPotion(400, 100, 30, 30, "cyan", 6, 5000));
 
             // ajout d'un obstacle mobile
-            this.game.objetsGraphiques.push(new movingObstacle(1000, 300, 50, 50, "brown", 2, 0));
+            this.game.objetsGraphiques.push(new MovingObstacle(1000, 300, 50, 50, "purple", 150, 0, 0.05));
 
             // 4. Bumpers (Triangles orange) - Placés aux points stratégiques du schéma
             // On utilise la classe bumper(x, y, w, h, couleur)
@@ -502,15 +499,15 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Murs extérieurs et séparations horizontales (Noirs)
-            this.game.objetsGraphiques.push(new Obstacle(0, 50, 1320, 20, "black"));        // Plafond
-            this.game.objetsGraphiques.push(new Obstacle(0, 850, 1320, 20, "black"));      // Sol
-            this.game.objetsGraphiques.push(new Obstacle(0, 70, 20, 780, "black"));        // Mur Gauche
-            this.game.objetsGraphiques.push(new Obstacle(1300, 70, 20, 780, "black"));      // Mur droite
-            this.game.objetsGraphiques.push(new Obstacle(300, 70, 20, 780, "black"));    
-            this.game.objetsGraphiques.push(new Obstacle(650, 70, 20, 780, "black"));    
-            this.game.objetsGraphiques.push(new Obstacle(1000, 70, 20, 780, "black"));  
-            this.game.objetsGraphiques.push(new Obstacle(0, 300, 1320, 20, "black"));  
-            this.game.objetsGraphiques.push(new Obstacle(0, 600, 1320, 20, "black"));    
+            this.game.objetsGraphiques.push(new PipeObstacle(650, -600, 20, 1320, Math.PI / 2));        // Plafond
+            this.game.objetsGraphiques.push(new PipeObstacle(650, 200, 20, 1320, Math.PI / 2));      // Sol
+            this.game.objetsGraphiques.push(new PipeObstacle(0, 70, 20, 780));        // Mur Gauche
+            this.game.objetsGraphiques.push(new PipeObstacle(1300, 70, 20, 780));      // Mur droite
+            this.game.objetsGraphiques.push(new PipeObstacle(300, 70, 20, 780));    
+            this.game.objetsGraphiques.push(new PipeObstacle(650, 70, 20, 780));    
+            this.game.objetsGraphiques.push(new PipeObstacle(1000, 70, 20, 780));  
+            this.game.objetsGraphiques.push(new PipeObstacle(650, -350, 20, 1320, Math.PI / 2));  
+            this.game.objetsGraphiques.push(new PipeObstacle(650, -50, 20, 1320, Math.PI / 2));    
       
             // 3. Téléporteurs (4 par salle, destination le centre d'une autre salle)
             const cols = [
@@ -570,16 +567,16 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Murs extérieurs (Bordures noires)
-            this.game.objetsGraphiques.push(new Obstacle(0, 50, 1300, 20, "black"));        // Plafond
-            this.game.objetsGraphiques.push(new Obstacle(0, 950, 1300, 20, "black"));      // Sol
-            this.game.objetsGraphiques.push(new Obstacle(0, 50, 20, 920, "black"));        // Mur Gauche
-            this.game.objetsGraphiques.push(new Obstacle(1280, 50, 20, 920, "black"));      // Mur Droit
+            this.game.objetsGraphiques.push(new PipeObstacle(640, -590, 20, 1300, Math.PI / 2));        // Plafond
+            this.game.objetsGraphiques.push(new PipeObstacle(640, 310, 20, 1300, Math.PI / 2));      // Sol
+            this.game.objetsGraphiques.push(new PipeObstacle(0, 50, 20, 920));        // Mur Gauche
+            this.game.objetsGraphiques.push(new PipeObstacle(1280, 50, 20, 920));      // Mur Droit
 
             // 3. Murs de séparation (Parcours en S)
             // Mur du bas (laisse un passage à droite)
-            this.game.objetsGraphiques.push(new Obstacle(0, 650, 1100, 20, "black")); 
+            this.game.objetsGraphiques.push(new PipeObstacle(540, 110, 20, 1100, Math.PI / 2)); 
             // Mur du haut (laisse un passage à gauche)
-            this.game.objetsGraphiques.push(new Obstacle(200, 350, 1100, 20, "black"));
+            this.game.objetsGraphiques.push(new PipeObstacle(740, -190, 20, 1100, Math.PI / 2));
 
             // 4. MovingObstacles (Carrés rouges - Mouvement Haut/Bas)
             // Couloir Bas
@@ -610,24 +607,22 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. OBSTACLES (RECTANGLES)
-            this.game.objetsGraphiques.push(new Obstacle(24.14, 65.90, 642.15, 18.39, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(23.37, 74.33, 21.46, 252.87, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(21.15, 308.12, 642.15, 18.39, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(641.07, 65.21, 21.46, 252.87, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(21.15, 609.27, 642.15, 18.39, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(639.77, 317.55, 21.15, 309.27, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(24.52, 308.43, 21.15, 309.27, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(203.91, 323.98, 21.15, 186.36, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(442.30, 435.94, 21.15, 186.36, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(654.33, 27.89, 24.21, 787.43, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(932.64, 34.87, 30.19, 787.43, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(657.24, 26.97, 642.15, 18.39, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1277.47, 28.81, 18.08, 787.43, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(655.02, 804.06, 642.15, 18.39, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(670.42, 680.77, 110.04, 21.15, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1093.87, 236.02, 52.87, 154.02, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1033.18, 613.95, 21.15, 195.25, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1186.74, 620.08, 22.07, 204.44, "black"));
+            this.game.objetsGraphiques.push(new PipeObstacle(336.02, -245.98, 18.39, 642.15, Math.PI / 2)); // Plafond gauche
+            this.game.objetsGraphiques.push(new PipeObstacle(23.37, 74.33, 21.46, 252.87)); // Mur gauche haut
+            this.game.objetsGraphiques.push(new PipeObstacle(333.03, -3.76, 18.39, 642.15, Math.PI / 2)); // Plafond section 1
+            this.game.objetsGraphiques.push(new PipeObstacle(333.03, 297.39, 18.39, 642.15, Math.PI / 2)); // Sol section 1 / Plafond section 2
+            this.game.objetsGraphiques.push(new PipeObstacle(24.52, 308.43, 21.15, 309.27)); // Mur gauche bas
+            this.game.objetsGraphiques.push(new PipeObstacle(203.91, 323.98, 21.15, 186.36)); // Obstacle vertical interne gauche
+            this.game.objetsGraphiques.push(new PipeObstacle(442.30, 435.94, 21.15, 186.36)); // Obstacle vertical interne droite
+            this.game.objetsGraphiques.push(new PipeObstacle(654.33, 27.89, 24.21, 787.43)); // Long mur vertical central
+            this.game.objetsGraphiques.push(new PipeObstacle(932.64, 34.87, 30.19, 787.43)); // Mur vertical droit interne
+            this.game.objetsGraphiques.push(new PipeObstacle(969.12, -284.91, 18.39, 642.15, Math.PI / 2)); // Plafond droite
+            this.game.objetsGraphiques.push(new PipeObstacle(1277.47, 28.81, 18.08, 787.43)); // Mur droite extérieur
+            this.game.objetsGraphiques.push(new PipeObstacle(966.9, 492.18, 18.39, 642.15, Math.PI / 2)); // Sol droite
+            this.game.objetsGraphiques.push(new PipeObstacle(714.87, 636.33, 21.15, 110.04, Math.PI / 2)); // Petit mur horizontal bas
+            this.game.objetsGraphiques.push(new PipeObstacle(1093.87, 236.02, 52.87, 154.02)); // Obstacle bloc droite haut
+            this.game.objetsGraphiques.push(new PipeObstacle(1019.18, 613.95, 21.15, 195.25)); // Obstacle bloc droite bas 1
+            this.game.objetsGraphiques.push(new PipeObstacle(1198.74, 613.95, 21.15, 195.25)); // Obstacle bloc droite bas 2
 
             // 3. TELEPORTEURS (VIOLETS)
             this.game.objetsGraphiques.push(new teleporter(562.76, 100.31, 40, 40, "purple", 100, 350));
@@ -648,9 +643,9 @@ export default class Levels {
             this.game.objetsGraphiques.push(new bumper(1242.53, 512.64, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(1214.25, 545.67, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(1192.80, 580.92, 35.25, 36.78, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(962.15, 508.12, 35.25, 36.78, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(989.81, 534.25, 35.25, 36.78, "orange", "up"));
-            this.game.objetsGraphiques.push(new bumper(1012.87, 571.88, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(962.15, 512.64, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(989.81, 545.67, 35.25, 36.78, "orange", "up"));
+            this.game.objetsGraphiques.push(new bumper(1012.87, 580.92, 35.25, 36.78, "orange", "up"));
             this.game.objetsGraphiques.push(new bumper(961.59, 44.73, 50, 50, "orange", "down"));
             this.game.objetsGraphiques.push(new bumper(1229.10, 43.28, 50, 50, "orange", "down"));
 
@@ -670,22 +665,22 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Obstacles (Murs noirs)
-            this.game.objetsGraphiques.push(new Obstacle(170.50, 87.36, 1046.74, 30.65, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(172.03, 104.21, 29.12, 688.12, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1184.37, 85.90, 29.12, 688.12, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(491.65, 286.74, 29.12, 231.26, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(491.72, 285.90, 405.98, 30.65, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(171.34, 757.93, 1046.74, 30.65, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(871.80, 286.05, 29.12, 231.26, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(878.08, 478.31, 323.07, 30.65, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(195.33, 680.00, 179.00, 25.75, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1057.61, 507.59, 10, 108.51, "black"));
+            this.game.objetsGraphiques.push(new PipeObstacle(678.55, -420.69, 30.65, 1046.74, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(172.03, 85.90, 29.12, 688.12));
+            this.game.objetsGraphiques.push(new PipeObstacle(1184.37, 85.90, 29.12, 688.12));
+            this.game.objetsGraphiques.push(new PipeObstacle(491.65, 286.74, 29.12, 231.26));
+            this.game.objetsGraphiques.push(new PipeObstacle(679.39, 98.24, 30.65, 390.98, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(679.39, 249.89, 30.65, 1046.74, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(871.80, 286.05, 29.12, 231.26));
+            this.game.objetsGraphiques.push(new PipeObstacle(1024.29, 332.10, 30.65, 300.07, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(271.96, 603.38, 25.75, 179.00, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(1057.61, 490.59, 20, 108.51));
 
             // 3. Portes à évanouissement et Claviers (FadingDoors & Keypads)
-            this.game.objetsGraphiques.push(new fadingDoor(873.18, 512.64, 24.52, 249.81, "pink", 3000, 1));
-            this.game.objetsGraphiques.push(new fadingDoor(493.18, 513.49, 24.52, 249.81, "pink", 5000, 2));
-            this.game.objetsGraphiques.push(new keypad(1084.67, 429.12, 42.91, 35.25, "pink", 3000, 2));
-            this.game.objetsGraphiques.push(new keypad(299.23, 713.41, 44.44, 36.78, "pink", 3000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(860.18, 512.64, 50, 249.81, 3000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(480.18, 513.49, 50, 249.81, 5000, 2));
+            this.game.objetsGraphiques.push(new keypad(1084.67, 429.12, 42.91, 35.25, 3000, 2));
+            this.game.objetsGraphiques.push(new keypad(299.23, 713.41, 44.44, 36.78, 3000, 1));
 
             // 4. Bumpers (Orange)
             this.game.objetsGraphiques.push(new bumper(1136.30, 124.43, 50, 50, "orange", "down"));
@@ -701,7 +696,7 @@ export default class Levels {
             this.game.objetsGraphiques.push(new sizePotion(676.57, 384.23, 30, 30, "magenta", -40, -40));
 
             // 6. Obstacle Mobile (Violet)
-            this.game.objetsGraphiques.push(new MovingObstacle(644.37, 478.89, 60, 20, "purple", 100, 0, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(644.37, 478.89, 60, 60, "purple", 100, 0, 0.05));
 
             // 7. Sortie
             this.game.fin = new fin(1084.52, 517.09, 80, 80, "green", "assets/images/portal.png");
@@ -716,27 +711,27 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Obstacles Fixes (Murs noirs)
-            this.game.objetsGraphiques.push(new Obstacle(124.52, 76.63, 22.99, 800, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(129.12, 78.93, 596.17, 21.46, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(448.05, 211.65, 260.38, 16.70, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(706.28, 79.85, 21.30, 594.48, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(707.89, 655.25, 349.27, 18.54, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(131.57, 853.72, 930.11, 21.46, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1037.47, 657.78, 22.68, 215.79, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(890.42, 771.34, 22.68, 91.49, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(453.26, 708.81, 122.61, 26.05, "black"));
+            this.game.objetsGraphiques.push(new PipeObstacle(124.52, 76.63, 22.99, 800));
+            this.game.objetsGraphiques.push(new PipeObstacle(416.48, -208.43, 21.46, 596.17, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(569.89, 89.81, 16.70, 268.38, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(706.28, 79.85, 21.30, 594.48));
+            this.game.objetsGraphiques.push(new PipeObstacle(873.26, 489.89, 18.54, 349.27, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(585.90, 399.40, 21.46, 930.11, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(1037.47, 657.78, 22.68, 215.79));
+            this.game.objetsGraphiques.push(new PipeObstacle(890.42, 771.34, 22.68, 91.49));
+            this.game.objetsGraphiques.push(new PipeObstacle(501.54, 660.53, 26.05, 122.61, Math.PI / 2));
 
             // 3. Portes et Claviers (FadingDoor & Keypad)
-            this.game.objetsGraphiques.push(new fadingDoor(450.19, 98.85, 18.39, 116.48, "pink", 3000, 1));
-            this.game.objetsGraphiques.push(new keypad(955.17, 814.56, 42.91, 38.31, "pink", 3000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(450.19, 95.85, 30, 124, 3000, 1));
+            this.game.objetsGraphiques.push(new keypad(955.17, 814.56, 42.91, 38.31, 3000, 1));
 
             // 4. Obstacles Mobiles (Violets)
-            this.game.objetsGraphiques.push(new MovingObstacle(380, 314.14, 60, 20, "purple", 200, 0, 0.05));
-            this.game.objetsGraphiques.push(new MovingObstacle(380, 403.79, 60, 20, "purple", 200, 0, 0.037));
-            this.game.objetsGraphiques.push(new MovingObstacle(380, 547.09, 60, 20, "purple", 200, 0, 0.07));
-            this.game.objetsGraphiques.push(new MovingObstacle(718.28, 750, 60, 20, "purple", 0, 70, 0.02));
-            this.game.objetsGraphiques.push(new MovingObstacle(809.46, 750, 60, 18.18, "purple", 0, 70, 0.01));
-            this.game.objetsGraphiques.push(new MovingObstacle(380, 477.36, 60, 20, "purple", 200, 0, 0.02));
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 314.14, 60, 40, "purple", 200, 0, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 403.79, 60, 40, "purple", 200, 0, 0.037));
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 547.09, 60, 40, "purple", 200, 0, 0.07));
+            this.game.objetsGraphiques.push(new MovingObstacle(718.28, 750, 60, 40, "purple", 0, 70, 0.02));
+            this.game.objetsGraphiques.push(new MovingObstacle(809.46, 750, 60, 40, "purple", 0, 70, 0.01));
+            this.game.objetsGraphiques.push(new MovingObstacle(380, 477.36, 60, 40, "purple", 200, 0, 0.02));
 
             // 5. Obstacle Rotatif (Rouge)
             this.game.objetsGraphiques.push(new RotatingObstacle(254.79, 747.89, 200, 20, "purple", 0.02, 1366.08));
@@ -762,29 +757,30 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Obstacles Fixes (Murs noirs)
-            this.game.objetsGraphiques.push(new Obstacle(454.87, 182.45, 21.46, 485.82, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(16.48, 182.38, 438.31, 22.99, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(947.66, 176.40, 21.46, 485.82, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(38.85, 850.73, 1342.38, 25.90, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(152.26, 353.41, 151.57, 13.64, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1358.47, -0.31, 21.46, 851.65, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1163.14, 371.19, 197.39, 15.02, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(959.46, 175.94, 166.59, 17.93, "black"));
+            this.game.objetsGraphiques.push(new PipeObstacle(454.87, 182.45, 21.46, 485.82));
+            this.game.objetsGraphiques.push(new PipeObstacle(224.14, -25.28, 22.99, 438.31, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(947.66, 176.40, 21.46, 485.82));
+            this.game.objetsGraphiques.push(new PipeObstacle(670, 180, 25.90, 1368.38, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(221.23, 284.45, 13.64, 151.57, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(1358.47, -0.31, 21.46, 851.65));
+            this.game.objetsGraphiques.push(new PipeObstacle(0, -0.31, 21.46, 851.65));
+            this.game.objetsGraphiques.push(new PipeObstacle(1254.33, 280.01, 15.02, 197.39, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(1037.79, 101.61, 17.93, 166.59, Math.PI / 2));
 
             // 3. Obstacles Rotatifs (RotatingObstacles)
             this.game.objetsGraphiques.push(new RotatingObstacle(707.66, 447.51, 500, 20, "black", 0.02, 2487.66));
             this.game.objetsGraphiques.push(new RotatingObstacle(231.03, 516.48, 200, 20, "black", 0.02, 635.02));
 
             // 4. Portes et Claviers (FadingDoors & Keypads)
-            this.game.objetsGraphiques.push(new fadingDoor(163.56, -7.66, 20, 190.04, "pink", 3000, 1));
-            this.game.objetsGraphiques.push(new fadingDoor(947.51, -0.77, 21.46, 174.71, "pink", 7000, 2));
-            this.game.objetsGraphiques.push(new keypad(1290.80, 70.50, 41.38, 42.91, "pink", 3000, 1));
-            this.game.objetsGraphiques.push(new keypad(198.08, 311.11, 44.44, 44.44, "pink", 7000, 2));
+            this.game.objetsGraphiques.push(new fadingDoor(163.56, -7.66, 40, 190.04, 3000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(947.51, -0.77, 40, 174.71, 7000, 2));
+            this.game.objetsGraphiques.push(new keypad(1290.80, 70.50, 41.38, 42.91, 3000, 1));
+            this.game.objetsGraphiques.push(new keypad(198.08, 250, 44.44, 44.44, 7000, 2));
 
             // 5. Obstacles Mobiles (Violets)
-            this.game.objetsGraphiques.push(new MovingObstacle(1130, 521.03, 60, 20, "purple", 100, 0, 0.05));
-            this.game.objetsGraphiques.push(new MovingObstacle(690, 439.04, 50, 20, "purple", 200, 0, 0.05));
-            this.game.objetsGraphiques.push(new MovingObstacle(669.23, 70, 60, 20, "purple", 0, 50, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(1130, 521.03, 60, 40, "purple", 100, 0, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(690, 439.04, 50, 40, "purple", 200, 0, 0.05));
+            this.game.objetsGraphiques.push(new MovingObstacle(669.23, 70, 60, 40, "purple", 0, 50, 0.05));
 
             // 6. Bumpers (Orange)
             this.game.objetsGraphiques.push(new bumper(11.40, 202.59, 50, 50, "orange", "down"));
@@ -815,31 +811,31 @@ export default class Levels {
             this.game.objetsGraphiques.push(this.game.player);
 
             // 2. Obstacles Fixes (Murs noirs)
-            this.game.objetsGraphiques.push(new Obstacle(135.25, 163.98, 1187.74, 15.33, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(138.39, 711.95, 1187.74, 15.33, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(1306.13, 164.75, 24.52, 557.85, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(136.09, 162.53, 24.52, 557.85, "black"));
-            this.game.objetsGraphiques.push(new Obstacle(328.51, 423.14, 782.99, 22.84, "black"));
+            this.game.objetsGraphiques.push(new PipeObstacle(721.46, -422.23, 15.33, 1187.74, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(724.60, 125.75, 15.33, 1187.74, Math.PI / 2));
+            this.game.objetsGraphiques.push(new PipeObstacle(1306.13, 164.75, 24.52, 557.85));
+            this.game.objetsGraphiques.push(new PipeObstacle(136.09, 162.53, 24.52, 557.85));
+            this.game.objetsGraphiques.push(new PipeObstacle(708.59, 43.07, 22.84, 782.99, Math.PI / 2));
 
             // 3. Portes à évanouissement (FadingDoors)
-            this.game.objetsGraphiques.push(new fadingDoor(429.50, 180.84, 32.18, 237.55, "red", 5000, 4));
-            this.game.objetsGraphiques.push(new fadingDoor(641.07, 181.69, 32.18, 237.55, "pink", 3000, 5));
-            this.game.objetsGraphiques.push(new fadingDoor(871.72, 181.69, 32.18, 237.55, "pink", 3000, 5));
-            this.game.objetsGraphiques.push(new fadingDoor(1073.26, 183.98, 32.18, 237.55, "pink", 3000, 6));
-            this.game.objetsGraphiques.push(new fadingDoor(429.58, 448.43, 32.18, 260.38, "red", 5000, 1));
-            this.game.objetsGraphiques.push(new fadingDoor(643.37, 449.20, 32.18, 258.85, "pink", 3000, 2));
-            this.game.objetsGraphiques.push(new fadingDoor(873.26, 448.43, 32.18, 257.32, "pink", 3000, 2));
-            this.game.objetsGraphiques.push(new fadingDoor(1073.26, 446.13, 32.18, 258.85, "pink", 3000, 3));
+            this.game.objetsGraphiques.push(new fadingDoor(429.50, 180.84, 60, 240, 5000, 4));
+            this.game.objetsGraphiques.push(new fadingDoor(641.07, 180.84, 60, 240, 3000, 5));
+            this.game.objetsGraphiques.push(new fadingDoor(871.72, 180.84, 60, 240, 3000, 5));
+            this.game.objetsGraphiques.push(new fadingDoor(1073.26, 180.84, 60, 240, 3000, 6));
+            this.game.objetsGraphiques.push(new fadingDoor(429.50, 445.29, 60, 270.38, 5000, 1));
+            this.game.objetsGraphiques.push(new fadingDoor(641.07, 445.29, 60, 270.38, 3000, 2));
+            this.game.objetsGraphiques.push(new fadingDoor(871.72, 445.29, 60, 270.38, 3000, 2));
+            this.game.objetsGraphiques.push(new fadingDoor(1073.26, 445.29, 60, 270.38, 3000, 3));
 
             // 4. Claviers (Keypads)
-            this.game.objetsGraphiques.push(new keypad(751.57, 564.21, 35.25, 35.25, "pink", 5000, 4));
-            this.game.objetsGraphiques.push(new keypad(974.56, 560.38, 35.25, 35.25, "pink", 3000, 6));
-            this.game.objetsGraphiques.push(new keypad(976.09, 279.16, 35.25, 35.25, "pink", 3000, 3));
-            this.game.objetsGraphiques.push(new keypad(753.87, 284.52, 35.25, 35.25, "pink", 3000, 1));
-            this.game.objetsGraphiques.push(new keypad(317.09, 281.46, 35.25, 35.25, "pink", 5000, 1));
-            this.game.objetsGraphiques.push(new keypad(537.01, 286.05, 35.25, 35.25, "pink", 3000, 2));
-            this.game.objetsGraphiques.push(new keypad(318.54, 563.37, 35.25, 35.25, "pink", 3000, 4));
-            this.game.objetsGraphiques.push(new keypad(533.18, 563.45, 35.25, 35.25, "pink", 3000, 5));
+            this.game.objetsGraphiques.push(new keypad(751.57, 564.21, 35.25, 35.25, 5000, 4));
+            this.game.objetsGraphiques.push(new keypad(974.56, 560.38, 35.25, 35.25, 3000, 6));
+            this.game.objetsGraphiques.push(new keypad(976.09, 279.16, 35.25, 35.25, 3000, 3));
+            this.game.objetsGraphiques.push(new keypad(753.87, 284.52, 35.25, 35.25, 3000, 1));
+            this.game.objetsGraphiques.push(new keypad(317.09, 281.46, 35.25, 35.25, 5000, 1));
+            this.game.objetsGraphiques.push(new keypad(537.01, 286.05, 35.25, 35.25, 3000, 2));
+            this.game.objetsGraphiques.push(new keypad(318.54, 563.37, 35.25, 35.25, 3000, 4));
+            this.game.objetsGraphiques.push(new keypad(533.18, 563.45, 35.25, 35.25, 3000, 5));
 
             // 5. Potions de vitesse (SpeedPotions)
             this.game.objetsGraphiques.push(new speedPotion(796.88, 650.33, 30, 40.86, "cyan", 5, 3000));
