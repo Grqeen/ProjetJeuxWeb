@@ -421,8 +421,8 @@ export default class Game {
       return;
     }
 
-    // niveau 9
-    if (this.currentLevel === 9) return;
+    // niveau 9 et niveaux 11 à 18
+    if (this.currentLevel === 9 || (this.currentLevel >= 11 && this.currentLevel <= 18)) return;
 
     // murs
     if (this.player.x - this.player.w / 2 < 0) {

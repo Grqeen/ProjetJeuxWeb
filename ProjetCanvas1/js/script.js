@@ -112,7 +112,7 @@ async function init() {
   gameMusic.loop = true;
   gameMusic.volume = 0.5;
 
-  let currentMusicState = "stop";
+  let currentMusicState = "menu";
 
   function playMusic(state) {
     currentMusicState = state;
@@ -332,9 +332,9 @@ async function init() {
       sidebar.style.display = "flex";
       sidebar.innerHTML = `
             <div id="editorHeader" style="display: flex; flex-direction: column; gap: 20px; align-items: center; padding-top: 20px;">
-                <button id="btnEditorWall" class="menu-style-button">Mur</button>
+                <button id="btnEditorWall" class="menu-style-button">Wall</button>
                 <button id="btnEditorObstacle" class="menu-style-button">Obstacle</button>
-                <button id="btnEditorModifiers" class="menu-style-button">Modificateurs</button>
+                <button id="btnEditorModifiers" class="menu-style-button">Modifiers</button>
             </div>
             <div class="editor-separator" style="height: 4px; background-color: #ffcc00; width: 90%; margin: 30px auto; border-radius: 10px;"></div>
             <div id="editorAssetsContainer" style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; padding: 10px;">
@@ -387,30 +387,30 @@ async function init() {
             document.querySelector("#btnEditorWall").onclick = () => {
                 assetsContainer.innerHTML = ""; // On vide
                 // On crée 3 types : Carré, Rectangle, Cercle
-                createAssetPreview(assetsContainer, "square", "Carré", { w: 60, h: 60, type: "rect" });
+                createAssetPreview(assetsContainer, "square", "Square", { w: 60, h: 60, type: "rect" });
                 createAssetPreview(assetsContainer, "rect", "Rectangle", { w: 120, h: 40, type: "rect" });
-                createAssetPreview(assetsContainer, "rect", "Mur V", { w: 40, h: 120, type: "rect" });
-                createAssetPreview(assetsContainer, "circle", "Cercle", { r: 35, type: "circle" });
+                createAssetPreview(assetsContainer, "rect", "Wall V", { w: 40, h: 120, type: "rect" });
+                createAssetPreview(assetsContainer, "circle", "Circle", { r: 35, type: "circle" });
             };
 
             // --- CLIC SUR LE BOUTON OBSTACLE ---
             document.querySelector("#btnEditorObstacle").onclick = () => {
                 assetsContainer.innerHTML = "";
                 createAssetPreview(assetsContainer, "triangle", "Bumper", { w: 50, h: 50, type: "bumper" });
-                createAssetPreview(assetsContainer, "rect", "Croix", { w: 200, h: 20, type: "rotating" });
-                createAssetPreview(assetsContainer, "circle", "Fin", { w: 80, h: 80, type: "fin" });
+                createAssetPreview(assetsContainer, "rect", "Cross", { w: 200, h: 20, type: "rotating" });
+                createAssetPreview(assetsContainer, "circle", "Goal", { w: 80, h: 80, type: "fin" });
                 createAssetPreview(assetsContainer, "rect", "Moving", { w: 60, h: 20, type: "moving" });
-                createAssetPreview(assetsContainer, "rect", "Teleport", { w: 40, h: 40, type: "teleporter" });
-                createAssetPreview(assetsContainer, "rect", "Ventilo", { w: 50, h: 50, type: "fan" });
+                createAssetPreview(assetsContainer, "rect", "Teleporter", { w: 40, h: 40, type: "teleporter" });
+                createAssetPreview(assetsContainer, "rect", "Fan", { w: 50, h: 50, type: "fan" });
             };
 
             // --- CLIC SUR LE BOUTON MODIFICATEURS ---
             document.querySelector("#btnEditorModifiers").onclick = () => {
                 assetsContainer.innerHTML = "";
-                createAssetPreview(assetsContainer, "square", "Vitesse", { w: 30, h: 30, type: "speed" });
-                createAssetPreview(assetsContainer, "square", "Taille", { w: 30, h: 30, type: "size" });
-                createAssetPreview(assetsContainer, "rect", "Porte", { w: 20, h: 100, type: "door" });
-                createAssetPreview(assetsContainer, "square", "Clé", { w: 30, h: 30, type: "keypad" });
+                createAssetPreview(assetsContainer, "square", "Speed", { w: 30, h: 30, type: "speed" });
+                createAssetPreview(assetsContainer, "square", "Size", { w: 30, h: 30, type: "size" });
+                createAssetPreview(assetsContainer, "rect", "Door", { w: 20, h: 100, type: "door" });
+                createAssetPreview(assetsContainer, "square", "Key", { w: 30, h: 30, type: "keypad" });
             };
 
             document.querySelector("#btnExitEditor").onclick = () => location.reload();
@@ -980,18 +980,28 @@ async function init() {
       img.src = "assets/images/fadingdoor.png";
       img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
     } else if (data.type === "moving") {
-      ctx.fillStyle = "purple";
-      ctx.fillRect(10, 20, 30, 10);
-      ctx.fillText("↔", 20, 15);
+      let img = new Image();
+      img.src = "assets/images/metalblock.png";
+      img.onload = () => {
+        ctx.drawImage(img, 0, 15, 50, 20);
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+        ctx.fillText("↔", 15, 32);
+      };
     } else if (data.type === "teleporter") {
       let img = new Image();
       img.src = "assets/images/teleporter.png";
       img.onload = () => ctx.drawImage(img, 0, 0, 50, 50);
     } else if (data.type === "fan") {
+      ctx.fillStyle = "#555";
+      ctx.fillRect(5, 5, 40, 40);
+      ctx.strokeStyle = "#333";
+      ctx.strokeRect(5, 5, 40, 40);
       ctx.fillStyle = "cyan";
-      ctx.fillRect(10, 10, 30, 30);
-      ctx.fillStyle = "black";
-      ctx.fillText("Fan", 15, 28);
+      ctx.translate(25, 25);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillRect(-18, -4, 36, 8);
+      ctx.fillRect(-4, -18, 8, 36);
     }
 
     div.appendChild(cvs);
@@ -1033,43 +1043,11 @@ async function init() {
       ghost.style.width = w + "px";
       ghost.style.height = h + "px";
 
-      // couleurs
-      if (data.type === "bumper") {
-        ghost.style.backgroundColor = "transparent";
-        ghost.style.backgroundImage = "url('assets/images/bumper.png')";
-        ghost.style.backgroundSize = "contain";
-        ghost.style.backgroundRepeat = "no-repeat";
-      } else if (data.type === "rotating") ghost.style.backgroundColor = "red";
-      else if (data.type === "fin") ghost.style.backgroundColor = "green";
-      else if (data.type === "speed") {
-        ghost.style.backgroundColor = "transparent";
-        ghost.style.backgroundImage = "url('assets/images/citron.png')";
-        ghost.style.backgroundSize = "contain";
-        ghost.style.backgroundRepeat = "no-repeat";
-      } else if (data.type === "size") {
-        ghost.style.backgroundColor = "transparent";
-        ghost.style.backgroundImage = "url('assets/images/orange.png')";
-        ghost.style.backgroundSize = "contain";
-        ghost.style.backgroundRepeat = "no-repeat";
-      } else if (data.type === "keypad") {
-        ghost.style.backgroundColor = "transparent";
-        ghost.style.backgroundImage = "url('assets/images/fadingdoor.png')";
-        ghost.style.backgroundSize = "contain";
-        ghost.style.backgroundRepeat = "no-repeat";
-      } else if (data.type === "door") {
-        ghost.style.backgroundColor = "transparent";
-        ghost.style.backgroundImage = "url('assets/images/laser.png')";
-        ghost.style.backgroundSize = "100% 100%";
-        ghost.style.backgroundRepeat = "no-repeat";
-      } else if (data.type === "moving") ghost.style.backgroundColor = "purple";
-      else if (data.type === "teleporter") {
-        ghost.style.backgroundColor = "transparent";
-        ghost.style.backgroundImage = "url('assets/images/teleporter.png')";
-        ghost.style.backgroundSize = "contain";
-        ghost.style.backgroundRepeat = "no-repeat";
-      } else if (data.type === "fan") {
-        ghost.style.backgroundColor = "cyan";
-      } else ghost.style.backgroundColor = "rgba(100, 100, 100, 0.8)"; // mur defaut
+      // On utilise l'image du canvas de prévisualisation comme skin pour le drag
+      ghost.style.backgroundImage = `url(${cvs.toDataURL()})`;
+      ghost.style.backgroundSize = "100% 100%";
+      ghost.style.backgroundRepeat = "no-repeat";
+      ghost.style.backgroundColor = "transparent";
 
       // centre souris
       ghost.style.left = e.clientX - w / 2 + "px";
