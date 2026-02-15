@@ -81,6 +81,11 @@ async function init() {
                 <div class="timer-label">TEMPS</div>
                 <div id="timerValue">00:00</div>
             </div>
+
+            <div id="livesContainer" style="margin-top: 15px; text-align: center;">
+                <div class="timer-label">VIES</div>
+                <div id="livesValue" style="font-size: 30px; text-shadow: 2px 2px 0 #000;">❤️❤️❤️</div>
+            </div>
             <button id="btnExitLevel" class="menu-style-button" style="margin-top: auto; margin-bottom: 20px; align-self: center; background-color: #ff4444; color: white;">Quitter</button>
         `;
     }
@@ -213,6 +218,14 @@ async function init() {
     game.levelElement = document.querySelector("#level");
     game.timerElement = document.querySelector("#timerValue");
     await game.init();
+
+    // --- GESTION DE L'AFFICHAGE DES VIES ---
+    const livesValue = document.querySelector("#livesValue");
+    function updateLives() {
+        let hearts = "";
+        for(let i = 0; i < game.lives; i++) hearts += "❤️";
+        if (livesValue) livesValue.innerText = hearts;
+    }
 
     // --- GESTION DES MODIFICATEURS ---
     const setupModifier = (rangeId, onChange) => {
@@ -1221,6 +1234,8 @@ async function init() {
                 if (sidebar) sidebar.style.display = "flex";
                 resizeCanvas();
                 playMusic("game");
+                game.lives = 3; // Reset des vies
+                updateLives();
                 game.start(i);
             };
 
@@ -1422,6 +1437,8 @@ async function init() {
             if (sidebar) sidebar.style.display = "flex";
             resizeCanvas();
             playMusic("game");
+            game.lives = 3; // Reset des vies au démarrage
+            updateLives();
             game.start(1); // Lance le niveau 1 par défaut
         });
     };
@@ -1466,6 +1483,8 @@ async function init() {
         if (sidebar) sidebar.style.display = "flex";
         resizeCanvas();
         playMusic("game");
+        game.lives = 3;
+        updateLives();
         game.start(1);
     };
     document.querySelector("#btnWinHome").onclick = () => {
@@ -1477,7 +1496,20 @@ async function init() {
     // Gestion du bouton Recommencer (Sidebar)
     restartBtn.onclick = () => {
         restartBtn.blur(); // Enlève le focus pour ne pas gêner les contrôles clavier
-        game.start(game.currentLevel);
+        
+        if (game.lives > 0) {
+            game.lives--; // On enlève une vie
+            updateLives();
+            
+            if (game.lives === 0) {
+                // Game Over
+                alert("Game Over ! Vous n'avez plus de vies.");
+                if (btnExitLevel) btnExitLevel.click(); // Retour au menu
+            } else {
+                // On recommence le niveau
+                game.start(game.currentLevel);
+            }
+        }
     };
 
     // Gestion du bouton Quitter (Sidebar)

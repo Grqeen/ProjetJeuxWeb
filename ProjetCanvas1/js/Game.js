@@ -54,6 +54,7 @@ export default class Game {
         this.countdownStartTime = 0;
         this.countdownOverlay = null;
         this.countdownText = null;
+        this.lives = 3; // Nombre de vies initial
     }
 
     async init(canvas) {
