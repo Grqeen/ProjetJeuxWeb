@@ -19,8 +19,51 @@ import keypad from "./keypad.js";
 import fadingDoor from "./fadingDoor.js";
 import fin from "./fin.js";
 import teleporter from "./teleporter.js";
+import Fan from "./Fan.js";
 
 export default class Game {
+    objetsGraphiques = [];
+
+    constructor(canvas, scoreElement) {
+        this.canvas = canvas;
+        this.timerElement = null; // Élément HTML pour le timer
+        this.onLevelComplete = null; // Callback pour gérer la fin de niveau (score)
+        this.startTime = 0; // Temps de début du niveau
+        this.levelElement = null; // L'élément HTML pour afficher le niveau
+        // etat du clavier
+        this.inputStates = {
+            mouseX: 0,
+            mouseY: 0,
+            ArrowRight: false,
+            ArrowLeft: false,
+            ArrowUp: false,
+            ArrowDown: false
+        };
+
+        // Modificateurs de jeu
+        this.playerSpeed = 5;
+        this.rotationMultiplier = 1;
+        this.bumperForce = 25;
+
+        // Gestion du recul (Knockback)
+        this.knockbackX = 0;
+        this.knockbackY = 0;
+
+        // Gestion du boost de vitesse
+        this.speedBoostTimeout = null;
+        this.speedBoostEndTime = 0;
+        this.activeSpeedBoost = 0;
+        this.running = false;
+        this.onFinish = null; // Callback appelé quand le jeu est fini
+        this.selectedObject = null; // Objet sélectionné dans l'éditeur
+
+        // Compte à rebours
+        this.countdownActive = false;
+        this.countdownValue = 3;
+        this.countdownStartTime = 0;
+        this.countdownOverlay = null;
+        this.countdownText = null;
+        this.lives = 3; // Nombre de vies initial
   objetsGraphiques = [];
 
   constructor(canvas, scoreElement) {
@@ -244,6 +287,173 @@ export default class Game {
       this.nextLevel();
     }
 
+    startCustomLevel(levelData) {
+        this.currentLevel = "custom";
+        this.countdownActive = false;
+        this.removeCountdownOverlay();
+        // Réinitialisation des modificateurs
+        this.activeSpeedBoost = 0;
+        this.speedBoostEndTime = 0;
+        this.levels.loadFromJSON(levelData);
+        this.applyRotationMultiplier();
+        if (this.levelElement) this.levelElement.innerText = "Custom";
+        this.knockbackX = 0;
+        this.knockbackY = 0;
+        this.startTime = Date.now();
+        if (!this.running) {
+            this.running = true;
+            requestAnimationFrame(this.mainAnimationLoop.bind(this));
+        }
+    }
+
+    mainAnimationLoop() {
+        if (!this.running) return;
+        // 1 - on efface le canvas avec une couleur de fond (gris clair) pour délimiter le niveau
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // 2 - on dessine les objets à animer dans le jeu
+        // ici on dessine le monstre
+        this.drawAllObjects();
+
+        // 3 - On regarde l'état du clavier, manette, souris et on met à jour
+        // l'état des objets du jeu en conséquence
+        if (this.countdownActive) {
+            this.drawCountdown();
+        } else {
+            this.update();
+        }
+
+        // 4 - on demande au navigateur d'appeler la fonction mainAnimationLoop
+        // à nouveau dans 1/60 de seconde
+        requestAnimationFrame(this.mainAnimationLoop.bind(this));
+    }
+
+    createCountdownOverlay() {
+        this.removeCountdownOverlay();
+
+        this.countdownOverlay = document.createElement("div");
+        Object.assign(this.countdownOverlay.style, {
+            position: "fixed",
+            top: "0",
+            left: "0",
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            zIndex: "10000",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none" // Permet de cliquer à travers (ex: bouton quitter)
+        });
+
+        this.countdownText = document.createElement("div");
+        Object.assign(this.countdownText.style, {
+            fontFamily: "'Lilita One', cursive",
+            fontSize: "200px",
+            color: "white",
+            textShadow: "8px 8px 0 #000"
+        });
+
+        this.countdownOverlay.appendChild(this.countdownText);
+        document.body.appendChild(this.countdownOverlay);
+    }
+
+    removeCountdownOverlay() {
+        if (this.countdownOverlay) {
+            this.countdownOverlay.remove();
+            this.countdownOverlay = null;
+            this.countdownText = null;
+        }
+    }
+
+    drawCountdown() {
+        let now = Date.now();
+        let elapsed = now - this.countdownStartTime;
+        
+        // Logique du compte à rebours (3, 2, 1, GO)
+        if (elapsed < 1000) {
+            this.countdownValue = 3;
+        } else if (elapsed < 2000) {
+            this.countdownValue = 2;
+        } else if (elapsed < 3000) {
+            this.countdownValue = 1;
+        } else if (elapsed < 4000) {
+            this.countdownValue = "GO !";
+        } else {
+            this.countdownActive = false;
+            this.startTime = Date.now(); // On lance le vrai timer du niveau
+            this.removeCountdownOverlay();
+            return;
+        }
+
+        if (this.countdownText) {
+            this.countdownText.innerText = this.countdownValue;
+            // Animation de pulsation
+            let subTime = elapsed % 1000;
+            let scale = 1.5 - (subTime / 1000) * 0.5; 
+            if (this.countdownValue === "GO !") scale = 1 + (subTime / 1000) * 0.5;
+            this.countdownText.style.transform = `scale(${scale})`;
+        }
+    }
+
+    drawAllObjects() {
+        // Dessine tous les objets du jeu
+        this.objetsGraphiques.forEach(obj => {
+            obj.draw(this.ctx);
+
+            // --- DESSIN DU CONTOUR DE SÉLECTION (ÉDITEUR) ---
+            if (this.selectedObject === obj) {
+                this.ctx.save();
+                this.ctx.strokeStyle = "cyan";
+                this.ctx.lineWidth = 3;
+                this.ctx.shadowColor = "cyan";
+                this.ctx.shadowBlur = 10;
+
+                // Fonction utilitaire pour dessiner une poignée
+                const hSize = 10;
+                const drawHandle = (x, y) => this.ctx.fillRect(x - hSize/2, y - hSize/2, hSize, hSize);
+                this.ctx.fillStyle = "cyan";
+
+                if (obj instanceof RotatingObstacle) {
+                    // RotatingObstacle a son x,y au centre
+                    this.ctx.translate(obj.x, obj.y);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    // Poignées (locales)
+                    drawHandle(obj.w/2, 0); // Droite
+                    drawHandle(0, obj.h/2); // Bas
+                    drawHandle(obj.w/2, obj.h/2); // Coin
+                } else if (obj === this.player) {
+                    // Le joueur est centré (x,y au milieu)
+                    this.ctx.translate(obj.x, obj.y);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    drawHandle(obj.w/2, 0);
+                    drawHandle(0, obj.h/2);
+                    drawHandle(obj.w/2, obj.h/2);
+                } else if (obj.angle) {
+                    // Autres objets avec angle (Obstacle, Items...) ont x,y en haut à gauche
+                    this.ctx.translate(obj.x + obj.w / 2, obj.y + obj.h / 2);
+                    this.ctx.rotate(obj.angle);
+                    this.ctx.strokeRect(-obj.w / 2, -obj.h / 2, obj.w, obj.h);
+                    drawHandle(obj.w/2, 0);
+                    drawHandle(0, obj.h/2);
+                    drawHandle(obj.w/2, obj.h/2);
+                } else if (obj.radius) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(obj.x, obj.y, obj.radius, 0, Math.PI * 2);
+                    this.ctx.stroke();
+                    drawHandle(obj.x + obj.radius, obj.y); // Poignée Rayon
+                } else {
+                    this.ctx.strokeRect(obj.x, obj.y, obj.w, obj.h);
+                    drawHandle(obj.x + obj.w, obj.y + obj.h/2); // Droite
+                    drawHandle(obj.x + obj.w/2, obj.y + obj.h); // Bas
+                    drawHandle(obj.x + obj.w, obj.y + obj.h);   // Coin
+                }
+                this.ctx.restore();
+            }
+        });
+    }
     // timer
     if (this.timerElement && this.running) {
       let elapsed = Date.now() - this.startTime;
@@ -298,6 +508,45 @@ export default class Game {
     if (Math.abs(this.knockbackX) < 0.1) this.knockbackX = 0;
     if (Math.abs(this.knockbackY) < 0.1) this.knockbackY = 0;
 
+        // Vitesse de base du joueur
+        let vitesse = this.playerSpeed;
+
+        // --- GESTION DU VENT (FAN) ---
+        let windVx = 0;
+        let windVy = 0;
+        
+        this.objetsGraphiques.forEach(obj => {
+            if (obj instanceof Fan) {
+                // Calcul de la position du joueur dans le repère local du ventilateur
+                // Centre du ventilateur
+                let cx = obj.x + obj.w / 2;
+                let cy = obj.y + obj.h / 2;
+                
+                // Vecteur Joueur -> Centre
+                let dx = (this.player.x) - cx;
+                let dy = (this.player.y) - cy;
+                
+                // Rotation inverse pour aligner avec l'axe X local (direction du souffle)
+                let localX = dx * Math.cos(-obj.angle) - dy * Math.sin(-obj.angle);
+                let localY = dx * Math.sin(-obj.angle) + dy * Math.cos(-obj.angle);
+                
+                // Vérification : Le joueur est-il devant le ventilo (x > 0) et dans la portée ?
+                // Et est-il dans la largeur du flux d'air (y entre -h/2 et h/2) ?
+                if (localX > 0 && localX < obj.range && Math.abs(localY) < obj.h / 2) {
+                    // Application de la force dans la direction du ventilateur
+                    windVx += Math.cos(obj.angle) * obj.force;
+                    windVy += Math.sin(obj.angle) * obj.force;
+                }
+            }
+        });
+
+        
+        // Si le boost est actif
+        vitesse += this.activeSpeedBoost;
+        // Si le boost est actif (temps actuel < temps de fin du boost)
+        if (Date.now() < this.speedBoostEndTime) {
+            vitesse += this.activeSpeedBoost;
+        }
     this.testCollisionsPlayer();
   }
 
@@ -308,6 +557,9 @@ export default class Game {
     // obstacles
     //this.testCollisionPlayerObstacles();
 
+        // On ajoute le knockback à la vitesse
+        this.player.vitesseX = inputVx + this.knockbackX + windVx;
+        this.player.vitesseY = inputVy + this.knockbackY + windVy;
     // collisions
     this.handleCollisionObstacle();
 
