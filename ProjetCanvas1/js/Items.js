@@ -8,7 +8,14 @@ export default class Items extends ObjectGraphique {
     draw(ctx) {
         ctx.save();
         ctx.fillStyle = this.couleur;
-        ctx.fillRect(this.x, this.y, this.w, this.h);
+        
+        if (this.angle) {
+            ctx.translate(this.x + this.w / 2, this.y + this.h / 2);
+            ctx.rotate(this.angle);
+            ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
+        } else {
+            ctx.fillRect(this.x, this.y, this.w, this.h);
+        }
         ctx.restore();
     }
 }
