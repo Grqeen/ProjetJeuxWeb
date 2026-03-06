@@ -36,6 +36,10 @@ window.addEventListener('DOMContentLoaded', function () {
     const canvas = document.getElementById("myCanvas");
     const engine = new BABYLON.Engine(canvas, true);
 
+    // Déclaration anticipée pour l'utiliser dans createGameScene
+    let isGamePaused = false;
+    const togglePause = () => { isGamePaused = !isGamePaused; };
+
     const createGameScene = function () {
         const scene = new BABYLON.Scene(engine);
         
@@ -120,12 +124,132 @@ window.addEventListener('DOMContentLoaded', function () {
             for (const key in inputMap) inputMap[key] = false;
         });
 
-        return { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText };
+        // --- SYSTÈME DE PAUSE / PARAMÈTRES (ÉCHAP) ---
+        const pauseTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("PauseUI", true, scene);
+
+        const pausePanel = new BABYLON.GUI.StackPanel();
+        pausePanel.width = "450px"; // Plus large pour les touches
+        pausePanel.background = "#2c3e50";
+        pausePanel.paddingTop = "10px";
+        pausePanel.paddingBottom = "10px";
+        pausePanel.cornerRadius = 20;
+        pausePanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+        pausePanel.isVisible = false;
+        pauseTexture.addControl(pausePanel);
+
+        const createHeader = (text) => {
+            const header = new BABYLON.GUI.TextBlock();
+            header.text = text;
+            header.color = "white";
+            header.fontSize = 24;
+            header.height = "40px";
+            header.fontWeight = "bold";
+            return header;
+        };
+
+        pausePanel.addControl(createHeader("PAUSE - PARAMÈTRES"));
+
+        // -- Option Plein Écran et FPS --
+        const videoRow = new BABYLON.GUI.StackPanel();
+        videoRow.isVertical = false;
+        videoRow.height = "40px";
+        pausePanel.addControl(videoRow);
+
+        const fsCheckbox = new BABYLON.GUI.Checkbox();
+        fsCheckbox.width = "20px"; fsCheckbox.height = "20px";
+        fsCheckbox.isChecked = gameSettings.fullscreen;
+        fsCheckbox.color = "#3498db";
+        fsCheckbox.onIsCheckedChangedObservable.add(v => {
+            gameSettings.fullscreen = v;
+            if (v) engine.enterFullscreen(); else engine.exitFullscreen();
+        });
+        videoRow.addControl(fsCheckbox);
+
+        const fsLabel = new BABYLON.GUI.TextBlock();
+        fsLabel.text = " Plein Écran  |  FPS ";
+        fsLabel.color = "white"; fsLabel.width = "150px";
+        videoRow.addControl(fsLabel);
+
+        const fpsCheckbox = new BABYLON.GUI.Checkbox();
+        fpsCheckbox.width = "20px"; fpsCheckbox.height = "20px";
+        fpsCheckbox.isChecked = gameSettings.showFps;
+        fpsCheckbox.color = "#3498db";
+        fpsCheckbox.onIsCheckedChangedObservable.add(v => gameSettings.showFps = v);
+        videoRow.addControl(fpsCheckbox);
+
+        // -- Qualité Graphique --
+        pausePanel.addControl(createHeader("QUALITÉ"));
+        const qRow = new BABYLON.GUI.StackPanel();
+        qRow.isVertical = false; qRow.height = "40px";
+        pausePanel.addControl(qRow);
+
+        ["Low", "Medium", "High"].forEach(q => {
+            const btn = BABYLON.GUI.Button.CreateSimpleButton("q"+q, q);
+            btn.width = "80px"; btn.height = "30px"; btn.color = "white";
+            btn.background = gameSettings.quality.toLowerCase() === q.toLowerCase() ? "#3498db" : "#7f8c8d";
+            btn.onPointerUpObservable.add(() => {
+                gameSettings.quality = q.toLowerCase();
+                if (q === "Low") gameSettings.resolution = 2.0;
+                else if (q === "Medium") gameSettings.resolution = 1.5;
+                else gameSettings.resolution = 1.0;
+                // Note: La mise à jour visuelle des boutons demanderait une boucle ici
+            });
+            qRow.addControl(btn);
+        });
+
+        // -- Liste des Touches (Version compacte) --
+        pausePanel.addControl(createHeader("TOUCHES"));
+        const keysContainer = new BABYLON.GUI.ScrollViewer();
+        keysContainer.width = "400px"; keysContainer.height = "150px";
+        keysContainer.background = "#34495e";
+        pausePanel.addControl(keysContainer);
+
+        const keysList = new BABYLON.GUI.StackPanel();
+        keysContainer.addControl(keysList);
+
+        const addKeySetting = (label, prop) => {
+            const row = new BABYLON.GUI.StackPanel();
+            row.isVertical = false; row.height = "35px";
+            const t = new BABYLON.GUI.TextBlock();
+            t.text = label; t.color = "white"; t.width = "180px";
+            row.addControl(t);
+            const b = BABYLON.GUI.Button.CreateSimpleButton("k"+prop, gameSettings.keys[prop].toUpperCase());
+            b.width = "100px"; b.height = "25px"; b.color = "white"; b.background = "#95a5a6";
+            b.onPointerUpObservable.add(() => {
+                b.textBlock.text = "...";
+                const listener = (e) => {
+                    gameSettings.keys[prop] = e.key.toLowerCase();
+                    b.textBlock.text = e.key.toUpperCase();
+                    window.removeEventListener("keydown", listener);
+                };
+                window.addEventListener("keydown", listener);
+            });
+            row.addControl(b);
+            keysList.addControl(row);
+        };
+        addKeySetting("Avancer", "forward");
+        addKeySetting("Reculer", "backward");
+        addKeySetting("Gauche", "left");
+        addKeySetting("Droite", "right");
+        addKeySetting("Sprint", "sprint");
+
+        const resumeBtn = BABYLON.GUI.Button.CreateSimpleButton("resume", "REPRENDRE");
+        resumeBtn.height = "40px"; resumeBtn.width = "200px"; resumeBtn.color = "white";
+        resumeBtn.background = "#27ae60"; resumeBtn.marginTop = "10px";
+        resumeBtn.onPointerUpObservable.add(() => {
+            isGamePaused = false;
+            pausePanel.isVisible = false;
+        });
+        pausePanel.addControl(resumeBtn);
+
+        return { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, pausePanel };
     };
 
     // --- GESTION DES SCÈNES ---
     let currentScene = null;
     let gameData = null; // Stockera les objets du jeu (stickman, camera, etc.)
+    let projectiles = []; // Liste des boules de feu
+    let lastFireTime = 0; // Chronomètre pour le tir
 
     // Fonction pour lancer le jeu depuis le menu
     const startGame = () => {
@@ -133,6 +257,9 @@ window.addEventListener('DOMContentLoaded', function () {
         const data = createGameScene();
         currentScene = data.scene;
         gameData = data;
+        isGamePaused = false;
+        projectiles = [];
+        lastFireTime = 0;
     };
 
     // Au démarrage, on lance le menu
@@ -147,6 +274,16 @@ window.addEventListener('DOMContentLoaded', function () {
     // "waiting" -> "opening" -> "climbing" -> "closing" -> "finished"
     let spawnState = "waiting"; 
     setTimeout(() => { spawnState = "opening"; }, 1000); // Commence après 1 seconde
+
+    // Écouteur global pour la touche Échap
+    window.addEventListener("keydown", (evt) => {
+        if (evt.key === "Escape" && gameData) {
+            togglePause();
+            if (gameData.pausePanel) {
+                gameData.pausePanel.isVisible = isGamePaused;
+            }
+        }
+    });
 
     engine.runRenderLoop(function () {
         if (!currentScene) return;
@@ -172,6 +309,12 @@ window.addEventListener('DOMContentLoaded', function () {
         if (gameData.fpsText) {
             gameData.fpsText.text = engine.getFps().toFixed() + " FPS";
             gameData.fpsText.isVisible = gameSettings.showFps;
+        }
+
+        // SI LE JEU EST EN PAUSE
+        if (isGamePaused) {
+            currentScene.render();
+            return; // On arrête la logique ici, mais on continue de dessiner l'image fixe
         }
 
         // --- LOGIQUE DU JEU (Uniquement si gameData existe) ---
@@ -315,6 +458,69 @@ window.addEventListener('DOMContentLoaded', function () {
             monster.position.addInPlace(direction.scale(0.05));
             monster.position.y = getHeight(monster.position.x, monster.position.z) + 0.5;
         });
+
+        // --- SYSTÈME DE TIR AUTOMATIQUE (FLAMMES) ---
+        const now = Date.now();
+        if (now - lastFireTime > 1000) { 
+            lastFireTime = now;
+
+            // Chercher le monstre le plus proche
+            let nearestMonster = null;
+            let minDistance = 40; // Portée maximum de détection
+
+            monsters.forEach(m => {
+                const dist = BABYLON.Vector3.Distance(stickman.position, m.position);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearestMonster = m;
+                }
+            });
+
+            // Déterminer la direction (vers le monstre ou tout droit)
+            let targetDir;
+            if (nearestMonster) {
+                // On vise le centre du monstre (y + 0.5)
+                const targetPos = nearestMonster.position.clone();
+                targetDir = targetPos.subtract(stickman.position).normalize();
+            } else {
+                targetDir = stickman.getDirection(BABYLON.Axis.Z).normalize();
+            }
+
+            // Création du projectile
+            const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
+            fireball.position = stickman.position.clone();
+            fireball.position.y += 1.2; // Hauteur du torse
+
+            const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
+            fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0); 
+            fireball.material = fireMat;
+
+            projectiles.push({ mesh: fireball, direction: targetDir, life: 60 });
+        }
+
+        // Mise à jour des projectiles
+        for (let i = 0; i < projectiles.length; i++) {
+            const p = projectiles[i];
+            p.mesh.position.addInPlace(p.direction.scale(0.4)); // Vitesse du projectile
+            p.life--;
+
+            // Vérification collision avec les monstres
+            for (let j = 0; j < monsters.length; j++) {
+                if (p.mesh.intersectsMesh(monsters[j], true)) {
+                    // Touché !
+                    monsters[j].dispose(); // Supprime le monstre
+                    monsters.splice(j, 1); // Retire de la liste
+                    p.life = 0; // Détruit le projectile
+                    break;
+                }
+            }
+
+            if (p.life <= 0) {
+                p.mesh.dispose();
+                projectiles.splice(i, 1);
+                i--;
+            }
+        }
 
         currentScene.render();
     });
