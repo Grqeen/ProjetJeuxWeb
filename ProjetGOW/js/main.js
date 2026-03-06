@@ -9,24 +9,34 @@ import { createBirds, updateBirds } from "./birds.js";
 import { createWater } from "./water.js";
 import { createBuildings } from "./buildings.js";
 import { createBridges } from "./bridges.js";
+import { createMenuScene } from "./menu.js";
+
+// Configuration globale du jeu
+export const gameSettings = {
+    fullscreen: false,
+    quality: "high", // low, medium, high, custom
+    resolution: 1.0, // 1.0 = High, 2.0 = Low (HardwareScalingLevel)
+    keys: {
+        forward: "z",
+        backward: "s",
+        left: "q",
+        right: "d",
+        sprint: "shift",
+        showFps: true // Nouvelle option pour afficher ou masquer les FPS
+    }
+};
 
 window.addEventListener('DOMContentLoaded', function () {
+    // Vérification de sécurité : on s'assure que Babylon GUI est chargé
+    if (!BABYLON.GUI) {
+        alert("Erreur critique : La librairie Babylon.js GUI est manquante.\nVeuillez ajouter <script src='https://cdn.babylonjs.com/gui/babylon.gui.min.js'></script> dans votre fichier HTML.");
+        throw new Error("Babylon.js GUI not found");
+    }
+
     const canvas = document.getElementById("myCanvas");
     const engine = new BABYLON.Engine(canvas, true);
 
-    // Création du compteur FPS
-    const fpsDiv = document.createElement("div");
-    fpsDiv.style.position = "absolute";
-    fpsDiv.style.top = "10px";
-    fpsDiv.style.left = "10px";
-    fpsDiv.style.color = "white";
-    fpsDiv.style.fontSize = "20px";
-    fpsDiv.style.fontWeight = "bold";
-    fpsDiv.style.pointerEvents = "none"; // Pour cliquer au travers
-    fpsDiv.style.textShadow = "1px 1px 2px black";
-    document.body.appendChild(fpsDiv);
-
-    const createScene = function () {
+    const createGameScene = function () {
         const scene = new BABYLON.Scene(engine);
         
         // ACTIVER LES COLLISIONS GLOBALES
@@ -38,6 +48,19 @@ window.addEventListener('DOMContentLoaded', function () {
         
         // Empêche la caméra de passer sous le sol (Beta < 90 degrés environ)
         camera.upperBetaLimit = Math.PI / 2 - 0.05;
+
+        // UI JEU (FPS) - Créé ici car il faut une scène active
+        const gameUI = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("gameUI", true, scene);
+        const fpsText = new BABYLON.GUI.TextBlock();
+        fpsText.text = "0 FPS";
+        fpsText.color = "yellow";
+        fpsText.fontSize = 24;
+        fpsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+        fpsText.left = "10px";
+        fpsText.top = "10px";
+        fpsText.isVisible = gameSettings.showFps;
+        gameUI.addControl(fpsText);
 
         const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
         light.intensity = 0.7;
@@ -97,10 +120,23 @@ window.addEventListener('DOMContentLoaded', function () {
             for (const key in inputMap) inputMap[key] = false;
         });
 
-        return { scene, stickman, monsters, inputMap, camera, cover, birds };
+        return { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText };
     };
 
-    const { scene, stickman, monsters, inputMap, camera, cover, birds } = createScene();
+    // --- GESTION DES SCÈNES ---
+    let currentScene = null;
+    let gameData = null; // Stockera les objets du jeu (stickman, camera, etc.)
+
+    // Fonction pour lancer le jeu depuis le menu
+    const startGame = () => {
+        if (currentScene) currentScene.dispose();
+        const data = createGameScene();
+        currentScene = data.scene;
+        gameData = data;
+    };
+
+    // Au démarrage, on lance le menu
+    currentScene = createMenuScene(engine, startGame, gameSettings);
 
     // Variables pour la physique (saut et gravité)
     let verticalVelocity = 0;
@@ -113,8 +149,33 @@ window.addEventListener('DOMContentLoaded', function () {
     setTimeout(() => { spawnState = "opening"; }, 1000); // Commence après 1 seconde
 
     engine.runRenderLoop(function () {
-        // Mise à jour du FPS
-        fpsDiv.innerHTML = engine.getFps().toFixed() + " FPS";
+        if (!currentScene) return;
+
+        // Application dynamique de la qualité graphique (Résolution)
+        // Si le scaling level a changé dans les settings, on l'applique au moteur
+        if (engine.getHardwareScalingLevel() !== gameSettings.resolution) {
+            engine.setHardwareScalingLevel(gameSettings.resolution);
+        }
+
+        // SI ON EST DANS LE MENU, on rend juste la scène et on quitte
+        if (!gameData) {
+            // Mise à jour FPS Menu (si disponible)
+            if (currentScene.fpsText) {
+                currentScene.fpsText.text = engine.getFps().toFixed() + " FPS";
+                currentScene.fpsText.isVisible = gameSettings.showFps;
+            }
+            currentScene.render();
+            return;
+        }
+
+        // Mise à jour FPS Jeu
+        if (gameData.fpsText) {
+            gameData.fpsText.text = engine.getFps().toFixed() + " FPS";
+            gameData.fpsText.isVisible = gameSettings.showFps;
+        }
+
+        // --- LOGIQUE DU JEU (Uniquement si gameData existe) ---
+        const { stickman, monsters, inputMap, camera, cover, birds, scene } = gameData;
 
         // Mise à jour des oiseaux
         updateBirds(birds);
@@ -169,7 +230,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
         // --- JEU NORMAL ---
         // Vitesse : course (Shift) ou marche normale
-        let speed = inputMap["shift"] ? 0.4 : 0.15; // Un peu plus rapide sur la grande map
+        let speed = inputMap[gameSettings.keys.sprint] ? 0.4 : 0.15;
 
         // Ralentissement dans l'eau
         if (stickman.position.y < waterLevel) {
@@ -187,16 +248,16 @@ window.addEventListener('DOMContentLoaded', function () {
         right.y = 0;
         right.normalize();
 
-        if (inputMap["z"]) {
+        if (inputMap[gameSettings.keys.forward]) {
             moveVector.addInPlace(forward);
         }
-        if (inputMap["s"]) {
+        if (inputMap[gameSettings.keys.backward]) {
             moveVector.subtractInPlace(forward);
         }
-        if (inputMap["q"]) {
+        if (inputMap[gameSettings.keys.left]) {
             moveVector.subtractInPlace(right);
         }
-        if (inputMap["d"]) {
+        if (inputMap[gameSettings.keys.right]) {
             moveVector.addInPlace(right);
         }
         
@@ -216,17 +277,26 @@ window.addEventListener('DOMContentLoaded', function () {
         const isGrounded = hit.hit;
 
         // 2. Si on est au sol, on peut sauter et on annule la vitesse de chute
-        if (isGrounded) {
-            if (verticalVelocity < 0) {
-                verticalVelocity = 0;
-            }
+        if (isGrounded && verticalVelocity <= 0) {
+            verticalVelocity = 0;
+
             if (inputMap[" "]) {
                 verticalVelocity = jumpForce;
+            } else {
+                // Si on ne saute pas, on applique la gravité seulement si on bouge
+                // Cela évite de glisser (tomber petit à petit) quand on est à l'arrêt sur une pente
+                const isMoving = inputMap[gameSettings.keys.forward] || 
+                                 inputMap[gameSettings.keys.backward] || 
+                                 inputMap[gameSettings.keys.left] || 
+                                 inputMap[gameSettings.keys.right];
+                if (isMoving) {
+                    verticalVelocity = gravity;
+                }
             }
+        } else {
+            // 3. Appliquer la gravité en continu
+            verticalVelocity += gravity;
         }
-
-        // 3. Appliquer la gravité en continu
-        verticalVelocity += gravity;
 
         // Physique de l'eau (Viscosité et chute lente)
         if (stickman.position.y < waterLevel) {
@@ -246,7 +316,7 @@ window.addEventListener('DOMContentLoaded', function () {
             monster.position.y = getHeight(monster.position.x, monster.position.z) + 0.5;
         });
 
-        scene.render();
+        currentScene.render();
     });
 
     window.addEventListener("resize", function () {
