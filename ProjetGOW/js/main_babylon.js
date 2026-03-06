@@ -26,24 +26,108 @@ window.addEventListener('DOMContentLoaded', function(){
         // Diminue un peu l'intensité de la lumière pour un rendu plus doux
         light.intensity = 0.7;
 
-        // Crée une forme de "sphère" intégrée. C'est notre premier objet 3D.
-        const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", {diameter: 2, segments: 32}, scene);
-
-        // Déplace la sphère vers le haut pour qu'elle repose sur le sol
-        sphere.position.y = 1;
-
         // Crée une forme de "sol" intégrée.
-        const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 10, height: 10}, scene);
+        const ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 20, height: 20}, scene);
 
-        // Retourne la scène qui vient d'être créée
-        return scene;
+        // Créer le stickman
+        const stickman = createStickman(scene);
+
+        // Créer des monstres
+        const monsters = [];
+        for (let i = 0; i < 5; i++) {
+            const monster = BABYLON.MeshBuilder.CreateSphere("monster" + i, {diameter: 1}, scene);
+            monster.position = new BABYLON.Vector3(Math.random() * 20 - 10, 0.5, Math.random() * 20 - 10);
+            monster.material = new BABYLON.StandardMaterial("monsterMat", scene);
+            monster.material.diffuseColor = new BABYLON.Color3(1, 0, 0); // Rouge pour les monstres
+            monsters.push(monster);
+        }
+
+        // Contrôles clavier pour le stickman
+        const inputMap = {};
+        scene.actionManager = new BABYLON.ActionManager(scene);
+        scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyDownTrigger, function (evt) {
+            inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+        }));
+        scene.actionManager.registerAction(new BABYLON.ExecuteCodeAction(BABYLON.ActionManager.OnKeyUpTrigger, function (evt) {
+            inputMap[evt.sourceEvent.key] = evt.sourceEvent.type == "keydown";
+        }));
+
+        // Fonction pour créer le stickman
+        function createStickman(scene) {
+            const stickmanGroup = new BABYLON.TransformNode("stickman", scene);
+
+            // Corps
+            const body = BABYLON.MeshBuilder.CreateCylinder("body", {height: 2, diameter: 0.5}, scene);
+            body.position.y = 1;
+            body.parent = stickmanGroup;
+
+            // Tête
+            const head = BABYLON.MeshBuilder.CreateSphere("head", {diameter: 0.8}, scene);
+            head.position.y = 2.5;
+            head.parent = stickmanGroup;
+
+            // Bras gauche
+            const leftArm = BABYLON.MeshBuilder.CreateCylinder("leftArm", {height: 1.5, diameter: 0.3}, scene);
+            leftArm.position = new BABYLON.Vector3(-0.4, 1.5, 0);
+            leftArm.rotation.z = Math.PI / 4;
+            leftArm.parent = stickmanGroup;
+
+            // Bras droit avec épée
+            const rightArm = BABYLON.MeshBuilder.CreateCylinder("rightArm", {height: 1.5, diameter: 0.3}, scene);
+            rightArm.position = new BABYLON.Vector3(0.4, 1.5, 0);
+            rightArm.rotation.z = -Math.PI / 4;
+            rightArm.parent = stickmanGroup;
+
+            // Épée
+            const sword = BABYLON.MeshBuilder.CreateBox("sword", {width: 0.1, height: 2, depth: 0.1}, scene);
+            sword.position = new BABYLON.Vector3(0.8, 1.5, 0);
+            sword.rotation.z = -Math.PI / 4;
+            sword.parent = stickmanGroup;
+            sword.material = new BABYLON.StandardMaterial("swordMat", scene);
+            sword.material.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5); // Gris pour l'épée
+
+            // Jambes
+            const leftLeg = BABYLON.MeshBuilder.CreateCylinder("leftLeg", {height: 2, diameter: 0.4}, scene);
+            leftLeg.position = new BABYLON.Vector3(-0.2, -1, 0);
+            leftLeg.parent = stickmanGroup;
+
+            const rightLeg = BABYLON.MeshBuilder.CreateCylinder("rightLeg", {height: 2, diameter: 0.4}, scene);
+            rightLeg.position = new BABYLON.Vector3(0.2, -1, 0);
+            rightLeg.parent = stickmanGroup;
+
+            return stickmanGroup;
+        }
+
+        // Retourne la scène et les objets pour la boucle de rendu
+        return { scene, stickman, monsters, inputMap };
     };
 
-    // Appelle la fonction de création de scène pour obtenir notre scène
-    const scene = createScene();
+    // Appelle la fonction de création de scène pour obtenir notre scène et objets
+    const { scene, stickman, monsters, inputMap } = createScene();
 
     // Démarre la boucle de rendu : le moteur va dessiner la scène en continu (environ 60 fois par seconde)
     engine.runRenderLoop(function () {
+        // Mouvement du stickman
+        const speed = 0.1;
+        if (inputMap["w"] || inputMap["W"]) {
+            stickman.position.z += speed;
+        }
+        if (inputMap["s"] || inputMap["S"]) {
+            stickman.position.z -= speed;
+        }
+        if (inputMap["a"] || inputMap["A"]) {
+            stickman.position.x -= speed;
+        }
+        if (inputMap["d"] || inputMap["D"]) {
+            stickman.position.x += speed;
+        }
+
+        // Mouvement des monstres vers le stickman
+        monsters.forEach(monster => {
+            const direction = stickman.position.subtract(monster.position).normalize();
+            monster.position.addInPlace(direction.scale(0.05));
+        });
+
         scene.render();
     });
 
