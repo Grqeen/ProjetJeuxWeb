@@ -1,0 +1,255 @@
+import { getHeight, limitRadius, waterLevel } from "./utils.js";
+import { createTerrain } from "./terrain.js";
+import { createPlayer } from "./player.js";
+import { createMonsters } from "./monsters.js";
+import { createTrees } from "./trees.js";
+import { createSewer } from "./sewer.js";
+import { createGrass } from "./grass.js";
+import { createBirds, updateBirds } from "./birds.js";
+import { createWater } from "./water.js";
+import { createBuildings } from "./buildings.js";
+import { createBridges } from "./bridges.js";
+
+window.addEventListener('DOMContentLoaded', function () {
+    const canvas = document.getElementById("myCanvas");
+    const engine = new BABYLON.Engine(canvas, true);
+
+    // Création du compteur FPS
+    const fpsDiv = document.createElement("div");
+    fpsDiv.style.position = "absolute";
+    fpsDiv.style.top = "10px";
+    fpsDiv.style.left = "10px";
+    fpsDiv.style.color = "white";
+    fpsDiv.style.fontSize = "20px";
+    fpsDiv.style.fontWeight = "bold";
+    fpsDiv.style.pointerEvents = "none"; // Pour cliquer au travers
+    fpsDiv.style.textShadow = "1px 1px 2px black";
+    document.body.appendChild(fpsDiv);
+
+    const createScene = function () {
+        const scene = new BABYLON.Scene(engine);
+        
+        // ACTIVER LES COLLISIONS GLOBALES
+        scene.collisionsEnabled = true;
+
+        // Caméra plus proche et orientée vers le centre pour l'intro
+        const camera = new BABYLON.ArcRotateCamera("camera1", -Math.PI / 2, 1.0, 8, BABYLON.Vector3.Zero(), scene);
+        camera.attachControl(canvas, true);
+        
+        // Empêche la caméra de passer sous le sol (Beta < 90 degrés environ)
+        camera.upperBetaLimit = Math.PI / 2 - 0.05;
+
+        const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+        light.intensity = 0.7;
+
+        // Création du terrain
+        createTerrain(scene);
+
+        // Création du joueur
+        const stickman = createPlayer(scene);
+        
+        // ACTIVER LES COLLISIONS SUR LE JOUEUR
+        stickman.checkCollisions = true;
+        // Ajustement de l'ellipsoïde pour correspondre à l'échelle 0.6 du joueur
+        // Hauteur visuelle ~3m (5 * 0.6) -> On met une hitbox de 1.8m (Rayon 0.9)
+        stickman.ellipsoid = new BABYLON.Vector3(0.25, 0.9, 0.25); 
+        stickman.ellipsoidOffset = new BABYLON.Vector3(0, 0.9, 0); // Base à 0 (Pieds)
+        
+        // Position de départ : SOUS la map (dans les égouts)
+        stickman.position = new BABYLON.Vector3(0, -5, 0);
+        
+        // Note : On ne verrouille pas la caméra sur le stickman tout de suite pour bien voir l'égout
+
+        // Création des monstres
+        const monsters = createMonsters(scene, 15);
+
+        // Création des arbres (200 arbres)
+        createTrees(scene, 200);
+
+        // Création de l'entrée des égouts
+        const { cover } = createSewer(scene);
+
+        // Création de l'herbe (4000 touffes)
+        createGrass(scene, 1000);
+
+        // Création des oiseaux
+        const birds = createBirds(scene, 50);
+
+        // Création de l'eau
+        createWater(scene);
+
+        // Création des bâtiments (30 bâtiments)
+        createBuildings(scene, 30);
+
+        // Création des ponts cassés (10 ponts)
+        createBridges(scene, 10);
+
+        // Gestion des entrées
+        const inputMap = {};
+        window.addEventListener("keydown", (evt) => {
+            inputMap[evt.key.toLowerCase()] = true; // Convertit tout en minuscule pour éviter les bugs avec Maj
+        });
+        window.addEventListener("keyup", (evt) => {
+            inputMap[evt.key.toLowerCase()] = false;
+        });
+        // Arrête tout mouvement si on quitte la fenêtre (Alt-Tab ou clic ailleurs)
+        window.addEventListener("blur", () => {
+            for (const key in inputMap) inputMap[key] = false;
+        });
+
+        return { scene, stickman, monsters, inputMap, camera, cover, birds };
+    };
+
+    const { scene, stickman, monsters, inputMap, camera, cover, birds } = createScene();
+
+    // Variables pour la physique (saut et gravité)
+    let verticalVelocity = 0;
+    const gravity = -0.015;
+    const jumpForce = 0.25;
+
+    // État de l'animation d'intro
+    // "waiting" -> "opening" -> "climbing" -> "closing" -> "finished"
+    let spawnState = "waiting"; 
+    setTimeout(() => { spawnState = "opening"; }, 1000); // Commence après 1 seconde
+
+    engine.runRenderLoop(function () {
+        // Mise à jour du FPS
+        fpsDiv.innerHTML = engine.getFps().toFixed() + " FPS";
+
+        // Mise à jour des oiseaux
+        updateBirds(birds);
+
+        // --- GESTION DE L'INTRO (ÉGOUTS) ---
+        if (spawnState !== "finished") {
+            if (spawnState === "opening") {
+                // Animation : La plaque glisse et tourne
+                cover.position.x += 0.02;
+                cover.rotation.y += 0.05;
+                // Quand la plaque est assez loin, on commence à monter
+                if (cover.position.x > 1.2) {
+                    spawnState = "climbing";
+                }
+            } else if (spawnState === "climbing") {
+                // Animation : Le joueur monte
+                stickman.position.y += 0.03;
+                // Petit mouvement de gauche à droite pour simuler l'escalade
+                stickman.rotation.z = Math.sin(stickman.position.y * 5) * 0.1;
+
+                // Une fois arrivé à la surface (y=0 pour les pieds, donc y=1.2 pour le centre du corps réduit)
+                // Note: stickman.scaling est 0.6, donc le centre est plus bas.
+                // Avec la correction de l'hitbox, le pivot est plus bas, donc on arrête à 0.6
+                // On monte un peu plus haut (1.0) pour être sûr de retomber SUR la plaque et pas dedans
+                if (stickman.position.y >= 1.0) {
+                    stickman.position.y = 1.0;
+                    stickman.rotation.z = 0; // Remet droit
+                    spawnState = "closing"; // On passe à la fermeture
+                }
+            } else if (spawnState === "closing") {
+                // Animation : La plaque revient
+                cover.position.x -= 0.04; // Revient un peu plus vite
+                cover.rotation.y -= 0.1;
+                
+                if (cover.position.x <= 0) {
+                    cover.position.x = 0;
+                    cover.rotation.y = 0;
+                    spawnState = "finished";
+
+                    // Réinitialiser la vélocité pour éviter de tomber d'un coup à la reprise
+                    verticalVelocity = 0;
+
+                    // L'intro est finie : la caméra suit le joueur et recule
+                    camera.lockedTarget = stickman;
+                    camera.radius = 15;
+                }
+            }
+            // Pendant l'intro, on rend la scène mais on bloque les contrôles
+            scene.render();
+            return;
+        }
+
+        // --- JEU NORMAL ---
+        // Vitesse : course (Shift) ou marche normale
+        let speed = inputMap["shift"] ? 0.4 : 0.15; // Un peu plus rapide sur la grande map
+
+        // Ralentissement dans l'eau
+        if (stickman.position.y < waterLevel) {
+            speed *= 0.15; // On devient très lent dans l'eau (15% de la vitesse)
+        }
+
+        let moveVector = new BABYLON.Vector3(0, 0, 0);
+
+        // Récupère la direction de la caméra
+        const forward = camera.getDirection(BABYLON.Axis.Z);
+        forward.y = 0;
+        forward.normalize();
+
+        const right = camera.getDirection(BABYLON.Axis.X);
+        right.y = 0;
+        right.normalize();
+
+        if (inputMap["z"]) {
+            moveVector.addInPlace(forward);
+        }
+        if (inputMap["s"]) {
+            moveVector.subtractInPlace(forward);
+        }
+        if (inputMap["q"]) {
+            moveVector.subtractInPlace(right);
+        }
+        if (inputMap["d"]) {
+            moveVector.addInPlace(right);
+        }
+        
+        // Applique le mouvement si une touche est pressée
+        if (moveVector.length() > 0) {
+            moveVector.normalize().scaleInPlace(speed);
+            stickman.lookAt(stickman.position.add(moveVector));
+        }
+
+        // --- Gestion de la gravité et du saut (plus robuste avec Raycast) ---
+
+        // 1. Vérifier si le joueur est au sol avec un rayon vers le bas
+        // On part d'un peu plus haut (0.5) pour être sûr que le rayon ne part pas de SOUS le sol si on est un peu enfoncé
+        const rayOrigin = stickman.position.add(new BABYLON.Vector3(0, 0.5, 0));
+        const groundRay = new BABYLON.Ray(rayOrigin, new BABYLON.Vector3(0, -1, 0), 1.5); // Rayon plus long pour détecter le sol de plus haut
+        const hit = scene.pickWithRay(groundRay, (mesh) => mesh.isPickable && mesh.checkCollisions && mesh !== stickman);
+        const isGrounded = hit.hit;
+
+        // 2. Si on est au sol, on peut sauter et on annule la vitesse de chute
+        if (isGrounded) {
+            if (verticalVelocity < 0) {
+                verticalVelocity = 0;
+            }
+            if (inputMap[" "]) {
+                verticalVelocity = jumpForce;
+            }
+        }
+
+        // 3. Appliquer la gravité en continu
+        verticalVelocity += gravity;
+
+        // Physique de l'eau (Viscosité et chute lente)
+        if (stickman.position.y < waterLevel) {
+            // On coule doucement au lieu de tomber comme une pierre (résistance de l'eau)
+            // Et on ne remonte plus automatiquement à la surface
+            if (verticalVelocity < -0.02) verticalVelocity = -0.02;
+        }
+
+        moveVector.y = verticalVelocity;
+
+        // 4. Déplacer le joueur en utilisant le moteur de collision pour tous les axes
+        stickman.moveWithCollisions(moveVector);
+
+        monsters.forEach(monster => {
+            const direction = stickman.position.subtract(monster.position).normalize();
+            monster.position.addInPlace(direction.scale(0.05));
+            monster.position.y = getHeight(monster.position.x, monster.position.z) + 0.5;
+        });
+
+        scene.render();
+    });
+
+    window.addEventListener("resize", function () {
+        engine.resize();
+    });
+});
