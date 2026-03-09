@@ -21,6 +21,12 @@ export function getHeight(x, z) {
     if (distanceFromCenter < 2.0) {
         return -6.0; // On enfonce le sol bien en dessous
     }
+    
+    // OPTIMISATION SPAWN : On force une zone parfaitement plate autour de l'égout
+    // Cela évite que la dalle grise ne vole ou ne soit ensevelie, et empêche l'eau d'apparaître ici.
+    if (distanceFromCenter < 8.0) {
+        return 0.5; 
+    }
 
     // Si on dépasse la limite, on génère des montagnes
     if (distanceFromCenter > limitRadius) {
@@ -47,9 +53,6 @@ export function getHeight(x, z) {
         arenaHeight -= Math.abs(arenaHeight - waterLevel) * 0.2; // Encore moins profond
         arenaHeight += noise2D(x * 0.1, z * 0.1) * 0.5; // Petites bosses au fond
     }
-
-    // On s'assure que la zone de l'égout (centre) reste accessible (pas sous l'eau)
-    if (distanceFromCenter < 10) return Math.max(0.5, arenaHeight);
 
     return arenaHeight;
 }

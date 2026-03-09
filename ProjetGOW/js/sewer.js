@@ -1,11 +1,14 @@
 export function createSewer(scene) {
     const sewerGroup = new BABYLON.TransformNode("sewer", scene);
 
+    // Hauteur du sol plat définie dans utils.js (0.5)
+    const groundHeight = 0.5;
+
     // 0. Dalle de béton autour du trou (Anneau plat)
     // On utilise un Torus aplati pour faire un disque avec un trou
     const slab = BABYLON.MeshBuilder.CreateTorus("slab", {diameter: 3.7, thickness: 2.3, tessellation: 50}, scene);
     slab.scaling.y = 0.05; // Aplatir pour faire une dalle
-    slab.position.y = 0.02; // Juste au-dessus du sol théorique
+    slab.position.y = groundHeight + 0.02; // Posé sur le sol plat
     slab.material = new BABYLON.StandardMaterial("slabMat", scene);
     slab.material.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.3); // Gris béton
     slab.parent = sewerGroup;
@@ -14,21 +17,21 @@ export function createSewer(scene) {
     // 0.5. Le tuyau noir (Parois de l'égout)
     // sideOrientation: DOUBLESIDE permet de voir l'intérieur du tuyau
     const pipe = BABYLON.MeshBuilder.CreateCylinder("pipe", {diameter: 1.35, height: 6, sideOrientation: BABYLON.Mesh.DOUBLESIDE}, scene);
-    pipe.position.y = -3;
+    pipe.position.y = -2.5; // Remonté pour bien joindre la surface
     pipe.material = new BABYLON.StandardMaterial("pipeMat", scene);
     pipe.material.diffuseColor = new BABYLON.Color3(0.05, 0.05, 0.05); // Noir presque total
     pipe.parent = sewerGroup;
 
     // 1. Le rebord en béton (Torus)
     const rim = BABYLON.MeshBuilder.CreateTorus("rim", {diameter: 1.6, thickness: 0.3, tessellation: 30}, scene);
-    rim.position.y = 0.1;
+    rim.position.y = groundHeight + 0.1;
     rim.material = new BABYLON.StandardMaterial("rimMat", scene);
     rim.material.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4); // Gris béton
     rim.parent = sewerGroup;
 
     // 2. La plaque d'égout (Cylindre aplati)
     const cover = BABYLON.MeshBuilder.CreateCylinder("cover", {diameter: 1.4, height: 0.1}, scene);
-    cover.position.y = 0.25;
+    cover.position.y = groundHeight + 0.25;
     cover.material = new BABYLON.StandardMaterial("coverMat", scene);
     cover.material.diffuseColor = new BABYLON.Color3(0.25, 0.2, 0.15); // Métal rouillé
     cover.parent = sewerGroup;
