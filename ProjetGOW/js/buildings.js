@@ -29,7 +29,9 @@ export function createBuildings(scene, count) {
         const height = 10 + Math.random() * 25;
 
         const building = BABYLON.MeshBuilder.CreateBox("building" + i, {width: width, height: height, depth: depth}, scene);
-        building.position = new BABYLON.Vector3(x, y + height / 2, z);
+        
+        // OPTIMISATION : On enfonce le bâtiment de 1.5 unités dans le sol pour éviter qu'il ne "vole" si le terrain est en pente
+        building.position = new BABYLON.Vector3(x, y + height / 2 - 1.5, z);
         building.material = buildingMat;
         
         buildings.push(building);
