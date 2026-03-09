@@ -2,6 +2,11 @@ import { mapSize, getHeight } from "./utils.js";
 
 export function createMonsters(scene, count) {
     const monsters = [];
+    
+    // OPTIMISATION : On crée le matériau une seule fois pour tous les monstres
+    const monsterMat = new BABYLON.StandardMaterial("monsterMat", scene);
+    monsterMat.diffuseColor = new BABYLON.Color3(1, 0, 0); // Rouge
+
     for (let i = 0; i < count; i++) {
         const monster = BABYLON.MeshBuilder.CreateSphere("monster" + i, {diameter: 1}, scene);
         const x = Math.random() * mapSize - mapSize / 2;
@@ -16,8 +21,7 @@ export function createMonsters(scene, count) {
 
         const y = getHeight(x, z) + 0.5;
         monster.position = new BABYLON.Vector3(x, y, z);
-        monster.material = new BABYLON.StandardMaterial("monsterMat", scene);
-        monster.material.diffuseColor = new BABYLON.Color3(1, 0, 0); // Rouge pour les monstres
+        monster.material = monsterMat; // On assigne le matériau partagé
         monsters.push(monster);
     }
     return monsters;

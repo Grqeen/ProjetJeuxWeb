@@ -45,6 +45,9 @@ window.addEventListener('DOMContentLoaded', function () {
         
         // ACTIVER LES COLLISIONS GLOBALES
         scene.collisionsEnabled = true;
+        
+        // OPTIMISATION : On ne calcule pas les collisions de la souris (gain CPU)
+        scene.skipPointerMovePicking = true;
 
         // Caméra plus proche et orientée vers le centre pour l'intro
         const camera = new BABYLON.ArcRotateCamera("camera1", -Math.PI / 2, 1.0, 8, BABYLON.Vector3.Zero(), scene);
@@ -452,6 +455,14 @@ window.addEventListener('DOMContentLoaded', function () {
 
         // 4. Déplacer le joueur en utilisant le moteur de collision pour tous les axes
         stickman.moveWithCollisions(moveVector);
+
+        // 5. Limite de la carte (Mur invisible pour ne pas monter sur les montagnes)
+        const currentRadius = Math.sqrt(stickman.position.x * stickman.position.x + stickman.position.z * stickman.position.z);
+        if (currentRadius > limitRadius) {
+            const ratio = limitRadius / currentRadius;
+            stickman.position.x *= ratio;
+            stickman.position.z *= ratio;
+        }
 
         monsters.forEach(monster => {
             const direction = stickman.position.subtract(monster.position).normalize();

@@ -2,6 +2,9 @@ export function createMenuScene(engine, startGameCallback, settings) {
     const scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1); // Fond sombre bleuté
 
+    // Image de fond
+    const background = new BABYLON.Layer("menuBg", "assets/menuBackground.jpg", scene, true);
+
     // Caméra basique pour afficher l'UI
     const camera = new BABYLON.FreeCamera("menuCam", new BABYLON.Vector3(0, 0, 0), scene);
 
@@ -24,13 +27,35 @@ export function createMenuScene(engine, startGameCallback, settings) {
     // --- STYLES ---
     const createBtn = (text) => {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + text, text);
-        btn.width = "250px";
-        btn.height = "50px";
-        btn.color = "white";
-        btn.cornerRadius = 10;
-        btn.background = "#404040";
+        btn.width = "300px";
+        btn.height = "60px";
+        btn.color = "#FFD700"; // Jaune doré
+        btn.thickness = 0; // Pas de bordure
+        btn.background = "transparent"; // Fond transparent
         btn.hoverCursor = "pointer";
         btn.paddingBottom = "10px";
+
+        // Style du texte
+        btn.textBlock.fontSize = 35;
+        btn.textBlock.fontWeight = "bold";
+        btn.textBlock.outlineWidth = 4;
+        btn.textBlock.outlineColor = "black";
+        btn.textBlock.fontFamily = "Verdana";
+
+        // Effet Hover
+        btn.onPointerEnterObservable.add(() => {
+            btn.color = "white";
+            btn.textBlock.outlineColor = "#e67e22"; // Orange au survol
+            btn.scaleX = 1.1;
+            btn.scaleY = 1.1;
+        });
+        btn.onPointerOutObservable.add(() => {
+            btn.color = "#FFD700";
+            btn.textBlock.outlineColor = "black";
+            btn.scaleX = 1.0;
+            btn.scaleY = 1.0;
+        });
+
         return btn;
     };
 
@@ -51,22 +76,24 @@ export function createMenuScene(engine, startGameCallback, settings) {
 
     const title = new BABYLON.GUI.TextBlock();
     title.text = "Blob's Revenge";
-    title.color = "#3498db";
-    title.fontSize = 60;
-    title.height = "100px";
+    title.color = "#FFD700";
+    title.fontSize = 80;
+    title.height = "120px";
     title.fontWeight = "bold";
+    title.outlineWidth = 5;
+    title.outlineColor = "black";
     title.shadowColor = "black";
-    title.shadowBlur = 5;
+    title.shadowOffsetX = 4;
+    title.shadowOffsetY = 4;
     mainMenuPanel.addControl(title);
 
-    const startBtn = createBtn("JOUER");
-    startBtn.background = "#27ae60";
+    const startBtn = createBtn("Start");
     startBtn.onPointerUpObservable.add(() => {
         startGameCallback();
     });
     mainMenuPanel.addControl(startBtn);
 
-    const settingsBtn = createBtn("PARAMÈTRES");
+    const settingsBtn = createBtn("Settings");
     settingsBtn.onPointerUpObservable.add(() => {
         mainMenuPanel.isVisible = false;
         settingsPanel.isVisible = true;
