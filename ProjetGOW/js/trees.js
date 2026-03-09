@@ -49,5 +49,6 @@ export function createTrees(scene, count) {
 
         instance.position = new BABYLON.Vector3(x, y + 2, z); // +2 car l'origine de l'arbre est au centre du tronc
         instance.checkCollisions = true; // (Optionnel) pour plus tard
+        instance.freezeWorldMatrix(); // OPTIMISATION : L'arbre est statique
     }
 }

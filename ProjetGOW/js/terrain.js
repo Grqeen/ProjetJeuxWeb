@@ -5,7 +5,7 @@ export function createTerrain(scene) {
     const ground = BABYLON.MeshBuilder.CreateGround("ground", {
         width: mapSize, 
         height: mapSize, 
-        subdivisions: 400, // Augmenté pour la taille 1000
+        subdivisions: 200, // OPTIMISATION : Réduit de 400 à 200 pour gagner des FPS
         updatable: true
     }, scene);
     
@@ -49,6 +49,7 @@ export function createTerrain(scene) {
     groundMat.useVertexColors = true; // IMPORTANT : Active les couleurs définies plus haut
     ground.material = groundMat;
     ground.checkCollisions = true; // IMPORTANT : Permet au joueur de marcher dessus
+    ground.freezeWorldMatrix(); // OPTIMISATION : Le sol ne bouge jamais
 
     return ground;
 }

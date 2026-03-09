@@ -39,5 +39,6 @@ export function createGrass(scene, count) {
         // Variation de taille aléatoire
         const scale = 0.5 + Math.random() * 0.5;
         instance.scaling = new BABYLON.Vector3(scale, scale, scale);
+        instance.freezeWorldMatrix(); // OPTIMISATION : L'herbe est statique
     }
 }

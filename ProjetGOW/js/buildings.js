@@ -5,6 +5,8 @@ export function createBuildings(scene, count) {
     const buildingMat = new BABYLON.StandardMaterial("buildingMat", scene);
     buildingMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.45); // Gris béton
 
+    const buildings = []; // Liste temporaire pour la fusion
+
     for (let i = 0; i < count; i++) {
         // Position aléatoire
         const r = limitRadius * Math.sqrt(Math.random()) * 0.8;
@@ -29,6 +31,14 @@ export function createBuildings(scene, count) {
         const building = BABYLON.MeshBuilder.CreateBox("building" + i, {width: width, height: height, depth: depth}, scene);
         building.position = new BABYLON.Vector3(x, y + height / 2, z);
         building.material = buildingMat;
-        building.checkCollisions = true;
+        
+        buildings.push(building);
+    }
+
+    // OPTIMISATION : Fusionner tous les bâtiments en un seul objet
+    if (buildings.length > 0) {
+        const mergedBuildings = BABYLON.Mesh.MergeMeshes(buildings, true, true, undefined, false, true);
+        mergedBuildings.checkCollisions = true;
+        mergedBuildings.freezeWorldMatrix(); // Ne bouge plus
     }
 }

@@ -6,6 +6,7 @@ export function createBridges(scene, count) {
 
     let bridgesCreated = 0;
     let attempts = 0;
+    const allBridgeParts = []; // Pour fusionner tout à la fin
 
     // On essaie de créer le nombre demandé de ponts, mais on limite les tentatives pour ne pas planter le navigateur
     while (bridgesCreated < count && attempts < 500) {
@@ -58,36 +59,39 @@ export function createBridges(scene, count) {
             
             if (distance > 5 && distance < 50) {
                 // Création du pont
-                const bridgeGroup = new BABYLON.TransformNode("bridge" + bridgesCreated, scene);
-                
                 // Position au centre du pont
                 const midPoint = startPoint.add(endPoint).scale(0.5);
-                bridgeGroup.position = midPoint;
                 
-                // Orientation
-                bridgeGroup.lookAt(endPoint);
-
                 // Planches du pont (Box étirée)
                 const bridge = BABYLON.MeshBuilder.CreateBox("planks", {width: 2, height: 0.2, depth: distance}, scene);
+                bridge.position = midPoint;
+                bridge.lookAt(endPoint);
                 bridge.material = woodMat;
-                bridge.checkCollisions = true;
-                bridge.parent = bridgeGroup;
+                allBridgeParts.push(bridge);
 
                 // Piliers aux extrémités (pour faire joli)
                 const p1 = BABYLON.MeshBuilder.CreateCylinder("p1", {height: 3, diameter: 0.3}, scene);
-                p1.position.z = -distance / 2;
-                p1.position.y = -1;
+                // Calcul de la position absolue des piliers
+                p1.position = midPoint.add(endPoint.subtract(startPoint).normalize().scale(-distance / 2));
+                p1.position.y -= 1;
                 p1.material = woodMat;
-                p1.parent = bridgeGroup;
+                allBridgeParts.push(p1);
 
                 const p2 = BABYLON.MeshBuilder.CreateCylinder("p2", {height: 3, diameter: 0.3}, scene);
-                p2.position.z = distance / 2;
-                p2.position.y = -1;
+                p2.position = midPoint.add(endPoint.subtract(startPoint).normalize().scale(distance / 2));
+                p2.position.y -= 1;
                 p2.material = woodMat;
-                p2.parent = bridgeGroup;
+                allBridgeParts.push(p2);
 
                 bridgesCreated++;
             }
         }
+    }
+
+    // OPTIMISATION : Fusionner tous les ponts
+    if (allBridgeParts.length > 0) {
+        const mergedBridges = BABYLON.Mesh.MergeMeshes(allBridgeParts, true, true, undefined, false, true);
+        mergedBridges.checkCollisions = true;
+        mergedBridges.freezeWorldMatrix();
     }
 }
