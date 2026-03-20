@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Blob Odyssey - Site Officiel</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <nav class="navbar">
+        <div class="logo">BLOB ODYSSEY</div>
+        <ul class="nav-links">
+          <li>JEUX</li>
+          <li>ACTUALITÉS</li>
+          <li>NOTRE ÉQUIPE</li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="hero">
+      <div class="cards-container">
+        <div class="card card-1"></div>
+        <div class="card card-2"></div>
+        <div class="card card-3"></div>
+        <div class="card card-4"></div>
+        <div class="card card-5"></div>
+      </div>
+
+      <div class="info-box">
+        <h2>Découvrez nos jeux</h2>
+        <p>
+          Plongez dans l'aventure avec nos trois jeux exclusifs : Blob Escape,
+          Blob's Revenge et un troisième jeu mystère inédit. Préparez-vous à
+          relever des défis épiques !
+        </p>
+        <button class="btn-cta">JOUER MAINTENANT</button>
+      </div>
+    </main>
+    <section class="games-section">
+      <h2 class="section-title">DÉCOUVREZ NOS JEUX</h2>
+      <p class="section-subtitle"><a href="#"></a></p>
+
+      <div class="games-grid">
+        <div class="game-card">
+          <a href="ProjetCanvas1/index.html">
+            <div class="game-image blob-escape"></div>
+          </a>
+          <div class="game-info">
+            <a href="ProjetCanvas1/index.html" style="text-decoration: none; color: inherit;">
+              <h3>Blob Escape</h3>
+            </a>
+            <p class="game-genre">2D Parkour</p>
+            <p class="game-players">Jeu Solo</p>
+          </div>
+        </div>
+
+        <div class="game-card">
+          <div class="game-image blobs-revenge"></div>
+          <div class="game-info">
+            <h3>Blob's Revenge</h3>
+            <p class="game-genre">3D Survivor</p>
+            <p class="game-players">Jeu Solo</p>
+          </div>
+        </div>
+
+        <div class="game-card">
+          <div class="game-image blob-legends"></div>
+          <div class="game-info">
+            <h3>Coming soon</h3>
+            <p class="game-genre">Coming Soon</p>
+            <p class="game-players">Jeu Solo</p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="trailers-section">
+      <h2 class="section-title">BANDE-ANNONCES DU JEU</h2>
+
+      <div class="trailers-container">
+    <div class="trailers-tabs">
+        <div class="tab active">
+            <img src="https://via.placeholder.com/24" alt="icon">
+            <span>Blob Escape</span>
+        </div>
+        <div class="tab">
+            <img src="https://via.placeholder.com/24" alt="icon">
+            <span>Blob's Revenge</span>
+        </div>
+        <div class="tab">
+            <img src="https://via.placeholder.com/24" alt="icon">
+            <span>Blob Legends</span>
+        </div>
+    </div>
+
+    <div class="video-viewer">
+        <div class="video-responsive">
+            <iframe
+                src="https://www.youtube.com/embed/jW2C5XMW_Go?autoplay=0&rel=0"
+                title="Blob Escape Trailer"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen>
+            </iframe>
+        </div>
+    </div>
+</div>
+    </section>  
+
+    <script>
+    const tabs = document.querySelectorAll('.tab');
+    const iframe = document.querySelector('.video-responsive iframe');
+
+    // On définit les IDs YouTube pour chaque jeu
+    const videoIds = {
+        "Blob Escape": "jW2C5XMW_Go",
+        "Blob's Revenge": "VIDEO_ID_2", 
+        "Blob Legends": "VIDEO_ID_3",
+    };
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Changer l'onglet actif
+            document.querySelector('.tab.active').classList.remove('active');
+            tab.classList.add('active');
+
+            // Changer la vidéo
+            const gameName = tab.querySelector('span').innerText;
+            if(videoIds[gameName]) {
+                iframe.src = `https://www.youtube.com/embed/${videoIds[gameName]}?autoplay=1`;
+            }
+        });
+    });
+</script>
+  </body>
+</html>
