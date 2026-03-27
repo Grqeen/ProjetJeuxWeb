@@ -1,295 +1,566 @@
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
 :root {
-    --gold: #d4af37;
-    --dark-bg: #121212;
-    --card-gradient: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.5) 100%);
+  --gold: #d4af37;
+  --dark-bg: #121212;
+  --card-gradient: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(0, 0, 0, 0.5) 100%
+  );
 }
 
 body {
-    margin: 0;
-    font-family: 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--dark-bg);
-    color: white;
-    overflow-x: hidden;
+  margin: 0;
+  font-family: "Segoe UI", Roboto, sans-serif;
+  background-color: var(--dark-bg);
+  color: white;
+  overflow-x: hidden;
 }
 
 /* --- Navigation --- */
+
 .navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 50px;
-    background: #1a1a1a;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 50px;
+  background: #1a1a1a;
+  position: relative;
+  z-index: 1000;
 }
 
 .logo {
-    font-weight: 900;
-    font-size: 1.5rem;
-    letter-spacing: 2px;
+  font-weight: 900;
+  font-size: 1.5rem;
+  letter-spacing: 2px;
 }
 
 .nav-links {
-    list-style: none;
-    display: flex;
-    gap: 30px;
-    font-size: 0.8rem;
-    font-weight: bold;
+  list-style: none;
+  display: flex;
+  gap: 30px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+/* Le burger est caché par défaut sur ordinateur */
+.burger {
+  display: none;
+  cursor: pointer;
+}
+
+.burger div {
+  width: 25px;
+  height: 3px;
+  background-color: white;
+  margin: 5px;
+  transition: all 0.3s ease;
 }
 
 .btn-buy {
-    background: transparent;
-    border: 1px solid #4caf50;
-    color: #4caf50;
-    padding: 8px 15px;
-    cursor: pointer;
-    font-weight: bold;
+  background: transparent;
+  border: 1px solid #4caf50;
+  color: #4caf50;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-weight: bold;
 }
 
 /* --- Hero Section & Cards --- */
+
 .hero {
-    position: relative;
-    height: 80vh;
-    display: flex;
-    align-items: flex-end;
-    justify-content: flex-start;
-    padding: 0 10%;
-    perspective: 1000px; /* Important pour l'effet 3D */
+  position: relative;
+  height: 80vh;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 0 10%;
+  perspective: 1000px; /* Important pour l'effet 3D */
 }
 
 .cards-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -40%);
-    display: flex;
-    gap: 10px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -40%);
+  display: flex;
+  gap: 10px;
 }
 
 .card {
-    width: 180px;
-    height: 350px;
-    background: var(--card-gradient), #333;
-    border: 1px solid rgba(255,215,0,0.3);
-    border-radius: 4px;
-    transition: transform 0.3s;
+  width: 180px;
+  height: 350px;
+  background: var(--card-gradient), #333;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  border-radius: 4px;
+  transition: transform 0.3s;
 }
 
 /* Effet d'éventail (inclinaison) */
-.card-1 { transform: rotateY(25deg) translateZ(-50px); }
-.card-2 { transform: rotateY(15deg) translateZ(0px); }
-.card-3 { transform: scale(1.1); z-index: 10; border: 2px solid var(--gold); }
-.card-4 { transform: rotateY(-15deg) translateZ(0px); }
-.card-5 { transform: rotateY(-25deg) translateZ(-50px); }
+
+.card-1 {
+  transform: rotateY(25deg) translateZ(-50px);
+}
+
+.card-2 {
+  transform: rotateY(15deg) translateZ(0px);
+}
+
+.card-3 {
+  transform: scale(1.1);
+  z-index: 10;
+  border: 2px solid var(--gold);
+}
+
+.card-4 {
+  transform: rotateY(-15deg) translateZ(0px);
+}
+
+.card-5 {
+  transform: rotateY(-25deg) translateZ(-50px);
+}
 
 /* --- Boite d'info --- */
+
 .info-box {
-    background: rgba(20, 20, 20, 0.95);
-    padding: 40px;
-    max-width: 500px;
-    z-index: 20;
-    margin-bottom: 50px;
-    border-top: 5px solid var(--gold);
+  background: rgba(20, 20, 20, 0.95);
+  padding: 40px;
+  max-width: 500px;
+  z-index: 20;
+  margin-bottom: 50px;
+  border-top: 5px solid var(--gold);
 }
 
 .info-box h2 {
-    margin-top: 0;
-    font-size: 1.8rem;
+  margin-top: 0;
+  font-size: 1.8rem;
 }
 
 .btn-cta {
-    background: #3d8c40;
-    color: white;
-    border: none;
-    padding: 12px 25px;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 20px;
+  background: #3d8c40;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 20px;
 }
 
 /* --- Thumbnails en bas --- */
+
 .thumbnails {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding-bottom: 30px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding-bottom: 30px;
 }
 
 .thumb {
-    width: 100px;
-    height: 60px;
-    background: #333;
-    border: 2px solid transparent;
+  width: 100px;
+  height: 60px;
+  background: #333;
+  border: 2px solid transparent;
 }
 
 .thumb.active {
-    border-color: #4caf50;
+  border-color: #4caf50;
 }
 
 /* --- Section Jeux --- */
+
 .games-section {
-    padding: 80px 10%;
-    text-align: center;
-    background-color: #121212;
+  padding: 80px 10%;
+  text-align: center;
+  background-color: #121212;
 }
 
 .section-title {
-    font-size: 2.5rem;
-    letter-spacing: 3px;
-    margin-bottom: 10px;
-    text-transform: uppercase;
+  font-size: 2.5rem;
+  letter-spacing: 3px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
 }
 
 .section-subtitle {
-    color: #aaa;
-    margin-bottom: 50px;
+  color: #aaa;
+  margin-bottom: 50px;
 }
 
 .section-subtitle a {
-    color: #4caf50;
-    text-decoration: underline;
+  color: #4caf50;
+  text-decoration: underline;
 }
 
 /* Grille */
+
 .games-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 30px;
 }
 
 /* Cartes de jeu */
+
 .game-card {
-    text-align: left;
-    transition: transform 0.3s ease;
-    cursor: pointer;
+  text-align: left;
+  transition: transform 0.3s ease;
+  cursor: pointer;
 }
 
 .game-card:hover {
-    transform: translateY(-10px);
+  transform: translateY(-10px);
 }
 
 .game-image {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    background-color: #333; /* Remplacer par vos images plus tard */
-    border-radius: 4px;
-    margin-bottom: 15px;
-    background-size: cover;
-    background-position: center;
-    border: 1px solid rgba(255,255,255,0.1);
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: #333; /* Remplacer par vos images plus tard */
+  border-radius: 4px;
+  margin-bottom: 15px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Couleurs temporaires pour différencier les jeux */
-.blob-escape { background-image: linear-gradient(45deg, #2e7d32, #81c784); }
-.blobs-revenge { background-image: linear-gradient(45deg, #c62828, #ef5350); }
-.blob-legends { background-image: linear-gradient(45deg, #1565c0, #42a5f5); }
-.blob-education { background-image: linear-gradient(45deg, #ef6c00, #ffb74d); }
+
+.blob-escape {
+  background-image: linear-gradient(45deg, #2e7d32, #81c784);
+}
+
+.blobs-revenge {
+  background-image: linear-gradient(45deg, #c62828, #ef5350);
+}
+
+.blob-legends {
+  background-image: linear-gradient(45deg, #1565c0, #42a5f5);
+}
+
+.blob-education {
+  background-image: linear-gradient(45deg, #ef6c00, #ffb74d);
+}
 
 .game-info h3 {
-    margin: 5px 0;
-    font-size: 1.2rem;
+  margin: 5px 0;
+  font-size: 1.2rem;
 }
 
 .game-genre {
-    color: #ccc;
-    font-size: 0.85rem;
-    margin-bottom: 5px;
+  color: #ccc;
+  font-size: 0.85rem;
+  margin-bottom: 5px;
 }
 
 .game-players {
-    color: #888;
-    font-size: 0.8rem;
-    margin-bottom: 10px;
+  color: #888;
+  font-size: 0.8rem;
+  margin-bottom: 10px;
 }
 
 .platforms {
-    font-size: 0.9rem;
-    opacity: 0.6;
-    filter: grayscale(1);
+  font-size: 0.9rem;
+  opacity: 0.6;
+  filter: grayscale(1);
 }
 
 /* --- Section Bandes-Annonces --- */
+
 .trailers-section {
-    padding: 60px 10%;
-    background-color: #121212;
-    text-align: center;
+  padding: 60px 10%;
+  background-color: #121212;
+  text-align: center;
 }
 
 .trailers-container {
-    display: flex;
-    background-color: #313131; /* Couleur de fond du cadre */
-    border: 4px solid #4a4a4a; /* Bordure épaisse style UI */
-    margin-top: 30px;
-    max-width: 1000px;
-    margin-left: auto;
-    margin-right: auto;
-    min-height: 450px;
+  display: flex;
+  background-color: #313131; /* Couleur de fond du cadre */
+  border: 4px solid #4a4a4a; /* Bordure épaisse style UI */
+  margin-top: 30px;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  min-height: 450px;
 }
 
 /* Onglets à gauche */
+
 .trailers-tabs {
-    width: 30%;
-    display: flex;
-    flex-direction: column;
-    border-right: 4px solid #4a4a4a;
+  width: 30%;
+  display: flex;
+  flex-direction: column;
+  border-right: 4px solid #4a4a4a;
 }
 
 .tab {
-    display: flex;
-    align-items: center;
-    padding: 20px;
-    gap: 15px;
-    cursor: pointer;
-    border-bottom: 1px solid #4a4a4a;
-    transition: background 0.2s;
-    text-align: left;
-    font-weight: bold;
-    font-size: 0.9rem;
-    color: #ccc;
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  gap: 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #4a4a4a;
+  transition: background 0.2s;
+  text-align: left;
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #ccc;
 }
 
 .tab img {
-    width: 24px;
-    height: 24px;
-    image-rendering: pixelated; /* Pour le look rétro si tu as des icônes pixel */
+  width: 24px;
+  height: 24px;
+  image-rendering: pixelated; /* Pour le look rétro si tu as des icônes pixel */
 }
 
 .tab:hover {
-    background-color: #3d3d3d;
+  background-color: #3d3d3d;
 }
 
 .tab.active {
-    background-color: #4a4a4a;
-    color: white;
-    border-left: 4px solid var(--gold); /* Petite barre dorée pour l'onglet actif */
+  background-color: #4a4a4a;
+  color: white;
+  border-left: 4px solid var(--gold); /* Petite barre dorée pour l'onglet actif */
 }
 
 /* --- Ajustements du Lecteur Vidéo --- */
+
 .video-viewer {
-    width: 70%;
-    background-color: #000;
-    padding: 0; /* On retire le padding pour que la vidéo touche les bords du cadre interne */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  width: 70%;
+  background-color: #000;
+  padding: 0; /* On retire le padding pour que la vidéo touche les bords du cadre interne */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-responsive {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
 .video-responsive iframe {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
 }
 
 /* Optionnel : Ajout d'une ombre interne pour le look UI */
+
 .video-viewer {
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 
+/* --- Style des sections de jeux (Style Launcher) --- */
+
+.game-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 100px 10%;
+  min-height: 70vh;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Fonds spécifiques pour chaque jeu */
+
+.blob-escape-hero {
+  background:
+    linear-gradient(to right, #121212 40%, rgba(18, 18, 18, 0.7)),
+    url("ProjetCanvas1/assets/images/gameBackground.png");
+  background-size: cover;
+  background-position: center;
+}
+
+.blobs-revenge-hero {
+  background:
+    linear-gradient(to right, #121212 40%, rgba(18, 18, 18, 0.7)),
+    url("ProjetGOW/assets/menuBackground.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-content {
+  flex: 1;
+  max-width: 550px;
+  z-index: 2;
+}
+
+.game-category {
+  color: var(--gold);
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.hero-content h1 {
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin: 0 0 20px 0;
+  text-transform: uppercase;
+}
+
+.game-description {
+  font-size: 1.1rem;
+  color: #ccc;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+/* Bouton JOUER (Style Vert Minecraft) */
+
+.btn-play {
+  display: inline-block;
+  background-color: #3d8c40;
+  color: white;
+  padding: 18px 45px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  border-bottom: 4px solid #2d662f;
+}
+
+.btn-play:hover {
+  background-color: #4caf50;
+  transform: translateY(-2px);
+}
+
+.btn-play:active {
+  transform: translateY(2px);
+  border-bottom: 0;
+}
+
+/* Image penchée à droite */
+
+.hero-mockup {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  perspective: 1200px;
+}
+
+.mockup-wrapper {
+  transform: rotateY(-20deg) rotateX(5deg);
+  box-shadow: -30px 30px 60px rgba(0, 0, 0, 0.8);
+  border: 4px solid #444;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 500px;
+  transition: transform 0.5s ease;
+}
+
+.mockup-wrapper:hover {
+  transform: rotateY(-10deg) rotateX(2deg);
+}
+
+.mockup-wrapper img {
+  width: 100%;
+  display: block;
+}
+
+.separator {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, #444, transparent);
+  margin: 0;
+}
+
+/* Adaptation de la grille de fonctionnalités du bas */
+
+.features-section {
+  padding: 80px 10%;
+  background: #0f0f0f;
+  text-align: center;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  margin-top: 40px;
+}
+
+/* --- Responsive & Burger Menu --- */
+
+@media (max-width: 900px) {
+  /* Affichage du burger */
+  .burger {
+    display: block;
+    z-index: 1100;
+  }
+
+  /* Transformation du menu en overlay latéral */
+  .nav-links {
+    position: fixed;
+    right: 0px;
+    height: 100vh;
+    top: 0px;
+    background-color: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 60%;
+    transform: translateX(100%);
+    transition: transform 0.5s ease-in;
+    z-index: 1000;
+  }
+
+  .nav-links.nav-active {
+    transform: translateX(0%);
+  }
+
+  .nav-links li {
+    margin: 20px 0;
+  }
+
+  /* Animations du burger (quand actif) */
+  .toggle .line1 {
+    transform: rotate(-45deg) translate(-5px, 6px);
+  }
+  .toggle .line2 {
+    opacity: 0;
+  }
+  .toggle .line3 {
+    transform: rotate(45deg) translate(-5px, -6px);
+  }
+
+  /* Sections de jeux adaptées pour le centrage vertical */
+  .game-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 0 5%;
+    height: 100vh; /* Utilise toute la hauteur de l'écran pour le centrage */
+    justify-content: center; /* Centre verticalement le contenu flex */
+    border-bottom: none;
+  }
+
+  .hero-mockup {
+    display: none;
+  } 
+
+  .hero-content {
+    flex: none; /* Désactive le flex auto pour éviter des décalages */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hero-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+  }
+}
