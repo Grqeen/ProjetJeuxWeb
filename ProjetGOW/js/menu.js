@@ -1,17 +1,13 @@
 export function createMenuScene(engine, startGameCallback, settings) {
     const scene = new BABYLON.Scene(engine);
-    scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1); // Fond sombre bleuté
+    scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1);
 
-    // Image de fond
     const background = new BABYLON.Layer("menuBg", "assets/menuBackground.jpg", scene, true);
 
-    // Caméra basique pour afficher l'UI
     const camera = new BABYLON.FreeCamera("menuCam", new BABYLON.Vector3(0, 0, 0), scene);
 
-    // Création de l'interface
     const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
-    // Compteur FPS pour le menu
     const fpsText = new BABYLON.GUI.TextBlock();
     fpsText.text = "0 FPS";
     fpsText.color = "yellow";
@@ -22,30 +18,27 @@ export function createMenuScene(engine, startGameCallback, settings) {
     fpsText.top = "10px";
     fpsText.isVisible = settings.showFps;
     advancedTexture.addControl(fpsText);
-    scene.fpsText = fpsText; // On l'attache à la scène pour que main.js puisse le mettre à jour
+    scene.fpsText = fpsText;
 
-    // --- STYLES ---
     const createBtn = (text) => {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + text, text);
         btn.width = "300px";
         btn.height = "60px";
-        btn.color = "#FFD700"; // Jaune doré
-        btn.thickness = 0; // Pas de bordure
-        btn.background = "transparent"; // Fond transparent
+        btn.color = "#FFD700";
+        btn.thickness = 0;
+        btn.background = "transparent";
         btn.hoverCursor = "pointer";
         btn.paddingBottom = "10px";
 
-        // Style du texte
         btn.textBlock.fontSize = 35;
         btn.textBlock.fontWeight = "bold";
         btn.textBlock.outlineWidth = 4;
         btn.textBlock.outlineColor = "black";
         btn.textBlock.fontFamily = "Verdana";
 
-        // Effet Hover
         btn.onPointerEnterObservable.add(() => {
             btn.color = "white";
-            btn.textBlock.outlineColor = "#e67e22"; // Orange au survol
+            btn.textBlock.outlineColor = "#e67e22";
             btn.scaleX = 1.1;
             btn.scaleY = 1.1;
         });
@@ -69,7 +62,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         return header;
     };
 
-    // --- ECRAN PRINCIPAL ---
     const mainMenuPanel = new BABYLON.GUI.StackPanel();
     mainMenuPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
     advancedTexture.addControl(mainMenuPanel);
@@ -100,7 +92,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
     });
     mainMenuPanel.addControl(settingsBtn);
 
-    // --- ECRAN PARAMÈTRES ---
     const settingsPanel = new BABYLON.GUI.StackPanel();
     settingsPanel.isVisible = false;
     settingsPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
@@ -113,7 +104,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
 
     settingsPanel.addControl(createHeader("PARAMÈTRES"));
 
-    // 1. VIDEO (Plein écran)
     const videoPanel = new BABYLON.GUI.StackPanel();
     videoPanel.height = "60px";
     videoPanel.isVertical = false;
@@ -141,12 +131,11 @@ export function createMenuScene(engine, startGameCallback, settings) {
     });
     videoPanel.addControl(fsCheckbox);
 
-    // Option FPS (Ajouté à côté du plein écran)
     const fpsLabel = new BABYLON.GUI.TextBlock();
     fpsLabel.text = "Afficher FPS : ";
     fpsLabel.color = "white";
     fpsLabel.width = "150px";
-    fpsLabel.paddingLeft = "20px"; // Espacement
+    fpsLabel.paddingLeft = "20px";
     videoPanel.addControl(fpsLabel);
 
     const fpsCheckbox = new BABYLON.GUI.Checkbox();
@@ -159,7 +148,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
     });
     videoPanel.addControl(fpsCheckbox);
 
-    // 2. GRAPHISMES
     settingsPanel.addControl(createHeader("GRAPHISMES"));
     
     const qualityPanel = new BABYLON.GUI.StackPanel();
@@ -197,7 +185,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         qualityPanel.addControl(btn);
     });
 
-    // 3. TOUCHES
     settingsPanel.addControl(createHeader("TOUCHES"));
 
     const keysContainer = new BABYLON.GUI.ScrollViewer();
@@ -233,7 +220,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
         
         keyBtn.onPointerUpObservable.add(() => {
             keyBtn.textBlock.text = "...";
-            keyBtn.background = "#e74c3c"; // Rouge pendant l'écoute
+            keyBtn.background = "#e74c3c";
             
             const onKeyDown = (evt) => {
                 let key = evt.key.toLowerCase();
@@ -257,8 +244,8 @@ export function createMenuScene(engine, startGameCallback, settings) {
     createKeyRow("Gauche", "left");
     createKeyRow("Droite", "right");
     createKeyRow("Sprint", "sprint");
+    createKeyRow("S'accroupir", "crouch");
 
-    // BOUTON RETOUR
     const backBtn = createBtn("RETOUR");
     backBtn.width = "150px";
     backBtn.height = "40px";

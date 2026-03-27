@@ -1,11 +1,10 @@
 import { limitRadius, getHeight, waterLevel } from "./utils.js";
 
 export function createGrass(scene, count) {
-    // Modèle de base d'une touffe d'herbe (3 plans croisés)
     const grassBlade = BABYLON.MeshBuilder.CreatePlane("grassBlade", {width: 1, height: 1}, scene);
     grassBlade.material = new BABYLON.StandardMaterial("grassMat", scene);
     grassBlade.material.diffuseColor = new BABYLON.Color3(0.2, 0.8, 0.2);
-    grassBlade.material.backFaceCulling = false; // Visible des deux côtés
+    grassBlade.material.backFaceCulling = false;
     
     const grass2 = grassBlade.clone();
     grass2.rotation.y = Math.PI / 3;
@@ -17,10 +16,8 @@ export function createGrass(scene, count) {
     grassTuft.setEnabled(false);
     grassTuft.position.y = -1000;
 
-    // Création des instances
     for (let i = 0; i < count; i++) {
         const r = limitRadius * Math.sqrt(Math.random()) * 0.95;
-        // On évite la zone de l'égout (rayon < 20 pour être large)
         if (r < 20) {
             i--;
             continue;
@@ -31,14 +28,12 @@ export function createGrass(scene, count) {
         const z = r * Math.sin(theta);
         const y = getHeight(x, z);
 
-        // Pas d'herbe sous l'eau
         if (y < waterLevel + 0.2) continue;
 
         const instance = grassTuft.createInstance("grass" + i);
         instance.position = new BABYLON.Vector3(x, y + 0.5, z);
-        // Variation de taille aléatoire
         const scale = 0.5 + Math.random() * 0.5;
         instance.scaling = new BABYLON.Vector3(scale, scale, scale);
-        instance.freezeWorldMatrix(); // OPTIMISATION : L'herbe est statique
+        instance.freezeWorldMatrix();
     }
 }
