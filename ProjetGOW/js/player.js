@@ -20,6 +20,7 @@ export function createPlayer(scene) {
 
     const torso = BABYLON.MeshBuilder.CreateCylinder("torso", { height: 0.9, diameterTop: 0.3, diameterBottom: 0.25 }, scene);
     torso.position.y = 0.15;
+    torso.setPivotPoint(new BABYLON.Vector3(0, -0.45, 0)); // Pivot à la taille pour pouvoir se pencher
     torso.material = mat;
     torso.parent = visualRoot;
 
@@ -50,7 +51,7 @@ export function createPlayer(scene) {
     rightLeg.parent = visualRoot;
 
     // On expose les membres pour les animer dynamiquement dans main.js
-    playerRoot.limbs = { head, leftArm, rightArm, leftLeg, rightLeg };
+    playerRoot.limbs = { head, torso, leftArm, rightArm, leftLeg, rightLeg };
 
     // Tableau vide pour éviter les plantages du main.js qui cherche des animations
     playerRoot.animationGroups = [];

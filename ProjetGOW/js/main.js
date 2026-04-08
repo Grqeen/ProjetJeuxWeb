@@ -563,8 +563,18 @@ window.addEventListener('DOMContentLoaded', async function () {
             // Inclinaison de la caméra (pitch)
             const targetPitch = Math.PI / 2 - camera.beta; 
             
-            // La tête regarde exactement là où la caméra pointe
-            stickman.limbs.head.rotation.x = targetPitch; 
+            // Limite de l'inclinaison pour éviter que le personnage ne se retrouve la tête en bas
+            // On limite le pitch entre -60° et +60° (Math.PI / 3)
+            const maxPitch = Math.PI / 3;
+            const clampedPitch = Math.max(-maxPitch, Math.min(maxPitch, targetPitch));
+
+            // La tête regarde exactement là où la caméra pointe (avec la limite)
+            stickman.limbs.head.rotation.x = clampedPitch; 
+            
+            // Le corps (torse) s'incline pour accompagner le mouvement
+            if (stickman.limbs.torso) {
+                stickman.limbs.torso.rotation.x = clampedPitch * 0.5; // On l'incline à moitié pour un effet naturel
+            }
 
             // Vitesse de déplacement horizontale
             const horizSpeed = Math.sqrt(currentVel.x * currentVel.x + currentVel.z * currentVel.z);
@@ -576,17 +586,17 @@ window.addEventListener('DOMContentLoaded', async function () {
                 stickman.limbs.leftLeg.rotation.x = swingAnim;
                 stickman.limbs.rightLeg.rotation.x = -swingAnim;
                 
-                // Les bras pointent vers la cible (targetPitch) MAIS se balancent aussi en marchant
-                stickman.limbs.leftArm.rotation.x = -swingAnim * 0.5 + targetPitch;
-                stickman.limbs.rightArm.rotation.x = swingAnim * 0.5 + targetPitch;
+                // Les bras pointent vers la cible (clampedPitch) MAIS se balancent aussi en marchant
+                stickman.limbs.leftArm.rotation.x = -swingAnim * 0.5 + clampedPitch;
+                stickman.limbs.rightArm.rotation.x = swingAnim * 0.5 + clampedPitch;
             } else {
                 // Arrêt : retour amorti à la position neutre pour les jambes
                 stickman.limbs.leftLeg.rotation.x *= 0.8;
                 stickman.limbs.rightLeg.rotation.x *= 0.8;
                 
                 // Les bras pointent précisément dans l'axe de visée de la caméra (prêt à tirer)
-                stickman.limbs.leftArm.rotation.x = targetPitch;
-                stickman.limbs.rightArm.rotation.x = targetPitch;
+                stickman.limbs.leftArm.rotation.x = clampedPitch;
+                stickman.limbs.rightArm.rotation.x = clampedPitch;
             }
         }
 
