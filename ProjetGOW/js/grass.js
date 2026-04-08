@@ -34,6 +34,12 @@ export function createGrass(scene, count) {
         instance.position = new BABYLON.Vector3(x, y + 0.5, z);
         const scale = 0.5 + Math.random() * 0.5;
         instance.scaling = new BABYLON.Vector3(scale, scale, scale);
-        instance.freezeWorldMatrix();
+        instance.swayData = {
+            phase: Math.random() * Math.PI * 2,
+            speed: 0.001 + Math.random() * 0.002,
+            amount: 0.02 + Math.random() * 0.03
+        };
+        if (!scene._swayGrass) scene._swayGrass = [];
+        scene._swayGrass.push(instance);
     }
 }
