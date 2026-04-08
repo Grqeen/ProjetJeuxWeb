@@ -10,6 +10,7 @@ import { createWater } from "./water.js";
 import { createBuildings } from "./buildings.js";
 import { createBridges } from "./bridges.js";
 import { createMenuScene } from "./menu.js";
+import { bonusState, showUpgradeMenu, updateBonuses, resetBonuses } from "./bonus.js";
 
 export const gameSettings = {
     fullscreen: false,
@@ -80,6 +81,106 @@ window.addEventListener('DOMContentLoaded', async function () {
         fpsText.isVisible = gameSettings.showFps;
         gameUI.addControl(fpsText);
 
+        // --- UI : KILLS AVANT LE BOSS ---
+        const bossKillsText = new BABYLON.GUI.TextBlock();
+        bossKillsText.text = "Kills : 100";
+        bossKillsText.color = "yellow"; // Rouge
+        bossKillsText.fontSize = 26;
+        bossKillsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        bossKillsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+        bossKillsText.left = "-20px";
+        bossKillsText.top = "10px";
+        gameUI.addControl(bossKillsText);
+
+        // --- UI : BARRE D'XP ---
+        const xpContainer = new BABYLON.GUI.Rectangle();
+        xpContainer.width = "40%";
+        xpContainer.height = "20px";
+        xpContainer.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        xpContainer.top = "-30px";
+        xpContainer.background = "rgba(0, 0, 0, 0.6)";
+        xpContainer.thickness = 2;
+        xpContainer.color = "#bdc3c7"; // Bordure gris clair
+        xpContainer.cornerRadius = 10;
+        gameUI.addControl(xpContainer);
+
+        const xpBar = new BABYLON.GUI.Rectangle();
+        xpBar.width = "0%"; 
+        xpBar.height = "100%";
+        xpBar.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        xpBar.background = "#2980b9"; // Bleu
+        xpBar.thickness = 0;
+        xpBar.cornerRadius = 10;
+        xpContainer.addControl(xpBar);
+
+        // --- UI : BOUTON DEBUG XP (Pour tester les niveaux) ---
+        const debugXpBtn = BABYLON.GUI.Button.CreateSimpleButton("debugXpBtn", "+10 XP");
+        debugXpBtn.width = "100px";
+        debugXpBtn.height = "50px";
+        debugXpBtn.color = "white";
+        debugXpBtn.background = "purple";
+        debugXpBtn.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        debugXpBtn.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+        debugXpBtn.left = "20px";
+        debugXpBtn.thickness = 2;
+        debugXpBtn.cornerRadius = 10;
+        debugXpBtn.onPointerUpObservable.add(() => {
+            if (!gameData || isGamePaused) return; // Désactivé si le jeu est en pause
+            
+            gameData.kills += 10; // Donne 10 kills d'un coup
+            let killsLeft = Math.max(0, 100 - gameData.kills);
+            gameData.bossKillsText.text = "Kills : " + killsLeft;
+
+            let currentLevelKills = gameData.kills - gameData.prevUpgradeKillCount;
+            let requiredKills = gameData.nextUpgradeKillCount - gameData.prevUpgradeKillCount;
+            let progress = Math.min(100, (currentLevelKills / requiredKills) * 100);
+            gameData.xpBar.width = progress + "%";
+
+            if (gameData.kills >= gameData.nextUpgradeKillCount) {
+                showUpgradeMenu(gameData);
+            }
+        });
+        gameUI.addControl(debugXpBtn);
+
+        // --- UI : MENU D'AMÉLIORATION (LEVEL UP) ---
+        const upgradePanel = new BABYLON.GUI.Rectangle();
+        upgradePanel.width = 1;
+        upgradePanel.height = 1;
+        upgradePanel.background = "rgba(0, 0, 0, 0.4)"; // Plus transparent pour voir le jeu
+        upgradePanel.isVisible = false;
+        upgradePanel.zIndex = 100;
+        gameUI.addControl(upgradePanel);
+
+        const upgradeGrid = new BABYLON.GUI.Grid();
+        upgradeGrid.addColumnDefinition(1/3);
+        upgradeGrid.addColumnDefinition(1/3);
+        upgradeGrid.addColumnDefinition(1/3);
+        upgradeGrid.height = "50%";
+        upgradePanel.addControl(upgradeGrid);
+
+        const createUpgradeCard = (titleText, col) => {
+            const card = BABYLON.GUI.Button.CreateSimpleButton("card" + col, titleText);
+            card.width = "250px"; // Forme rectangulaire (style carte)
+            card.height = "380px"; // Hauteur plus importante
+            card.color = "white";
+            card.background = "#2c3e50";
+            card.cornerRadius = 20;
+            card.thickness = 4;
+            card.textBlock.textWrapping = true;
+            card.textBlock.fontSize = 24;
+
+            // Animation au survol
+            card.onPointerEnterObservable.add(() => { card.background = "#34495e"; card.scaleX = 1.05; card.scaleY = 1.05; });
+            card.onPointerOutObservable.add(() => { card.background = "#2c3e50"; card.scaleX = 1.0; card.scaleY = 1.0; });
+
+            upgradeGrid.addControl(card, 0, col);
+            return card;
+        };
+
+        const card1 = createUpgradeCard("Bonus 1\n(À venir)", 0);
+        const card2 = createUpgradeCard("Bonus 2\n(À venir)", 1);
+        const card3 = createUpgradeCard("Bonus 3\n(À venir)", 2);
+
         const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
         light.intensity = 0.4; // Baissée pour donner plus d'impact aux ombres du soleil
 
@@ -108,7 +209,22 @@ window.addEventListener('DOMContentLoaded', async function () {
         camera.lockedTarget = stickman;
         camera.radius = 15; // Ajuste le rayon de la caméra
         
-        const monsters = createMonsters(scene, 15);
+        // --- INITIALISATION DES VAGUES DE MONSTRES ---
+        const monsters = createMonsters(scene, 10); // Vague 1 initiale
+
+        const waveData = {
+            elapsedTime: 0,
+            nextWaveIndex: 1,
+            waves: [
+                { time: 0, count: 20 },
+                { time: 10, count: 30 },   // 10 sec
+                { time: 25, count: 45 },   // 25 sec
+                { time: 50, count: 70 }    // 50 sec
+            ],
+            last2MinTick: 120,
+            last5MinTick: 120,
+            currentBaseCount: 70
+        };
 
         createTrees(scene, 200);
 
@@ -255,7 +371,25 @@ window.addEventListener('DOMContentLoaded', async function () {
         });
         pausePanel.addControl(resumeBtn);
 
-        return { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, pausePanel };
+        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20 };
+
+        sceneData.pauseGame = () => { isGamePaused = true; };
+
+        sceneData.selectUpgrade = () => {
+            sceneData.upgradePanel.isVisible = false;
+            isGamePaused = false;
+            
+            sceneData.prevUpgradeKillCount = sceneData.nextUpgradeKillCount;
+
+            // Augmentation incrémentale du palier requis pour la prochaine amélioration
+            if (sceneData.nextUpgradeKillCount < 100) sceneData.nextUpgradeKillCount += 30; // 20, 50, 80...
+            else if (sceneData.nextUpgradeKillCount < 500) sceneData.nextUpgradeKillCount += 100; // 180, 280...
+            else sceneData.nextUpgradeKillCount += 200; // 680, 880...
+            
+            sceneData.xpBar.width = "0%";
+        };
+
+        return sceneData;
     };
 
     let currentScene = null;
@@ -266,6 +400,7 @@ window.addEventListener('DOMContentLoaded', async function () {
     const startGame = () => {
         if (currentScene) currentScene.dispose();
         
+        resetBonuses();
         const data = createGameScene();
         currentScene = data.scene;
         gameData = data;
@@ -278,6 +413,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 
     window.addEventListener("keydown", (evt) => {
         if (evt.key === "Escape" && gameData) {
+            if (gameData.upgradePanel && gameData.upgradePanel.isVisible) return; // Empêche de quitter le menu d'amélioration avec Echap
             togglePause();
             if (gameData.pausePanel) {
                 gameData.pausePanel.isVisible = isGamePaused;
@@ -311,8 +447,60 @@ window.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        const { stickman, monsters, inputMap, camera, cover, birds, scene } = gameData;
+        const { stickman, monsters, inputMap, camera, cover, birds, scene, waveData } = gameData;
         updateBirds(birds); // Les oiseaux doivent être mis à jour en permanence, quel que soit l'état d'apparition
+
+        const handleMonsterKill = (j) => {
+            if (monsters[j].physicsBody) {
+                monsters[j].physicsBody.dispose();
+            }
+            monsters[j].dispose();
+            monsters.splice(j, 1);
+            
+            gameData.kills++;
+            let killsLeft = Math.max(0, 100 - gameData.kills);
+            if(gameData.bossKillsText) gameData.bossKillsText.text = "Kills : " + killsLeft;
+
+            let currentLevelKills = gameData.kills - gameData.prevUpgradeKillCount;
+            let requiredKills = gameData.nextUpgradeKillCount - gameData.prevUpgradeKillCount;
+            let progress = Math.min(100, (currentLevelKills / requiredKills) * 100);
+            if(gameData.xpBar) gameData.xpBar.width = progress + "%";
+
+            if (gameData.kills >= gameData.nextUpgradeKillCount && !gameData.upgradePanel.isVisible) {
+                showUpgradeMenu(gameData);
+            }
+        };
+
+        updateBonuses(gameData, engine.getDeltaTime() / 1000, handleMonsterKill);
+
+        // --- GESTION DES VAGUES ---
+        waveData.elapsedTime += engine.getDeltaTime() / 1000;
+        const timeInSeconds = waveData.elapsedTime;
+
+        if (waveData.nextWaveIndex < waveData.waves.length) {
+            const nextWave = waveData.waves[waveData.nextWaveIndex];
+            if (timeInSeconds >= nextWave.time) {
+                const newMobs = createMonsters(scene, nextWave.count);
+                monsters.push(...newMobs);
+                waveData.nextWaveIndex++;
+            }
+        } else {
+            // Cycle infini : Chaque 1 min (60s) au lieu de 2 min
+            if (timeInSeconds - waveData.last2MinTick >= 60) {
+                waveData.last2MinTick += 60;
+                waveData.currentBaseCount += 20;
+                const newMobs = createMonsters(scene, waveData.currentBaseCount);
+                monsters.push(...newMobs);
+            }
+            // Cycle infini : Chaque 2.5 min (150s) au lieu de 5 min
+            if (timeInSeconds - waveData.last5MinTick >= 150) {
+                waveData.last5MinTick += 150;
+                waveData.currentBaseCount += 40; // Bonus de difficulté massif
+                const newMobs = createMonsters(scene, waveData.currentBaseCount);
+                monsters.push(...newMobs);
+            }
+        }
+        // --------------------------
 
         let speed = 8.0; // Vitesse réajustée pour les vélocités physiques
         if (stickman.isCrouched) {
@@ -465,17 +653,35 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         monsters.forEach(monster => {
             if (!monster.physicsBody) return;
+            
+            if (monster.stunTime && Date.now() < monster.stunTime) {
+                // Immobilise le monstre
+                const mVel = monster.physicsBody.getLinearVelocity();
+                monster.physicsBody.setLinearVelocity(new BABYLON.Vector3(0, mVel.y, 0));
+                return;
+            } else if (monster.stunTime && Date.now() >= monster.stunTime) {
+                // Retire l'étourdissement
+                monster.stunTime = 0;
+                if (monster.originalMaterial) {
+                    monster.material = monster.originalMaterial;
+                    monster.originalMaterial = null;
+                }
+            }
+
             const direction = stickman.position.subtract(monster.position).normalize();
             const mVel = monster.physicsBody.getLinearVelocity();
-            monster.physicsBody.setLinearVelocity(new BABYLON.Vector3(direction.x * 2.5, mVel.y, direction.z * 2.5));
+            monster.physicsBody.setLinearVelocity(new BABYLON.Vector3(direction.x * 5.5, mVel.y, direction.z * 5.5)); // Vitesse augmentée
         });
 
         const now = Date.now();
-        if (now - lastFireTime > 1000) { 
+        const fireCooldown = Math.max(200, 2500 - (bonusState.fireRateLevel * 400));
+        
+        // --- 1. CRÉATION DES TIRS ---
+        if (now - lastFireTime > fireCooldown) { 
             lastFireTime = now;
 
             let nearestMonster = null;
-            let minDistance = 40;
+            let minDistance = 30; // Visée automatique étendue à 30 mètres (360°)
 
             monsters.forEach(m => {
                 const dist = BABYLON.Vector3.Distance(stickman.position, m.position);
@@ -487,33 +693,60 @@ window.addEventListener('DOMContentLoaded', async function () {
 
             let targetDir;
             if (nearestMonster) {
+                // Amélioration de la visée automatique
                 const targetPos = nearestMonster.position.clone();
-                targetDir = targetPos.subtract(stickman.position).normalize();
+                targetPos.y += 1.2; // On tire à l'horizontale (à la même hauteur que le bras) pour ne plus plonger dans le sol
+                
+                const startPos = stickman.position.clone();
+                startPos.y += 1.2; // Le point de départ réel de la boule de feu
+                
+                const dir = targetPos.subtract(startPos);
+                if (dir.length() < 0.1) {
+                    targetDir = camera.getForwardRay().direction;
+                } else {
+                    targetDir = dir.normalize();
+                }
             } else {
                 targetDir = camera.getForwardRay().direction; // Le tir prend l'angle vertical de la caméra
             }
 
-            const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
-            fireball.position = stickman.position.clone();
-            fireball.position.y += 1.2;
+            let numProjectiles = 1 + (bonusState.extraProjectilesLevel || 0);
+            let speedMult = 1 + (bonusState.extraProjectilesLevel || 0) * 0.2;
 
-            const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
-            fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0); 
-            fireball.material = fireMat;
+            for (let i = 0; i < numProjectiles; i++) {
+                let currentDir = targetDir;
+                if (numProjectiles > 1) {
+                    let angleOffset = (i - (numProjectiles - 1) / 2) * 0.2; // Écart de 0.2 radians entre chaque tir
+                    let rotMat = BABYLON.Matrix.RotationY(angleOffset);
+                    currentDir = BABYLON.Vector3.TransformNormal(targetDir, rotMat);
+                }
 
-            const fireballAgg = new BABYLON.PhysicsAggregate(fireball, BABYLON.PhysicsShapeType.SPHERE, { mass: 0.1, restitution: 0 }, scene);
-            fireballAgg.body.setLinearVelocity(targetDir.scale(25));
-            projectiles.push({ mesh: fireball, life: 60 });
+                const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
+                fireball.position = stickman.position.clone();
+                fireball.position.y += 1.2;
+
+                const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
+                fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0); 
+                fireball.material = fireMat;
+
+                // Plus de moteur physique pour la boule = 0 rebond imprévu et meilleures performances
+                projectiles.push({ mesh: fireball, life: 60, direction: currentDir, speedMult: speedMult });
+            }
         }
 
+        // --- 2. DÉPLACEMENT ET COLLISIONS DES TIRS ---
         for (let i = 0; i < projectiles.length; i++) {
             const p = projectiles[i];
             p.life--;
 
+            // Déplacement manuel de la boule basé sur le temps et les bonus
+            let speed = 80 * (p.speedMult || 1) * (engine.getDeltaTime() / 1000);
+            p.mesh.position.addInPlace(p.direction.scale(speed));
+
             for (let j = 0; j < monsters.length; j++) {
-                if (BABYLON.Vector3.Distance(p.mesh.position, monsters[j].position) < 1.5) {
-                    monsters[j].dispose();
-                    monsters.splice(j, 1);
+                // Hitbox généreuse (2.8) pour tuer instantanément les mobs collés (au-dessus, en-dessous, à côté)
+                if (BABYLON.Vector3.Distance(p.mesh.position, monsters[j].position) < 2.8) {
+                    handleMonsterKill(j);
                     p.life = 0;
                     break;
                 }
