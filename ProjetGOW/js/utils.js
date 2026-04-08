@@ -2,7 +2,7 @@ import { createNoise2D } from 'https://esm.sh/simplex-noise';
 
 export const mapSize = 1000;
 export const limitRadius = 400;
-export const waterLevel = -1.5;
+export const waterLevel = -2.5; // On remonte légèrement pour ajouter quelques lacs
 
 const noise2D = createNoise2D(Math.random);
 

@@ -31,7 +31,7 @@ export function createSewer(scene) {
     cover.parent = sewerGroup;
 
     const coverAgg = new BABYLON.PhysicsAggregate(cover, BABYLON.PhysicsShapeType.CYLINDER, { mass: 0 }, scene);
-    coverAgg.body.disablePreStep = false;
+    coverAgg.body.setMotionType(BABYLON.PhysicsMotionType.ANIMATED);
 
     const ladderLeft = BABYLON.MeshBuilder.CreateCylinder("ladderL", {height: 3, diameter: 0.1}, scene);
     ladderLeft.position = new BABYLON.Vector3(-0.4, -1.5, -0.4);

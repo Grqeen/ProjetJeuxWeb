@@ -26,6 +26,10 @@ export function createTrees(scene, count) {
             const instance = treeModel.instantiateHierarchy();
             
             instance.setEnabled(true);
+            
+            if (scene.shadowGenerator) {
+                scene.shadowGenerator.addShadowCaster(instance, true); // L'arbre projette une ombre
+            }
 
             const scale = 4.0 + Math.random() * 3.0;
             instance.scaling = new BABYLON.Vector3(scale, scale, scale);
@@ -40,6 +44,12 @@ export function createTrees(scene, count) {
             instance.rotation.y = Math.random() * Math.PI * 2;
             
             instance.freezeWorldMatrix();
+            
+            // --- AJOUT DES COLLISIONS POUR L'ARBRE (Hitbox cylindrique invisible sur le tronc) ---
+            const trunkCollider = BABYLON.MeshBuilder.CreateCylinder("trunkCollider" + i, { height: scale * 2.5, diameter: scale * 0.35 }, scene);
+            trunkCollider.position = new BABYLON.Vector3(x, y + (scale * 1.25), z);
+            trunkCollider.isVisible = false;
+            new BABYLON.PhysicsAggregate(trunkCollider, BABYLON.PhysicsShapeType.CYLINDER, { mass: 0, friction: 0.8 }, scene);
         }
     });
 }

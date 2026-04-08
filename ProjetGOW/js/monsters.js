@@ -21,6 +21,10 @@ export function createMonsters(scene, count) {
         monster.position = new BABYLON.Vector3(x, y, z);
         monster.material = monsterMat;
         
+        if (scene.shadowGenerator) {
+            scene.shadowGenerator.addShadowCaster(monster);
+        }
+        
         const monsterAgg = new BABYLON.PhysicsAggregate(monster, BABYLON.PhysicsShapeType.SPHERE, { mass: 1, friction: 0.1 }, scene);
         monsterAgg.body.setMassProperties({ inertia: new BABYLON.Vector3(0, 0, 0) });
         monsterAgg.body.disablePreStep = false;

@@ -52,6 +52,9 @@ window.addEventListener('DOMContentLoaded', async function () {
     const createGameScene = function () {
         const scene = new BABYLON.Scene(engine);
         
+        // Active les collisions globales pour la caméra
+        scene.collisionsEnabled = true;
+        
         const hk = new BABYLON.HavokPlugin(true, havokInstance);
         scene.enablePhysics(new BABYLON.Vector3(0, -9.81, 0), hk);
         
@@ -60,7 +63,10 @@ window.addEventListener('DOMContentLoaded', async function () {
         const camera = new BABYLON.ArcRotateCamera("camera1", -Math.PI / 2, 1.0, 8, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
         
+        camera.checkCollisions = true; // Empêche la caméra de traverser le sol
+        camera.collisionRadius = new BABYLON.Vector3(0.5, 0.5, 0.5); // Taille de la "boîte" de la caméra
         camera.upperBetaLimit = Math.PI / 2 - 0.05;
+        camera.maxZ = 2000; // On augmente la distance de vue pour voir toute la map sans coupure
 
         const gameUI = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("gameUI", true, scene);
         const fpsText = new BABYLON.GUI.TextBlock();
@@ -75,20 +81,33 @@ window.addEventListener('DOMContentLoaded', async function () {
         gameUI.addControl(fpsText);
 
         const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-        light.intensity = 0.7;
+        light.intensity = 0.4; // Baissée pour donner plus d'impact aux ombres du soleil
+
+        // --- AJOUT DE LA LUMIÈRE DIRECTIONNELLE ET DES OMBRES ---
+        const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -0.5), scene);
+        dirLight.position = new BABYLON.Vector3(100, 100, 50);
+        dirLight.intensity = 0.8;
+
+        // Optimisation dynamique des ombres (Cascades) : 
+        // HD de près, basse qualité de loin, ignoré derrière la caméra
+        const shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, dirLight);
+        shadowGenerator.lambda = 0.7; // Priorité à la zone proche du joueur
+        shadowGenerator.shadowMaxZ = 120; // Ne calcule plus les ombres au-delà de 120m
+        shadowGenerator.usePercentageCloserFiltering = true; // Flou performant
+        scene.shadowGenerator = shadowGenerator; // Expose globalement au niveau de la scène
 
         createTerrain(scene);
 
         const stickman = createPlayer(scene);
+        stickman.position = new BABYLON.Vector3(0, 3.0, 0); // Positionne le joueur directement au-dessus de l'égout
         
         const playerAgg = new BABYLON.PhysicsAggregate(stickman, BABYLON.PhysicsShapeType.CAPSULE, { mass: 1, friction: 0, restitution: 0 }, scene);
         playerAgg.body.setMassProperties({ inertia: new BABYLON.Vector3(0, 0, 0) });
-        playerAgg.body.disablePreStep = false;
-        playerAgg.body.disable(); // On désactive la physique pendant l'animation d'apparition
-        
-        stickman.position = new BABYLON.Vector3(0, -5, 0);
-        
+        stickman.physicsBody = playerAgg.body;
 
+        camera.lockedTarget = stickman;
+        camera.radius = 15; // Ajuste le rayon de la caméra
+        
         const monsters = createMonsters(scene, 15);
 
         createTrees(scene, 200);
@@ -246,6 +265,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 
     const startGame = () => {
         if (currentScene) currentScene.dispose();
+        
         const data = createGameScene();
         currentScene = data.scene;
         gameData = data;
@@ -254,10 +274,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         lastFireTime = 0;
     };
 
-    currentScene = createMenuScene(engine, startGame, gameSettings);
-
-    let spawnState = "waiting"; 
-    setTimeout(() => { spawnState = "opening"; }, 1000);
+    currentScene = createMenuScene(engine, startGame, gameSettings); // Initialise la scène du menu
 
     window.addEventListener("keydown", (evt) => {
         if (evt.key === "Escape" && gameData) {
@@ -295,48 +312,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         }
 
         const { stickman, monsters, inputMap, camera, cover, birds, scene } = gameData;
-
-        updateBirds(birds);
-
-        if (spawnState !== "finished") {
-            if (spawnState === "opening") {
-                cover.position.x += 0.02;
-                cover.rotation.y += 0.05;
-                if (cover.position.x > 1.2) {
-                    spawnState = "climbing";
-                }
-            } else if (spawnState === "climbing") {
-                stickman.position.y += 0.03;
-                stickman.rotation.z = Math.sin(stickman.position.y * 5) * 0.1;
-
-                const climbGroup = stickman.animationGroups.find(ag => ag.name === "Ladder_Climb" || ag.name.toLowerCase().includes("climb"));
-                if (climbGroup && !climbGroup.isPlaying) {
-                    stickman.animationGroups.forEach(ag => ag.stop());
-                    climbGroup.start(true);
-                }
-
-                if (stickman.position.y >= 3.0) {
-                    stickman.position.y = 3.0;
-                    stickman.rotation.z = 0;
-                    spawnState = "closing";
-                }
-            } else if (spawnState === "closing") {
-                cover.position.x -= 0.04;
-                cover.rotation.y -= 0.1;
-                
-                if (cover.position.x <= 0) {
-                    cover.position.x = 0;
-                    cover.rotation.y = 0;
-                    spawnState = "finished";
-
-                    stickman.physicsBody.enable(); // Activation de la physique une fois apparu
-                    camera.lockedTarget = stickman;
-                    camera.radius = 15;
-                }
-            }
-            scene.render();
-            return;
-        }
+        updateBirds(birds); // Les oiseaux doivent être mis à jour en permanence, quel que soit l'état d'apparition
 
         let speed = 8.0; // Vitesse réajustée pour les vélocités physiques
         if (stickman.isCrouched) {
@@ -354,10 +330,14 @@ window.addEventListener('DOMContentLoaded', async function () {
         const forward = new BABYLON.Vector3(-Math.cos(camera.alpha), 0, -Math.sin(camera.alpha));
         const right = new BABYLON.Vector3(-Math.sin(camera.alpha), 0, Math.cos(camera.alpha));
 
-        stickman.rotationQuaternion = null;
-        stickman.rotation.y = Math.atan2(forward.x, forward.z);
-        stickman.rotation.x = 0;
-        stickman.rotation.z = 0;
+        const targetYaw = Math.atan2(forward.x, forward.z);
+        if (stickman.rotationQuaternion) {
+            BABYLON.Quaternion.FromEulerAnglesToRef(0, targetYaw, 0, stickman.rotationQuaternion);
+        } else {
+            stickman.rotation.y = targetYaw;
+            stickman.rotation.x = 0;
+            stickman.rotation.z = 0;
+        }
 
         if (inputMap[gameSettings.keys.forward]) {
             moveVector.addInPlace(forward);
@@ -378,10 +358,49 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         const rayOrigin = stickman.position.clone();
         const groundRay = new BABYLON.Ray(rayOrigin, new BABYLON.Vector3(0, -1, 0), 2.2);
-        const hit = scene.pickWithRay(groundRay, (mesh) => mesh.isPickable && mesh !== stickman);
+        // Optimisation CPU : Le rayon ne scanne QUE le sol et les bâtiments, ignorant l'herbe et les arbres
+        const hit = scene.pickWithRay(groundRay, (mesh) => {
+            return mesh.name === "ground" || mesh.name.startsWith("building");
+        });
         const isGrounded = hit.hit;
 
+        if (!stickman.physicsBody) {
+            scene.render();
+            return;
+        }
         const currentVel = stickman.physicsBody.getLinearVelocity();
+
+        // --- ANIMATION DYNAMIQUE (PAS STATIQUE) ET ADAPTATION À LA CAMÉRA ---
+        if (stickman.limbs) {
+            // Inclinaison de la caméra (pitch)
+            const targetPitch = Math.PI / 2 - camera.beta; 
+            
+            // La tête regarde exactement là où la caméra pointe
+            stickman.limbs.head.rotation.x = targetPitch; 
+
+            // Vitesse de déplacement horizontale
+            const horizSpeed = Math.sqrt(currentVel.x * currentVel.x + currentVel.z * currentVel.z);
+            const walkCycle = Date.now() * 0.015;
+
+            if (horizSpeed > 1) {
+                // Animation de marche : balancement des jambes
+                const swingAnim = Math.sin(walkCycle) * 0.8;
+                stickman.limbs.leftLeg.rotation.x = swingAnim;
+                stickman.limbs.rightLeg.rotation.x = -swingAnim;
+                
+                // Les bras pointent vers la cible (targetPitch) MAIS se balancent aussi en marchant
+                stickman.limbs.leftArm.rotation.x = -swingAnim * 0.5 + targetPitch;
+                stickman.limbs.rightArm.rotation.x = swingAnim * 0.5 + targetPitch;
+            } else {
+                // Arrêt : retour amorti à la position neutre pour les jambes
+                stickman.limbs.leftLeg.rotation.x *= 0.8;
+                stickman.limbs.rightLeg.rotation.x *= 0.8;
+                
+                // Les bras pointent précisément dans l'axe de visée de la caméra (prêt à tirer)
+                stickman.limbs.leftArm.rotation.x = targetPitch;
+                stickman.limbs.rightArm.rotation.x = targetPitch;
+            }
+        }
 
         if (stickman.animationGroups && stickman.animationGroups.length > 0) {
             let targetAnimName = "Idle";
@@ -471,7 +490,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                 const targetPos = nearestMonster.position.clone();
                 targetDir = targetPos.subtract(stickman.position).normalize();
             } else {
-                targetDir = stickman.getDirection(BABYLON.Axis.Z).normalize();
+                targetDir = camera.getForwardRay().direction; // Le tir prend l'angle vertical de la caméra
             }
 
             const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);

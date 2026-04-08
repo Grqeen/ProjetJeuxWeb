@@ -35,6 +35,10 @@ export function createBuildings(scene, count) {
     if (buildings.length > 0) {
         const mergedBuildings = BABYLON.Mesh.MergeMeshes(buildings, true, true, undefined, false, true);
         mergedBuildings.freezeWorldMatrix();
+        mergedBuildings.receiveShadows = true; // Les bâtiments reçoivent les ombres des autres
+        if (scene.shadowGenerator) {
+            scene.shadowGenerator.addShadowCaster(mergedBuildings);
+        }
         new BABYLON.PhysicsAggregate(mergedBuildings, BABYLON.PhysicsShapeType.MESH, { mass: 0, friction: 0.5, restitution: 0 }, scene);
     }
 }
