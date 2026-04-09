@@ -108,3 +108,30 @@ export function createMonsters(scene, count) {
 
     return monsters;
 }
+
+export function createBoss(scene) {
+    const bossMat = new BABYLON.StandardMaterial("bossMat", scene);
+    bossMat.diffuseColor = new BABYLON.Color3(0.6, 0.1, 0.8); // Violet sombre
+    bossMat.emissiveColor = new BABYLON.Color3(0.2, 0.0, 0.3); // Légère luisance
+
+    // Le boss est un énorme cylindre pour l'instant
+    const boss = BABYLON.MeshBuilder.CreateCylinder("boss", {height: 6, diameter: 4}, scene);
+    boss.material = bossMat;
+    boss.isVisible = true;
+
+    boss._type = 'boss';
+    boss._hp = 400; // Beaucoup de points de vie
+    boss.maxHp = 400;
+    boss.ai = { speed: 4.0 };
+    boss._castsShadow = false;
+    
+    // Pattern parameters
+    boss._lastJumpTime = 0;
+    boss._isJumping = false;
+
+    // Ajouter à la liste pour les ombres potentiellement
+    if (!scene._registeredMonsters) scene._registeredMonsters = [];
+    scene._registeredMonsters.push(boss);
+
+    return boss;
+}

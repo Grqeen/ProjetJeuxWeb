@@ -1,7 +1,7 @@
 import { getHeight, limitRadius, waterLevel } from "./utils.js";
 import { createTerrain } from "./terrain.js";
 import { createPlayer } from "./player.js";
-import { createMonsters } from "./monsters.js";
+import { createMonsters, createBoss } from "./monsters.js";
 import { createTrees } from "./trees.js";
 import { createSewer } from "./sewer.js";
 import { createGrass } from "./grass.js";
@@ -102,10 +102,11 @@ window.addEventListener('DOMContentLoaded', async function () {
         fpsText.color = "yellow";
         fpsText.fontSize = 24;
         fpsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        // Show FPS bottom-left when enabled
-        fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        // Show FPS upper-left just below hp enabled
+        fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         fpsText.left = "10px";
-        fpsText.bottom = "10px";
+        fpsText.top = "42px";
+        fpsText.bottom = null;
         fpsText.isVisible = gameSettings.showFps;
         gameUI.addControl(fpsText);
 
@@ -304,7 +305,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         camera.radius = 15; // Ajuste le rayon de la caméra
         // store base radius and sprint zoom params for dynamic camera effects
         camera._baseRadius = camera.radius;
-        camera._sprintZoom = 3.0; // how much the camera zooms in when sprinting
+        camera._sprintZoom = 0.4; // how much the camera zooms in when sprinting (très peu)
         camera._sprintLerp = 0.12; // smoothing
         
         // --- INITIALISATION DES VAGUES DE MONSTRES ---
@@ -408,9 +409,9 @@ window.addEventListener('DOMContentLoaded', async function () {
             if (fpsText) {
                 fpsText.isVisible = v;
                 if (v) {
-                    fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-                    fpsText.bottom = "10px";
-                    fpsText.top = null;
+                    fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+                    fpsText.bottom = null;
+                    fpsText.top = "42px";
                     fpsText.left = "10px";
                 }
             }
@@ -840,8 +841,32 @@ window.addEventListener('DOMContentLoaded', async function () {
                 }
             } catch(e) {}
 
-            let killsLeft = Math.max(0, 100 - gameData.kills);
-            if(gameData.bossKillsText) gameData.bossKillsText.text = "Kills : " + killsLeft;
+            if (monsters[j] && monsters[j]._type === 'boss') {
+                if (gameData.bossKillsText) {
+                    gameData.bossKillsText.text = "VICTOIRE !";
+                    gameData.bossKillsText.color = "gold";
+                }
+            } else {
+                let killsLeft = Math.max(0, 100 - gameData.kills);
+                if(gameData.bossKillsText) gameData.bossKillsText.text = "Kills : " + killsLeft;
+
+                if (killsLeft === 0 && !gameData.bossSpawned) {
+                    gameData.bossSpawned = true;
+                    setTimeout(() => {
+                        monsters.forEach(m => {
+                            try { m.dispose(); } catch(e){}
+                            if (m.physicsAgg) { try { m.physicsAgg.body.dispose(); m.physicsAgg.dispose(); } catch(e){} }
+                            if (m.physicsProxy) { try { m.physicsProxy.dispose(); } catch(e){} }
+                        });
+                        monsters.length = 0;
+                        const boss = createBoss(scene);
+                        const bx = stickman.position.x + (Math.random() > 0.5 ? 30 : -30);
+                        const bz = stickman.position.z + (Math.random() > 0.5 ? 30 : -30);
+                        boss.position = new BABYLON.Vector3(bx, 20, bz);
+                        monsters.push(boss);
+                    }, 50);
+                }
+            }
             let currentLevelKills = gameData.kills - gameData.prevUpgradeKillCount;
             let baseRequired = gameData.nextUpgradeKillCount - gameData.prevUpgradeKillCount;
             // Apply xpBoost as additional fractional progress towards next upgrade
@@ -872,14 +897,14 @@ window.addEventListener('DOMContentLoaded', async function () {
         waveData.elapsedTime += dt;
         const timeInSeconds = waveData.elapsedTime;
 
-        if (waveData.nextWaveIndex < waveData.waves.length) {
+        if (!gameData.bossSpawned && waveData.nextWaveIndex < waveData.waves.length) {
             const nextWave = waveData.waves[waveData.nextWaveIndex];
             if (timeInSeconds >= nextWave.time) {
                 const newMobs = createMonsters(scene, nextWave.count);
                 monsters.push(...newMobs);
                 waveData.nextWaveIndex++;
             }
-        } else {
+        } else if (!gameData.bossSpawned) {
             // Cycle infini : Chaque 1 min (60s) au lieu de 2 min
             if (timeInSeconds - waveData.last2MinTick >= 60) {
                 waveData.last2MinTick += 60;
@@ -1068,9 +1093,103 @@ window.addEventListener('DOMContentLoaded', async function () {
         }
 
         monsters.forEach(monster => {
-            // monster is an InstancedMesh with optional dynamic physicsAgg
             const nowMs = Date.now();
             const distToPlayer = BABYLON.Vector3.Distance(monster.position, stickman.position);
+
+            if (monster._type === 'boss') {
+                if (monster._isJumping) {
+                    monster.position.y -= 25 * dt; // Chute rapide
+                    const dir = stickman.position.subtract(monster.position);
+                    dir.y = 0;
+                    if (dir.length() > 0.1) {
+                        dir.normalize();
+                        monster.position.addInPlace(dir.scale(8 * dt)); // Ajuste sa chute vers le joueur
+                    }
+                    if (monster.position.y <= getHeight(monster.position.x, monster.position.z) + 3) {
+                        monster.position.y = getHeight(monster.position.x, monster.position.z) + 3;
+                        monster._isJumping = false;
+                        monster._lastJumpTime = nowMs;
+                        
+                        try { if (gameData.shakeCamera) gameData.shakeCamera(0.6, 600); } catch(e){}
+                        try { if (gameData.explosionSound) gameData.explosionSound.play(); } catch(e){}
+                        
+                        // Onde de choc (anneau texturé)
+                        const sw = BABYLON.MeshBuilder.CreateTorus("shockwave", {diameter: 6, thickness: 1}, scene);
+                        sw.position = monster.position.clone();
+                        sw.position.y = getHeight(sw.position.x, sw.position.z) + 0.5;
+                        const swMat = new BABYLON.StandardMaterial("swMat", scene);
+                        swMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0);
+                        swMat.alpha = 0.8; 
+                        swMat.disableLighting = true;
+                        sw.material = swMat;
+                        
+                        let swAge = 0;
+                        scene.onBeforeRenderObservable.add(function expandSW() {
+                            const sdt = engine.getDeltaTime() / 1000;
+                            swAge += sdt;
+                            sw.scaling.scaleInPlace(1 + 8 * sdt);
+                            sw.material.alpha -= 0.8 * sdt;
+                            
+                            if (!sw._hitPlayer && BABYLON.Vector3.Distance(stickman.position, sw.position) < (sw.scaling.x * 3)) {
+                                sw._hitPlayer = true;
+                                gameData.health = Math.max(0, gameData.health - 25);
+                                if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
+                                if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
+                                try { if (gameData.shakeCamera) gameData.shakeCamera(0.4, 300); } catch(e){}
+                            }
+                            if (swAge > 1.2) {
+                                sw.dispose();
+                                scene.onBeforeRenderObservable.removeCallback(expandSW);
+                            }
+                        });
+                    }
+                } else {
+                    const dir = stickman.position.subtract(monster.position);
+                    dir.y = 0;
+                    if (dir.length() > 0.1) {
+                        dir.normalize();
+                        monster.position.addInPlace(dir.scale(monster.ai.speed * dt));
+                    }
+                    monster.position.y = getHeight(monster.position.x, monster.position.z) + 3;
+                    
+                    if (nowMs - monster._lastJumpTime > 6000) {
+                        monster._isJumping = true;
+                        monster.position.y += 20; // Propulsé en l'air
+                    }
+                    if (distToPlayer < 4) {
+                        if (!monster.lastHitTime || nowMs - monster.lastHitTime > 1000) {
+                            monster.lastHitTime = nowMs;
+                            gameData.health = Math.max(0, gameData.health - 15);
+                            if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
+                            if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
+                        }
+                    }
+                }
+                
+                // Barre de vie du boss visuelle (au-dessus de sa tête)
+                if (!monster._hpBarUI) {
+                    try {
+                        const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+                        const container = new BABYLON.GUI.Rectangle();
+                        container.width = "100px"; container.height = "15px";
+                        container.thickness = 1; container.background = "black";
+                        advancedTexture.addControl(container);
+                        container.linkWithMesh(monster);
+                        container.linkOffsetY = -100;
+                        const hpBar = new BABYLON.GUI.Rectangle();
+                        hpBar.width = "100%"; hpBar.height = "100%";
+                        hpBar.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+                        hpBar.background = "red"; hpBar.thickness = 0;
+                        container.addControl(hpBar);
+                        monster._hpBarUI = { root: advancedTexture, bar: hpBar, container };
+                        monster.onDisposeObservable.add(() => advancedTexture.dispose());
+                    } catch(e){}
+                } else {
+                    monster._hpBarUI.bar.width = Math.max(0, (monster._hp / monster.maxHp) * 100) + "%";
+                }
+                
+                return; // Skips generic AI for the boss
+            }
 
             // Handle stun
             if (monster.stunTime && nowMs < monster.stunTime) {
