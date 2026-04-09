@@ -55,6 +55,7 @@ export default class Game {
         this.activeSpeedBoost = 0;
         this.running = false;
         this.onFinish = null; // Callback appelé quand le jeu est fini
+        this.maxLevel = null; // Si défini, le jeu s'arrête après ce niveau
         this.selectedObject = null; // Objet sélectionné dans l'éditeur
 
         // Compte à rebours
@@ -924,6 +925,13 @@ export default class Game {
     if (this.onLevelComplete) {
       let elapsed = (Date.now() - this.startTime) / 1000;
       this.onLevelComplete(this.currentLevel, elapsed);
+    }
+
+    // Vérifier si on a atteint le niveau max défini
+    if (this.maxLevel && this.currentLevel >= this.maxLevel) {
+      this.running = false;
+      if (this.onFinish) this.onFinish();
+      return;
     }
 
     // niveau +1

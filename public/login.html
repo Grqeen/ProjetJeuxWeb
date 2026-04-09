@@ -67,12 +67,18 @@
       </form>
 
       <p style="margin-top: 25px; font-size: 0.9rem;">
-        Pas encore de compte ? <a href="register.html" style="color: var(--gold); text-decoration: underline;">S'inscrire</a>
+        Pas encore de compte ? <a id="register-link" href="register.html" style="color: var(--gold); text-decoration: underline;">S'inscrire</a>
       </p>
     </div>
   </main>
 
   <script>
+    // Transmettre le paramètre redirect au lien register
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect');
+    if (redirect) {
+        document.getElementById('register-link').href = `register.html?redirect=${encodeURIComponent(redirect)}`;
+    }
     document.getElementById('login-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value;
@@ -93,8 +99,10 @@
                 // Sauvegarde du token JWT pour les requêtes futures
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('username', data.username);
-                // Redirection vers les classements
-                window.location.href = 'classements.html';
+                // Redirection : vers la page d'origine si redirect param, sinon classements
+                const params = new URLSearchParams(window.location.search);
+                const redirectTo = params.get('redirect') || 'classements.html';
+                window.location.href = redirectTo;
             }
         } catch (err) {
             errorDiv.innerText = "Erreur de connexion au serveur.";

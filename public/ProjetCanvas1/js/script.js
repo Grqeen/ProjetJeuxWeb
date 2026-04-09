@@ -38,6 +38,24 @@ async function init() {
   // scroll haut
   window.scrollTo(0, 0);
 
+  // auth status
+  const authStatusMenu = document.getElementById("authStatusMenu");
+  if(authStatusMenu) {
+      const token = localStorage.getItem("token");
+      const username = localStorage.getItem("username");
+      if(token && username) {
+          authStatusMenu.innerHTML = `Connecté en tant que <span>${username}</span> <br><a href="#" id="menuLogoutBtn">Déconnexion</a>`;
+          document.getElementById('menuLogoutBtn').onclick = (e) => {
+              e.preventDefault();
+              localStorage.removeItem("token");
+              localStorage.removeItem("username");
+              window.location.reload();
+          };
+      } else {
+          authStatusMenu.innerHTML = `<a href="../login.html?redirect=/ProjetCanvas1/index.html">Se connecter</a>`;
+      }
+  }
+
   let canvas = document.querySelector("#myCanvas");
   let menu = document.querySelector("#gameMenu");
   let startBtn = document.querySelector("#startButton");
@@ -1475,7 +1493,7 @@ async function init() {
   };
 
   // callback fin
-  game.onFinish = () => {
+  game.onFinish = async () => {
     menu.style.display = "none";
     sidebar.style.display = "none";
     menuBackground.style.display = "block";
@@ -1486,6 +1504,45 @@ async function init() {
     // unlock modifs
     let modifiers = document.querySelectorAll("#modifiersContainer input");
     modifiers.forEach((input) => (input.disabled = false));
+
+    // Calcul du temps total
+    let totalSeconds = Object.values(bestTimes).reduce((a, b) => a + b, 0);
+    let totalTime = parseFloat(totalSeconds.toFixed(2));
+    let timeDisplay = totalTime.toFixed(2) + "s";
+    
+    // Status message dans winMenu
+    let existingMsg = document.getElementById('winScoreMsg');
+    if (!existingMsg) {
+        existingMsg = document.createElement('p');
+        existingMsg.id = 'winScoreMsg';
+        existingMsg.style.color = "gold";
+        existingMsg.style.marginBottom = "20px";
+        winMenu.insertBefore(existingMsg, document.getElementById('btnWinRestart'));
+    }
+
+    const token = localStorage.getItem("token");
+    if (token) {
+        existingMsg.innerText = `Enregistrement du temps (${timeDisplay})...`;
+        try {
+            const res = await fetch('/api/scores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ gameId: 'escape', score: totalTime })
+            });
+            if (res.ok) {
+                existingMsg.innerText = `Ton temps de ${timeDisplay} a été sauvegardé au classement !`;
+            } else {
+                existingMsg.innerText = `Erreur lors de la sauvegarde du temps.`;
+            }
+        } catch(e) {
+            existingMsg.innerText = `Impossible de joindre le serveur.`;
+        }
+    } else {
+        existingMsg.innerHTML = `Score potentiel : ${finalScore} pts.<br><a href="../login.html" style="color:white; text-decoration:underline;">Connecte-toi pour l'enregistrer la prochaine fois !</a>`;
+    }
   };
 
   startBtn.onclick = () => {

@@ -7,9 +7,11 @@ const authMiddleware = require('../middleware/auth');
 router.get('/:gameId', async (req, res) => {
   try {
     const { gameId } = req.params;
-    // Trier par score décroissant, limiter à 10, et récupérer le username
+    // Pour 'escape', trier par temps croissant (le plus rapide en premier)
+    // Pour les autres jeux, trier par score décroissant
+    const sortOrder = gameId === 'escape' ? 1 : -1;
     const topScores = await Score.find({ gameId })
-                                 .sort({ score: -1 })
+                                 .sort({ score: sortOrder })
                                  .limit(10)
                                  .populate('user', 'username');
     
@@ -27,17 +29,40 @@ router.get('/:gameId', async (req, res) => {
   }
 });
 
-// Enregistrer un nouveau score (nécessite d'être connecté)
+// Enregistrer ou mettre à jour un score (nécessite d'être connecté)
+// Un seul score par joueur par jeu, mis à jour uniquement si meilleur
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { gameId, score } = req.body;
-    const newScore = new Score({
-      user: req.user.userId,
-      gameId,
-      score
-    });
-    await newScore.save();
-    res.status(201).json({ message: "Score enregistré avec succès !", score: newScore });
+    
+    // Chercher si le joueur a déjà un score pour ce jeu
+    const existing = await Score.findOne({ user: req.user.userId, gameId });
+    
+    if (existing) {
+      // Pour 'escape' : le meilleur temps = le plus bas
+      // Pour les autres jeux : le meilleur score = le plus haut
+      const isBetter = gameId === 'escape' 
+        ? score < existing.score 
+        : score > existing.score;
+      
+      if (isBetter) {
+        existing.score = score;
+        existing.date = Date.now();
+        await existing.save();
+        res.status(200).json({ message: "Nouveau record ! Temps mis à jour.", score: existing });
+      } else {
+        res.status(200).json({ message: "Ton record actuel est meilleur, pas de mise à jour." });
+      }
+    } else {
+      // Premier score pour ce joueur sur ce jeu
+      const newScore = new Score({
+        user: req.user.userId,
+        gameId,
+        score
+      });
+      await newScore.save();
+      res.status(201).json({ message: "Score enregistré avec succès !", score: newScore });
+    }
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de l'enregistrement du score." });
   }

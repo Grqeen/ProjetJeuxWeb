@@ -64,18 +64,25 @@
       </form>
 
       <p style="margin-top: 25px; font-size: 0.9rem;">
-        Déjà un compte ? <a href="login.html" style="color: var(--gold); text-decoration: underline;">Se connecter</a>
+        Déjà un compte ? <a id="login-link" href="login.html" style="color: var(--gold); text-decoration: underline;">Se connecter</a>
       </p>
     </div>
   </main>
 
   <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirect = urlParams.get('redirect');
+    // Transmettre redirect au lien login
+    if (redirect) {
+        document.getElementById('login-link').href = `login.html?redirect=${encodeURIComponent(redirect)}`;
+    }
+
     document.getElementById('register-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const msgDiv = document.getElementById('msg');
-        msgDiv.className = "error-msg"; // Reset class
+        msgDiv.className = "error-msg";
 
         try {
             const res = await fetch('/api/auth/register', {
@@ -90,7 +97,8 @@
             } else {
                 msgDiv.className = "success-msg";
                 msgDiv.innerText = "Parfait ! Redirection vers la page de connexion...";
-                setTimeout(() => window.location.href = 'login.html', 2000);
+                const loginUrl = redirect ? `login.html?redirect=${encodeURIComponent(redirect)}` : 'login.html';
+                setTimeout(() => window.location.href = loginUrl, 2000);
             }
         } catch (err) {
             msgDiv.innerText = "Erreur de connexion au serveur.";
