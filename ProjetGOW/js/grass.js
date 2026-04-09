@@ -1,6 +1,19 @@
 import { limitRadius, getHeight, waterLevel } from "./utils.js";
 
-export function createGrass(scene, count) {
+export function createGrass(scene, count, quality = "high") {
+    // Nettoyage de l'herbe existante pour le rechargement dynamique (hot-swap)
+    if (scene._swayGrass) {
+        scene._swayGrass.forEach(g => g.dispose());
+    }
+    scene._swayGrass = [];
+    
+    if (scene._grassTuftBase) {
+        scene._grassTuftBase.dispose();
+        scene._grassTuftBase = null;
+    }
+
+    if (quality === "low") return; // Désactive totalement l'herbe en qualité basse
+
     const grassBlade = BABYLON.MeshBuilder.CreatePlane("grassBlade", {width: 1, height: 1}, scene);
     grassBlade.material = new BABYLON.StandardMaterial("grassMat", scene);
     grassBlade.material.diffuseColor = new BABYLON.Color3(0.2, 0.8, 0.2);
@@ -15,6 +28,7 @@ export function createGrass(scene, count) {
     grassTuft.name = "grassTuft";
     grassTuft.setEnabled(false);
     grassTuft.position.y = -1000;
+    scene._grassTuftBase = grassTuft; // Stocké pour pouvoir le nettoyer plus tard
 
     for (let i = 0; i < count; i++) {
         const r = limitRadius * Math.sqrt(Math.random()) * 0.95;

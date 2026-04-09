@@ -263,14 +263,17 @@ window.addEventListener('DOMContentLoaded', async function () {
         const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -0.5), scene);
         dirLight.position = new BABYLON.Vector3(100, 100, 50);
         dirLight.intensity = 0.8;
+        scene.dirLight = dirLight; // Stocké pour pouvoir réactiver les ombres plus tard
 
-        // Optimisation dynamique des ombres (Cascades) : 
-        // HD de près, basse qualité de loin, ignoré derrière la caméra
-        const shadowGenerator = new BABYLON.CascadedShadowGenerator(1024, dirLight);
-        shadowGenerator.lambda = 0.7; // Priorité à la zone proche du joueur
-        shadowGenerator.shadowMaxZ = 120; // Ne calcule plus les ombres au-delà de 120m
-        shadowGenerator.usePercentageCloserFiltering = true; // Flou performant
-        scene.shadowGenerator = shadowGenerator; // Expose globalement au niveau de la scène
+        if (gameSettings.quality === "high") {
+            // Optimisation dynamique des ombres (Cascades) : 
+            // HD de près, basse qualité de loin, ignoré derrière la caméra
+            const shadowGenerator = new BABYLON.CascadedShadowGenerator(512, dirLight);
+            shadowGenerator.lambda = 0.7; // Priorité à la zone proche du joueur
+            shadowGenerator.shadowMaxZ = 120; // Ne calcule plus les ombres au-delà de 120m
+            shadowGenerator.usePercentageCloserFiltering = true; // Flou performant
+            scene.shadowGenerator = shadowGenerator; // Expose globalement au niveau de la scène
+        }
 
         // --- POST-PROCESSING: Bloom + FXAA ---
         try {
@@ -305,7 +308,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         camera.radius = 15; // Ajuste le rayon de la caméra
         // store base radius and sprint zoom params for dynamic camera effects
         camera._baseRadius = camera.radius;
-        camera._sprintZoom = 0.4; // how much the camera zooms in when sprinting (très peu)
+        camera._sprintZoom = 0.0; // how much the camera zooms in when sprinting (désactivé)
         camera._sprintLerp = 0.12; // smoothing
         
         // --- INITIALISATION DES VAGUES DE MONSTRES ---
@@ -325,13 +328,16 @@ window.addEventListener('DOMContentLoaded', async function () {
             currentBaseCount: 70
         };
 
-        createTrees(scene, 200);
+        createTrees(scene, 300, gameSettings.quality); // Augmentation massive du nombre d'arbres
 
         const { cover } = createSewer(scene);
 
-        createGrass(scene, 1000);
+        createGrass(scene, 1000, gameSettings.quality);
 
-        const birds = createBirds(scene, 50);
+        let birds = [];
+        if (gameSettings.quality !== "low") {
+            birds = createBirds(scene, 50);
+        }
 
         createWater(scene);
 
@@ -423,16 +429,66 @@ window.addEventListener('DOMContentLoaded', async function () {
         qRow.isVertical = false; qRow.height = "40px";
         pausePanel.addControl(qRow);
 
+        const qualityBtns = [];
         ["Low", "Medium", "High"].forEach(q => {
             const btn = BABYLON.GUI.Button.CreateSimpleButton("q"+q, q);
             btn.width = "80px"; btn.height = "30px"; btn.color = "white";
             btn.background = gameSettings.quality.toLowerCase() === q.toLowerCase() ? "#3498db" : "#7f8c8d";
             btn.onPointerUpObservable.add(() => {
-                gameSettings.quality = q.toLowerCase();
-                if (q === "Low") gameSettings.resolution = 2.0;
-                else if (q === "Medium") gameSettings.resolution = 1.5;
-                else gameSettings.resolution = 1.0;
+                const newQuality = q.toLowerCase();
+                if (gameSettings.quality === newQuality) return;
+
+                gameSettings.quality = newQuality;
+                gameSettings.resolution = 1.0; // On conserve toujours la résolution native
+
+                // Mise à jour visuelle
+                qualityBtns.forEach(b => b.background = "#7f8c8d");
+                btn.background = "#3498db";
+
+                // --- HOT-SWAP DES PARAMÈTRES GRAPHIQUES ---
+                
+                // 1. Ombres
+                if (newQuality === "high") {
+                    if (!scene.shadowGenerator && scene.dirLight) {
+                        const shadowGenerator = new BABYLON.CascadedShadowGenerator(512, scene.dirLight);
+                        shadowGenerator.lambda = 0.7;
+                        shadowGenerator.shadowMaxZ = 120; // Ne calcule plus les ombres au-delà de 120m
+                        shadowGenerator.usePercentageCloserFiltering = true;
+                        scene.shadowGenerator = shadowGenerator;
+
+                        // Rétablir les ombres sur les éléments principaux de la carte
+                        scene.meshes.forEach(m => {
+                            if (m.name === "stickman" || m.name.includes("building") || m.name.includes("bridge")) {
+                                shadowGenerator.addShadowCaster(m, true);
+                            }
+                        });
+                    }
+                } else {
+                    if (scene.shadowGenerator) {
+                        scene.shadowGenerator.dispose();
+                        scene.shadowGenerator = null;
+                    }
+                }
+
+                // 2. Oiseaux
+                if (newQuality === "low") {
+                    if (gameData && gameData.birds) {
+                        gameData.birds.forEach(b => b.dispose());
+                        gameData.birds = [];
+                    }
+                } else {
+                    if (gameData && (!gameData.birds || gameData.birds.length === 0)) {
+                        gameData.birds = createBirds(scene, 50);
+                    }
+                }
+
+                // 3. Arbres (Rechargement dynamique)
+                createTrees(scene, 600, newQuality); // Augmentation massive du nombre d'arbres
+
+                // 4. Herbe (Désactivée en Low)
+                createGrass(scene, 1000, newQuality);
             });
+            qualityBtns.push(btn);
             qRow.addControl(btn);
         });
 
@@ -761,7 +817,104 @@ window.addEventListener('DOMContentLoaded', async function () {
                 camera.radius += (targetRadius - camera.radius) * lerp;
             }
         } catch(e) {}
-        updateBirds(birds, stickman.position); // Les oiseaux réagissent à la position du joueur
+        if (birds && birds.length > 0) {
+            updateBirds(birds, stickman.position); // Les oiseaux réagissent à la position du joueur
+        }
+        
+        // --- GESTION DU LOD (Level Of Detail) DES ARBRES ---
+        try {
+            if (scene._treeObjects && stickman) {
+                const lodDist = 150;
+                const fadeZone = 15; // Transition douce sur 15 mètres
+                const shadowDistSq = 70 * 70; // 70 mètres pour désactiver les ombres des arbres
+                const maxDistSq = 300 * 300; // 300 mètres max pour désactiver totalement l'arbre
+                scene._treeObjects.forEach(tree => {
+                    const activeMesh = tree.lowMesh || tree.mesh;
+                    if (!activeMesh) return;
+
+                    const distSq = BABYLON.Vector3.DistanceSquared(stickman.position, activeMesh.position);
+                    
+                    // 1. Culling : Désactivation totale si très loin (Economise énormément de CPU)
+                    if (distSq > maxDistSq) {
+                        if (tree.highMesh && tree.highMesh.isEnabled()) tree.highMesh.setEnabled(false);
+                        if (tree.lowMesh && tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(false);
+                        if (tree.mesh && tree.mesh.isEnabled()) tree.mesh.setEnabled(false);
+                        
+                        // Désactiver les ombres par sécurité
+                        if (scene.shadowGenerator && tree.highMesh && tree.highMesh._castsShadow) {
+                            scene.shadowGenerator.removeShadowCaster(tree.highMesh, true);
+                            tree.highMesh._castsShadow = false;
+                        }
+                        return; // On stoppe le calcul ici, on passe à l'arbre suivant !
+                    }
+                    
+                    // Si qualité Low (pas de highMesh), on s'assure juste que l'arbre est visible
+                    if (!tree.highMesh) {
+                        if (!tree.mesh.isEnabled()) tree.mesh.setEnabled(true);
+                        return;
+                    }
+
+                    // --- Suite : Uniquement si High/Medium Quality avec LOD ---
+                    if (tree.baseScale) {
+                        // 2. LOD Géométrie avec transition fluide (Cross-Scale)
+                        const dist = Math.sqrt(distSq);
+                        if (dist > lodDist + fadeZone) { 
+                            // Complètement loin (Low uniquement)
+                            if (tree.highMesh.isEnabled()) tree.highMesh.setEnabled(false);
+                            if (!tree.lowMesh.isEnabled()) {
+                                tree.lowMesh.setEnabled(true);
+                                tree.lowMesh.scaling.x = tree.baseScale;
+                                tree.lowMesh.scaling.y = tree.baseScale;
+                                tree.lowMesh.scaling.z = tree.baseScale;
+                            }
+                        } else if (dist < lodDist - fadeZone) { 
+                            // Complètement proche (High uniquement)
+                            if (!tree.highMesh.isEnabled()) {
+                                tree.highMesh.setEnabled(true);
+                                tree.highMesh.scaling.x = tree.baseScale;
+                                tree.highMesh.scaling.y = tree.baseScale;
+                                tree.highMesh.scaling.z = tree.baseScale;
+                            }
+                            if (tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(false);
+                        } else { 
+                            // Zone de transition (les deux s'affichent et changent de taille)
+                            if (!tree.highMesh.isEnabled()) tree.highMesh.setEnabled(true);
+                            if (!tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(true);
+                            
+                            const ratio = (dist - (lodDist - fadeZone)) / (fadeZone * 2);
+                            
+                            // L'arbre low grandit quand on s'éloigne
+                            const lowScale = tree.baseScale * ratio;
+                            tree.lowMesh.scaling.x = lowScale;
+                            tree.lowMesh.scaling.y = lowScale;
+                            tree.lowMesh.scaling.z = lowScale;
+                            
+                            // L'arbre high rétrécit quand on s'éloigne
+                            const highScale = tree.baseScale * (1.0 - ratio);
+                            tree.highMesh.scaling.x = highScale;
+                            tree.highMesh.scaling.y = highScale;
+                            tree.highMesh.scaling.z = highScale;
+                        }
+                        
+                        // 3. LOD Ombres (Seuls les arbres proches projettent des ombres)
+                        if (scene.shadowGenerator) {
+                            if (distSq > shadowDistSq) {
+                                if (tree.highMesh._castsShadow) {
+                                    scene.shadowGenerator.removeShadowCaster(tree.highMesh, true);
+                                    tree.highMesh._castsShadow = false;
+                                }
+                            } else {
+                                if (!tree.highMesh._castsShadow) {
+                                    scene.shadowGenerator.addShadowCaster(tree.highMesh, true);
+                                    tree.highMesh._castsShadow = true;
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        } catch (e) {}
+
         // Wind sway for trees and grass
         try {
             const tnow = Date.now();
@@ -769,11 +922,22 @@ window.addEventListener('DOMContentLoaded', async function () {
                 scene._swayTrees.forEach(tr => {
                     const s = tr.swayData;
                     try { s.phase += s.speed * (engine.getDeltaTime() * (gameData && gameData.timeScale ? gameData.timeScale : 1)); } catch(e) {}
-                    tr.rotation.z = Math.sin(s.phase) * s.amount;
+                    tr.rotation.z = (s.baseRotZ || 0) + Math.sin(s.phase) * s.amount;
                 });
             }
-            if (scene._swayGrass) {
+            if (scene._swayGrass && stickman) {
+                const grassMaxDistSq = 150 * 150; // 150 mètres max (l'herbe est invisible au-delà de toute façon)
                 scene._swayGrass.forEach(g => {
+                    const distSq = BABYLON.Vector3.DistanceSquared(stickman.position, g.position);
+                    
+                    // Culling : Désactivation totale de l'herbe lointaine
+                    if (distSq > grassMaxDistSq) {
+                        if (g.isEnabled()) g.setEnabled(false);
+                        return; // On stoppe le calcul de l'animation de vent pour cette herbe !
+                    } else {
+                        if (!g.isEnabled()) g.setEnabled(true);
+                    }
+
                     const s = g.swayData;
                     try { s.phase += s.speed * (engine.getDeltaTime() * (gameData && gameData.timeScale ? gameData.timeScale : 1)); } catch(e) {}
                     g.rotation.x = Math.sin(s.phase) * s.amount;
