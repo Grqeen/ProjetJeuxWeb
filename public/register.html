@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blob Odyssey - Inscription</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .auth-box {
+        background: rgba(20, 20, 20, 0.95);
+        padding: 40px;
+        max-width: 400px;
+        margin: 50px auto;
+        border-top: 5px solid var(--gold);
+        text-align: center;
+    }
+    .auth-box input {
+        width: 100%;
+        padding: 15px;
+        margin-bottom: 20px;
+        background: #333;
+        border: 1px solid #555;
+        color: white;
+        font-size: 1rem;
+    }
+    .auth-box input:focus {
+        outline: none;
+        border-color: var(--gold);
+    }
+    .error-msg { color: #ff5252; margin-bottom: 15px; font-size: 0.9rem; }
+    .success-msg { color: #4caf50; margin-bottom: 15px; font-size: 0.9rem; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">BLOB ODYSSEY</div>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">ACCUEIL</a></li>
+        <li><a href="jeux.html">JEUX</a></li>
+        <li><a href="classements.html">CLASSEMENTS</a></li>
+        <li><a href="equipe.html">NOTRE ÉQUIPE</a></li>
+      </ul>
+      <div class="burger" id="burger">
+        <div class="line1"></div>
+        <div class="line2"></div>
+        <div class="line3"></div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="project-container">
+    <div class="auth-box">
+      <h2 style="margin-top:0;">Créer un compte</h2>
+      <p style="color:#aaa; margin-bottom: 30px;">Rejoignez la légende Blob</p>
+      
+      <form id="register-form">
+        <div id="msg" class="error-msg"></div>
+        <input type="text" id="username" placeholder="Pseudo" required />
+        <input type="password" id="password" placeholder="Mot de passe" required />
+        <button type="submit" class="btn-cta" style="width: 100%;">S'INSCRIRE</button>
+      </form>
+
+      <p style="margin-top: 25px; font-size: 0.9rem;">
+        Déjà un compte ? <a href="login.html" style="color: var(--gold); text-decoration: underline;">Se connecter</a>
+      </p>
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const msgDiv = document.getElementById('msg');
+        msgDiv.className = "error-msg"; // Reset class
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (!res.ok) {
+                msgDiv.innerText = data.message;
+            } else {
+                msgDiv.className = "success-msg";
+                msgDiv.innerText = "Parfait ! Redirection vers la page de connexion...";
+                setTimeout(() => window.location.href = 'login.html', 2000);
+            }
+        } catch (err) {
+            msgDiv.innerText = "Erreur de connexion au serveur.";
+        }
+    });
+
+    const burger = document.getElementById('burger');
+    const nav = document.getElementById('nav-links');
+    burger.addEventListener('click', () => {
+      nav.classList.toggle('nav-active');
+      burger.classList.toggle('toggle');
+    });
+  </script>
+</body>
+</html>

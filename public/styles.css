@@ -285,36 +285,38 @@ body {
 
 .trailers-container {
   display: flex;
+  flex-direction: column;
   background-color: #313131; /* Couleur de fond du cadre */
   border: 4px solid #4a4a4a; /* Bordure épaisse style UI */
   margin-top: 30px;
   max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
-  min-height: 450px;
 }
 
-/* Onglets à gauche */
+/* Onglets en haut */
 
 .trailers-tabs {
-  width: 30%;
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  border-right: 4px solid #4a4a4a;
+  flex-direction: row;
+  border-bottom: 4px solid #4a4a4a;
 }
 
 .tab {
+  flex: 1;
   display: flex;
   align-items: center;
-  padding: 20px;
-  gap: 15px;
+  justify-content: center;
+  padding: 15px 10px;
+  gap: 10px;
   cursor: pointer;
-  border-bottom: 1px solid #4a4a4a;
   transition: background 0.2s;
-  text-align: left;
+  text-align: center;
   font-weight: bold;
   font-size: 0.9rem;
   color: #ccc;
+  border-bottom: 4px solid transparent;
 }
 
 .tab img {
@@ -330,18 +332,19 @@ body {
 .tab.active {
   background-color: #4a4a4a;
   color: white;
-  border-left: 4px solid var(--gold); /* Petite barre dorée pour l'onglet actif */
+  border-bottom: 4px solid var(--gold); /* Petite barre dorée pour l'onglet actif */
 }
 
 /* --- Ajustements du Lecteur Vidéo --- */
 
 .video-viewer {
-  width: 70%;
+  width: 100%;
   background-color: #000;
   padding: 0; /* On retire le padding pour que la vidéo touche les bords du cadre interne */
   display: flex;
   align-items: center;
   justify-content: center;
+  aspect-ratio: 16 / 9;
 }
 
 .video-responsive {
@@ -765,6 +768,56 @@ body {
   border-bottom: 0;
 }
 
+/* --- Classements (Leaderboards) --- */
+
+.leaderboard-viewer {
+  width: 100%;
+  background-color: #1a1a1a;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  color: #ddd;
+  min-width: 500px; /* Assure que le tableau ne s'écrase pas sur mobile */
+}
+
+.leaderboard-table th, 
+.leaderboard-table td {
+  padding: 15px;
+  border-bottom: 1px solid #333;
+}
+
+.leaderboard-table th {
+  color: var(--gold);
+  text-transform: uppercase;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  border-bottom: 2px solid var(--gold);
+}
+
+.leaderboard-table tr {
+  transition: background-color 0.2s;
+}
+
+.leaderboard-table tr:hover {
+  background-color: #2a2a2a;
+}
+
+.top-1 td { color: #fff; font-weight: bold; font-size: 1.1rem; }
+.top-2 td { color: #f0f0f0; font-weight: bold; }
+.top-3 td { color: #e0e0e0; font-weight: bold; }
+
+.medal {
+  font-size: 1.2rem;
+  margin-left: 10px;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .hero-overlay {
@@ -777,34 +830,8 @@ body {
     max-width: 90%;
   }
 
-  .trailers-container {
-    flex-direction: column;
-    min-height: auto;
-  }
-
-  .trailers-tabs {
-    width: 100%;
-    flex-direction: row;
-    border-right: none;
-    border-bottom: 4px solid #4a4a4a;
-  }
-
   .tab {
-    flex: 1;
-    justify-content: center;
-    border-bottom: none;
     padding: 15px 5px;
-    text-align: center;
-  }
-
-  .tab.active {
-    border-left: none;
-    border-bottom: 4px solid var(--gold);
-  }
-
-  .video-viewer {
-    width: 100%;
-    aspect-ratio: 16 / 9;
   }
 }
 
