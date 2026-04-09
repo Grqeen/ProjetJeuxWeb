@@ -176,9 +176,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
             btn.background = "#3498db";
 
             // Application des presets
-            if (q === "Low") settings.resolution = 2.0; // 50% res
-            if (q === "Medium") settings.resolution = 1.5; // 66% res
-            if (q === "High") settings.resolution = 1.0; // 100% res
+            settings.resolution = 1.0; // On conserve la résolution native à 100%
         });
 
         qualityBtns.push(btn);
