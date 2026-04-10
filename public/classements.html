@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blob Odyssey - Classements</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <header>
+    <nav class="navbar">
+      <div class="logo">BLOB ODYSSEY</div>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">ACCUEIL</a></li>
+        <li><a href="jeux.html">JEUX</a></li>
+        <li><a href="classements.html">CLASSEMENTS</a></li>
+        <li><a href="equipe.html">NOTRE ÉQUIPE</a></li>
+      </ul>
+
+      <div class="burger" id="burger">
+        <div class="line1"></div>
+        <div class="line2"></div>
+        <div class="line3"></div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="project-container" style="padding-bottom: 80px;">
+    <h1 class="project-main-title section-title" style="text-align: center; margin-top: 40px;">CLASSEMENTS MONDIAUX</h1>
+    <p class="section-subtitle" style="text-align: center; margin-bottom: 40px;">Battez les records et entrez dans la légende de Blob Odyssey.</p>
+
+    <div class="trailers-container" style="min-height: auto; margin-top: 0;">
+      <div class="trailers-tabs">
+        <div class="tab active" data-target="leaderboard-escape">
+          <span>Blob Escape</span>
+        </div>
+        <div class="tab" data-target="leaderboard-revenge">
+          <span>Blob's Revenge</span>
+        </div>
+      </div>
+
+      <div class="leaderboard-viewer">
+        <div id="leaderboard-escape" class="leaderboard active">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Joueur</th>
+                <th>Temps</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-escape">
+              <tr><td colspan="4" style="text-align:center;">Chargement des scores...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="leaderboard-revenge" class="leaderboard" style="display: none;">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Joueur</th>
+                <th>Vagues Survéçues</th>
+                <th>Temps</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-revenge">
+              <tr><td colspan="4" style="text-align:center;">Chargement des scores...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const burger = document.getElementById('burger');
+    const nav = document.getElementById('nav-links');
+
+    burger.addEventListener('click', () => {
+      nav.classList.toggle('nav-active');
+      burger.classList.toggle('toggle');
+    });
+
+    const tabs = document.querySelectorAll('.tab');
+    const leaderboards = document.querySelectorAll('.leaderboard');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelector('.tab.active').classList.remove('active');
+        tab.classList.add('active');
+        
+        leaderboards.forEach(lb => lb.style.display = 'none');
+        
+        const targetId = tab.getAttribute('data-target');
+        document.getElementById(targetId).style.display = 'block';
+      });
+    });
+
+    async function loadScores(gameId, tbodyId) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        
+        try {
+            const res = await fetch(`/api/scores/${gameId}`);
+            if (!res.ok) throw new Error("API Error");
+            const scores = await res.json();
+            
+            tbody.innerHTML = '';
+            if(scores.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Aucun score pour le moment. Soyez le premier !</td></tr>';
+                return;
+            }
+
+            scores.forEach((s, index) => {
+                let rankClass = index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : '';
+                let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
+                let dateStr = new Date(s.date).toLocaleDateString('fr-FR');
+                
+                // Pour escape, afficher le score comme un temps
+                let scoreDisplay = gameId === 'escape' ? s.score.toFixed(2) + 's' : s.score;
+
+                tbody.innerHTML += `
+                  <tr class="${rankClass}">
+                    <td>${index + 1} <span class="medal">${medal}</span></td>
+                    <td>${s.username}</td>
+                    <td>${scoreDisplay}</td>
+                    <td>${dateStr}</td>
+                  </tr>
+                `;
+            });
+        } catch {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#ff5252;">Erreur de connexion au serveur.</td></tr>';
+        }
+    }
+
+    loadScores('escape', 'tbody-escape');
+    loadScores('revenge', 'tbody-revenge');
+  </script>
+  <script src="auth-ui.js"></script>
+</body>
+
+</html>

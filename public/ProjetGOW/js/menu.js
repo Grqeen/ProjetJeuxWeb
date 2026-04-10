@@ -1,0 +1,259 @@
+export function createMenuScene(engine, startGameCallback, settings) {
+    const scene = new BABYLON.Scene(engine);
+    scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1);
+
+    const background = new BABYLON.Layer("menuBg", "assets/menuBackground.jpg", scene, true);
+
+    const camera = new BABYLON.FreeCamera("menuCam", new BABYLON.Vector3(0, 0, 0), scene);
+
+    const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
+
+    const fpsText = new BABYLON.GUI.TextBlock();
+    fpsText.text = "0 FPS";
+    fpsText.color = "yellow";
+    fpsText.fontSize = 24;
+    fpsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
+    fpsText.left = "10px";
+    fpsText.top = "10px";
+    fpsText.isVisible = settings.showFps;
+    advancedTexture.addControl(fpsText);
+    scene.fpsText = fpsText;
+
+    const createBtn = (text) => {
+        const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + text, text);
+        btn.width = "300px";
+        btn.height = "60px";
+        btn.color = "#FFD700";
+        btn.thickness = 0;
+        btn.background = "transparent";
+        btn.hoverCursor = "pointer";
+        btn.paddingBottom = "10px";
+
+        btn.textBlock.fontSize = 35;
+        btn.textBlock.fontWeight = "bold";
+        btn.textBlock.outlineWidth = 4;
+        btn.textBlock.outlineColor = "black";
+        btn.textBlock.fontFamily = "Verdana";
+
+        btn.onPointerEnterObservable.add(() => {
+            btn.color = "white";
+            btn.textBlock.outlineColor = "#e67e22";
+            btn.scaleX = 1.1;
+            btn.scaleY = 1.1;
+        });
+        btn.onPointerOutObservable.add(() => {
+            btn.color = "#FFD700";
+            btn.textBlock.outlineColor = "black";
+            btn.scaleX = 1.0;
+            btn.scaleY = 1.0;
+        });
+
+        return btn;
+    };
+
+    const createHeader = (text) => {
+        const header = new BABYLON.GUI.TextBlock();
+        header.text = text;
+        header.color = "white";
+        header.fontSize = 30;
+        header.height = "60px";
+        header.fontWeight = "bold";
+        return header;
+    };
+
+    const mainMenuPanel = new BABYLON.GUI.StackPanel();
+    mainMenuPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    advancedTexture.addControl(mainMenuPanel);
+
+    const title = new BABYLON.GUI.TextBlock();
+    title.text = "Blob's Revenge";
+    title.color = "#FFD700";
+    title.fontSize = 80;
+    title.height = "120px";
+    title.fontWeight = "bold";
+    title.outlineWidth = 5;
+    title.outlineColor = "black";
+    title.shadowColor = "black";
+    title.shadowOffsetX = 4;
+    title.shadowOffsetY = 4;
+    mainMenuPanel.addControl(title);
+
+    const startBtn = createBtn("Start");
+    startBtn.onPointerUpObservable.add(() => {
+        startGameCallback();
+    });
+    mainMenuPanel.addControl(startBtn);
+
+    const settingsBtn = createBtn("Settings");
+    settingsBtn.onPointerUpObservable.add(() => {
+        mainMenuPanel.isVisible = false;
+        settingsPanel.isVisible = true;
+    });
+    mainMenuPanel.addControl(settingsBtn);
+
+    const settingsPanel = new BABYLON.GUI.StackPanel();
+    settingsPanel.isVisible = false;
+    settingsPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    settingsPanel.background = "#2c3e50";
+    settingsPanel.width = "500px";
+    settingsPanel.paddingTop = "20px";
+    settingsPanel.paddingBottom = "20px";
+    settingsPanel.cornerRadius = 20;
+    advancedTexture.addControl(settingsPanel);
+
+    settingsPanel.addControl(createHeader("PARAMÈTRES"));
+
+    const videoPanel = new BABYLON.GUI.StackPanel();
+    videoPanel.height = "60px";
+    videoPanel.isVertical = false;
+    videoPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    settingsPanel.addControl(videoPanel);
+
+    const fsLabel = new BABYLON.GUI.TextBlock();
+    fsLabel.text = "Plein Écran : ";
+    fsLabel.color = "white";
+    fsLabel.width = "150px";
+    videoPanel.addControl(fsLabel);
+
+    const fsCheckbox = new BABYLON.GUI.Checkbox();
+    fsCheckbox.width = "30px";
+    fsCheckbox.height = "30px";
+    fsCheckbox.isChecked = settings.fullscreen;
+    fsCheckbox.color = "#3498db";
+    fsCheckbox.onIsCheckedChangedObservable.add((value) => {
+        settings.fullscreen = value;
+        if (value) {
+            engine.enterFullscreen();
+        } else {
+            engine.exitFullscreen();
+        }
+    });
+    videoPanel.addControl(fsCheckbox);
+
+    const fpsLabel = new BABYLON.GUI.TextBlock();
+    fpsLabel.text = "Afficher FPS : ";
+    fpsLabel.color = "white";
+    fpsLabel.width = "150px";
+    fpsLabel.paddingLeft = "20px";
+    videoPanel.addControl(fpsLabel);
+
+    const fpsCheckbox = new BABYLON.GUI.Checkbox();
+    fpsCheckbox.width = "30px";
+    fpsCheckbox.height = "30px";
+    fpsCheckbox.isChecked = settings.showFps;
+    fpsCheckbox.color = "#3498db";
+    fpsCheckbox.onIsCheckedChangedObservable.add((value) => {
+        settings.showFps = value;
+    });
+    videoPanel.addControl(fpsCheckbox);
+
+    settingsPanel.addControl(createHeader("GRAPHISMES"));
+    
+    const qualityPanel = new BABYLON.GUI.StackPanel();
+    qualityPanel.isVertical = false;
+    qualityPanel.height = "50px";
+    settingsPanel.addControl(qualityPanel);
+
+    const qualities = ["Low", "Medium", "High", "Custom"];
+    const qualityBtns = [];
+
+    qualities.forEach(q => {
+        const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + q, q);
+        btn.width = "80px";
+        btn.height = "30px";
+        btn.color = "white";
+        btn.fontSize = 14;
+        btn.background = settings.quality.toLowerCase() === q.toLowerCase() ? "#3498db" : "#7f8c8d";
+        btn.cornerRadius = 5;
+        btn.marginRight = "5px";
+        
+        btn.onPointerUpObservable.add(() => {
+            settings.quality = q.toLowerCase();
+            
+            // Mise à jour visuelle des boutons
+            qualityBtns.forEach(b => b.background = "#7f8c8d");
+            btn.background = "#3498db";
+
+            // Application des presets
+            settings.resolution = 1.0; // On conserve la résolution native à 100%
+        });
+
+        qualityBtns.push(btn);
+        qualityPanel.addControl(btn);
+    });
+
+    settingsPanel.addControl(createHeader("TOUCHES"));
+
+    const keysContainer = new BABYLON.GUI.ScrollViewer();
+    keysContainer.width = "450px";
+    keysContainer.height = "250px";
+    keysContainer.background = "#34495e";
+    keysContainer.cornerRadius = 10;
+    settingsPanel.addControl(keysContainer);
+
+    const keysPanel = new BABYLON.GUI.StackPanel();
+    keysContainer.addControl(keysPanel);
+
+    const createKeyRow = (label, keyProp) => {
+        const row = new BABYLON.GUI.StackPanel();
+        row.isVertical = false;
+        row.height = "40px";
+        row.paddingTop = "5px";
+        
+        const txt = new BABYLON.GUI.TextBlock();
+        txt.text = label;
+        txt.color = "white";
+        txt.width = "200px";
+        txt.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        txt.paddingLeft = "20px";
+        row.addControl(txt);
+
+        const keyBtn = BABYLON.GUI.Button.CreateSimpleButton("kbtn" + label, settings.keys[keyProp].toUpperCase());
+        keyBtn.width = "100px";
+        keyBtn.height = "30px";
+        keyBtn.color = "white";
+        keyBtn.background = "#95a5a6";
+        keyBtn.cornerRadius = 5;
+        
+        keyBtn.onPointerUpObservable.add(() => {
+            keyBtn.textBlock.text = "...";
+            keyBtn.background = "#e74c3c";
+            
+            const onKeyDown = (evt) => {
+                let key = evt.key.toLowerCase();
+                if (key === " ") key = " "; 
+                
+                settings.keys[keyProp] = key;
+                keyBtn.textBlock.text = key === " " ? "SPACE" : key.toUpperCase();
+                keyBtn.background = "#95a5a6";
+                
+                window.removeEventListener("keydown", onKeyDown);
+            };
+            window.addEventListener("keydown", onKeyDown);
+        });
+
+        row.addControl(keyBtn);
+        keysPanel.addControl(row);
+    };
+
+    createKeyRow("Avancer", "forward");
+    createKeyRow("Reculer", "backward");
+    createKeyRow("Gauche", "left");
+    createKeyRow("Droite", "right");
+    createKeyRow("Sprint", "sprint");
+    createKeyRow("S'accroupir", "crouch");
+
+    const backBtn = createBtn("RETOUR");
+    backBtn.width = "150px";
+    backBtn.height = "40px";
+    backBtn.background = "#c0392b";
+    backBtn.marginTop = "20px";
+    backBtn.onPointerUpObservable.add(() => {
+        settingsPanel.isVisible = false;
+        mainMenuPanel.isVisible = true;
+    });
+    settingsPanel.addControl(backBtn);
+
+    return scene;
+}
