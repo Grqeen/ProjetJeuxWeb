@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>BLOB: TERMINAL DEFENSE 4.3</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="game-zone">
+    <div id="top-hud">
+      <div class="hud-box">
+        <div class="hud-label">TEMPS SURVÉCU</div>
+        <div class="hud-value val-time" id="ui-time">00:00</div>
+      </div>
+      <div class="hud-box">
+        <div class="hud-label">SCORE GLOBAL</div>
+        <div class="hud-value val-score" id="ui-score">0</div>
+      </div>
+    </div>
+
+    <div id="combo-container">
+      <div class="hud-label">COMBO ACTUEL</div>
+      <span class="combo-value" id="ui-combo">0</span>
+      <span class="combo-mult" id="ui-mult">x1</span>
+    </div>
+
+    <div id="targeting-laser"></div>
+    <div id="emp-flash"></div>
+    
+    <div id="core-blob">
+      <div class="core-shield" id="ui-shield">🛡️ 50</div>
+      <div class="core-hp"><span id="ui-hp">100</span>%</div>
+    </div>
+
+    <div id="typing-hud">
+      <span class="typed" id="hud-typed"></span><span class="untyped" id="hud-untyped"></span>
+    </div>
+
+    <div id="game-over">
+      <h1>SYSTÈME COMPROMIS</h1>
+      <div class="go-stats">
+        <div class="go-stat-box">
+          <h3>Temps de Survie</h3>
+          <p id="go-time" style="color:#00e5ff;">00:00</p>
+        </div>
+        <div class="go-stat-box">
+          <h3>Score Final</h3>
+          <p id="go-score" style="color:#d4af37;">0</p>
+        </div>
+      </div>
+      <button class="go-btn" onclick="location.reload()">RELANCER LE PROTOCOLE</button>
+    </div>
+
+  </div>
+
+  <div id="ui-zone">
+    <div class="header">
+      <h1 class="title">TERMINAL DEFENSE</h1>
+      <div class="emp-hint">Espace = EMP (50 🧬)</div>
+      <div class="stats">
+        <div class="stat-dna">🧬 <span id="ui-dna">0</span></div>
+        <div class="stat-gold">💰 <span id="ui-gold">50</span></div>
+      </div>
+    </div>
+
+    <div class="shop">
+      <div class="category">PIRATAGE (Coûte ADN)</div>
+      
+      <button class="btn" id="btn-execution">
+        <div>
+          <h4 class="btn-title" style="color: #ff5252">Auto-Complétion</h4>
+          <p class="btn-desc">Valide les mots à <span id="val-execution">80</span>% !</p>
+        </div>
+        <div class="cost-dna" id="cost-execution">100 🧬</div>
+      </button>
+
+      <button class="btn" id="btn-kinetic">
+        <div>
+          <h4 class="btn-title" id="title-kinetic" style="color: #ffeb3b">Frappe Cinétique</h4>
+          <p class="btn-desc" id="desc-kinetic">Les lettres infligent des dégâts !</p>
+        </div>
+        <div class="cost-dna" id="cost-kinetic">40 🧬</div>
+      </button>
+
+      <button class="btn" id="btn-dna-mult">
+        <div>
+          <h4 class="btn-title">Extraction Rapide</h4>
+          <p class="btn-desc">Gagnez +<span id="val-dna-mult">1</span> 🧬 par lettre.</p>
+        </div>
+        <div class="cost-dna" id="cost-dna-mult">15 🧬</div>
+      </button>
+
+      <button class="btn" id="btn-slow">
+        <div>
+          <h4 class="btn-title">Stase</h4>
+          <p class="btn-desc">Ralentit la cible de <span id="val-slow">60</span>%.</p>
+        </div>
+        <div class="cost-dna" id="cost-slow">25 🧬</div>
+      </button>
+
+      <div class="category">DÉFENSE (Coûte Or)</div>
+      <button class="btn" id="btn-tower">
+        <div>
+          <h4 class="btn-title">Tourelle Gatling</h4>
+          <p class="btn-desc">Tire vite. Dégâts: <span id="val-tower-dmg">15</span></p>
+        </div>
+        <div class="cost-gold" id="cost-tower">50 💰</div>
+      </button>
+
+      <button class="btn" id="btn-sniper">
+        <div>
+          <h4 class="btn-title" style="color: #e040fb">Canon Sniper</h4>
+          <p class="btn-desc">Tire lentement. Dégâts massifs.</p>
+        </div>
+        <div class="cost-gold" id="cost-sniper">150 💰</div>
+      </button>
+
+      <button class="btn" id="btn-tower-dmg">
+        <div>
+          <h4 class="btn-title">Calibre Universel</h4>
+          <p class="btn-desc">+10 Dégâts à toutes les tours.</p>
+        </div>
+        <div class="cost-gold" id="cost-tower-dmg">100 💰</div>
+      </button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
