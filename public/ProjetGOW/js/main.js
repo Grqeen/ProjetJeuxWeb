@@ -658,7 +658,60 @@ window.addEventListener('DOMContentLoaded', async function () {
             } catch(e) {}
         };
 
-        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker };
+        // --- OBJECT POOLING ---
+        const fireballPool = [];
+        try {
+            const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
+            fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0);
+            for (let i = 0; i < 50; i++) {
+                const fireball = BABYLON.MeshBuilder.CreateSphere("fireball_" + i, {diameter: 0.6}, scene);
+                fireball.material = fireMat;
+                fireball.isVisible = false;
+                
+                const trail = new BABYLON.ParticleSystem("trail_" + i, 200, scene);
+                trail.particleTexture = new BABYLON.Texture("assets/particles/smoke.png", scene);
+                trail.emitter = fireball;
+                trail.minEmitBox = new BABYLON.Vector3(0, 0, 0);
+                trail.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
+                trail.color1 = new BABYLON.Color4(0.2, 0.2, 0.2, 0.6);
+                trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
+                trail.minSize = 0.1; trail.maxSize = 0.4;
+                trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
+                trail.emitRate = 80;
+                trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
+                trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
+                trail.gravity = new BABYLON.Vector3(0, -1, 0);
+                trail.disposeOnStop = false; // Important : pas de destruction automatique
+                
+                fireballPool.push({ mesh: fireball, trail: trail, inUse: false });
+            }
+        } catch(e) {}
+
+        const hitSparkPool = [];
+        try {
+            for (let i = 0; i < 20; i++) {
+                const ps = new BABYLON.ParticleSystem("hitSpark_" + i, 200, scene);
+                ps.particleTexture = new BABYLON.Texture("assets/particles/spark.png", scene);
+                ps.minEmitBox = new BABYLON.Vector3(-0.2, -0.2, -0.2);
+                ps.maxEmitBox = new BABYLON.Vector3(0.2, 0.2, 0.2);
+                ps.color1 = new BABYLON.Color4(1, 0.6, 0.1, 1.0);
+                ps.color2 = new BABYLON.Color4(1, 0.3, 0.05, 1.0);
+                ps.minSize = 0.05; ps.maxSize = 0.2;
+                ps.minLifeTime = 0.2; ps.maxLifeTime = 0.6;
+                ps.emitRate = 400;
+                ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
+                ps.direction2 = new BABYLON.Vector3(1, 1, 1);
+                ps.gravity = new BABYLON.Vector3(0, -9.8, 0);
+                ps.disposeOnStop = false; // Important
+                
+                hitSparkPool.push({ ps: ps, inUse: false });
+            }
+        } catch(e) {}
+
+        const getFireball = () => fireballPool.find(p => !p.inUse) || null;
+        const getHitSpark = () => hitSparkPool.find(p => !p.inUse) || null;
+
+        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, getFireball, getHitSpark };
 
         // attach shake function to sceneData so caller gets it
         sceneData.shakeCamera = shakeCamera;
@@ -821,110 +874,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             updateBirds(birds, stickman.position); // Les oiseaux réagissent à la position du joueur
         }
         
-        // --- GESTION DU LOD (Level Of Detail) DES ARBRES ---
+        // Culling pour l'herbe (l'animation de vent est maintenant gérée sur le GPU via les Custom Shaders)
         try {
-            if (scene._treeObjects && stickman) {
-                const lodDist = 150;
-                const fadeZone = 15; // Transition douce sur 15 mètres
-                const shadowDistSq = 70 * 70; // 70 mètres pour désactiver les ombres des arbres
-                const maxDistSq = 300 * 300; // 300 mètres max pour désactiver totalement l'arbre
-                scene._treeObjects.forEach(tree => {
-                    const activeMesh = tree.lowMesh || tree.mesh;
-                    if (!activeMesh) return;
-
-                    const distSq = BABYLON.Vector3.DistanceSquared(stickman.position, activeMesh.position);
-                    
-                    // 1. Culling : Désactivation totale si très loin (Economise énormément de CPU)
-                    if (distSq > maxDistSq) {
-                        if (tree.highMesh && tree.highMesh.isEnabled()) tree.highMesh.setEnabled(false);
-                        if (tree.lowMesh && tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(false);
-                        if (tree.mesh && tree.mesh.isEnabled()) tree.mesh.setEnabled(false);
-                        
-                        // Désactiver les ombres par sécurité
-                        if (scene.shadowGenerator && tree.highMesh && tree.highMesh._castsShadow) {
-                            scene.shadowGenerator.removeShadowCaster(tree.highMesh, true);
-                            tree.highMesh._castsShadow = false;
-                        }
-                        return; // On stoppe le calcul ici, on passe à l'arbre suivant !
-                    }
-                    
-                    // Si qualité Low (pas de highMesh), on s'assure juste que l'arbre est visible
-                    if (!tree.highMesh) {
-                        if (!tree.mesh.isEnabled()) tree.mesh.setEnabled(true);
-                        return;
-                    }
-
-                    // --- Suite : Uniquement si High/Medium Quality avec LOD ---
-                    if (tree.baseScale) {
-                        // 2. LOD Géométrie avec transition fluide (Cross-Scale)
-                        const dist = Math.sqrt(distSq);
-                        if (dist > lodDist + fadeZone) { 
-                            // Complètement loin (Low uniquement)
-                            if (tree.highMesh.isEnabled()) tree.highMesh.setEnabled(false);
-                            if (!tree.lowMesh.isEnabled()) {
-                                tree.lowMesh.setEnabled(true);
-                                tree.lowMesh.scaling.x = tree.baseScale;
-                                tree.lowMesh.scaling.y = tree.baseScale;
-                                tree.lowMesh.scaling.z = tree.baseScale;
-                            }
-                        } else if (dist < lodDist - fadeZone) { 
-                            // Complètement proche (High uniquement)
-                            if (!tree.highMesh.isEnabled()) {
-                                tree.highMesh.setEnabled(true);
-                                tree.highMesh.scaling.x = tree.baseScale;
-                                tree.highMesh.scaling.y = tree.baseScale;
-                                tree.highMesh.scaling.z = tree.baseScale;
-                            }
-                            if (tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(false);
-                        } else { 
-                            // Zone de transition (les deux s'affichent et changent de taille)
-                            if (!tree.highMesh.isEnabled()) tree.highMesh.setEnabled(true);
-                            if (!tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(true);
-                            
-                            const ratio = (dist - (lodDist - fadeZone)) / (fadeZone * 2);
-                            
-                            // L'arbre low grandit quand on s'éloigne
-                            const lowScale = tree.baseScale * ratio;
-                            tree.lowMesh.scaling.x = lowScale;
-                            tree.lowMesh.scaling.y = lowScale;
-                            tree.lowMesh.scaling.z = lowScale;
-                            
-                            // L'arbre high rétrécit quand on s'éloigne
-                            const highScale = tree.baseScale * (1.0 - ratio);
-                            tree.highMesh.scaling.x = highScale;
-                            tree.highMesh.scaling.y = highScale;
-                            tree.highMesh.scaling.z = highScale;
-                        }
-                        
-                        // 3. LOD Ombres (Seuls les arbres proches projettent des ombres)
-                        if (scene.shadowGenerator) {
-                            if (distSq > shadowDistSq) {
-                                if (tree.highMesh._castsShadow) {
-                                    scene.shadowGenerator.removeShadowCaster(tree.highMesh, true);
-                                    tree.highMesh._castsShadow = false;
-                                }
-                            } else {
-                                if (!tree.highMesh._castsShadow) {
-                                    scene.shadowGenerator.addShadowCaster(tree.highMesh, true);
-                                    tree.highMesh._castsShadow = true;
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (e) {}
-
-        // Wind sway for trees and grass
-        try {
-            const tnow = Date.now();
-            if (scene._swayTrees) {
-                scene._swayTrees.forEach(tr => {
-                    const s = tr.swayData;
-                    try { s.phase += s.speed * (engine.getDeltaTime() * (gameData && gameData.timeScale ? gameData.timeScale : 1)); } catch(e) {}
-                    tr.rotation.z = (s.baseRotZ || 0) + Math.sin(s.phase) * s.amount;
-                });
-            }
             if (scene._swayGrass && stickman) {
                 const grassMaxDistSq = 150 * 150; // 150 mètres max (l'herbe est invisible au-delà de toute façon)
                 scene._swayGrass.forEach(g => {
@@ -933,14 +884,9 @@ window.addEventListener('DOMContentLoaded', async function () {
                     // Culling : Désactivation totale de l'herbe lointaine
                     if (distSq > grassMaxDistSq) {
                         if (g.isEnabled()) g.setEnabled(false);
-                        return; // On stoppe le calcul de l'animation de vent pour cette herbe !
                     } else {
                         if (!g.isEnabled()) g.setEnabled(true);
                     }
-
-                    const s = g.swayData;
-                    try { s.phase += s.speed * (engine.getDeltaTime() * (gameData && gameData.timeScale ? gameData.timeScale : 1)); } catch(e) {}
-                    g.rotation.x = Math.sin(s.phase) * s.amount;
                 });
             }
         } catch (e) {}
@@ -1133,13 +1079,9 @@ window.addEventListener('DOMContentLoaded', async function () {
             moveVector.normalize().scaleInPlace(speed);
         }
 
-        const rayOrigin = stickman.position.clone();
-        const groundRay = new BABYLON.Ray(rayOrigin, new BABYLON.Vector3(0, -1, 0), 2.2);
-        // Optimisation CPU : Le rayon ne scanne QUE le sol et les bâtiments, ignorant l'herbe et les arbres
-        const hit = scene.pickWithRay(groundRay, (mesh) => {
-            return mesh.name === "ground" || mesh.name.startsWith("building");
-        });
-        const isGrounded = hit.hit;
+        // Remplacement du Raycast par une vérification mathématique pure
+        const terrainHeight = getHeight(stickman.position.x, stickman.position.z);
+        const isGrounded = stickman.position.y <= terrainHeight + 1.3; // 1.1 (centre de la capsule) + 0.2 de tolérance
 
         if (!stickman.physicsBody) {
             scene.render();
@@ -1653,39 +1595,60 @@ window.addEventListener('DOMContentLoaded', async function () {
                     currentDir = BABYLON.Vector3.TransformNormal(targetDir, rotMat);
                 }
 
-                const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
-                fireball.position = stickman.position.clone();
-                fireball.position.y += 1.2;
+                let pooledObj = gameData.getFireball && gameData.getFireball();
+                if (pooledObj) {
+                    pooledObj.inUse = true;
+                    pooledObj.mesh.position = stickman.position.clone();
+                    pooledObj.mesh.position.y += 1.2;
+                    pooledObj.mesh.isVisible = true;
 
-                const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
-                fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0); 
-                fireball.material = fireMat;
+                    const proj = { 
+                        mesh: pooledObj.mesh, 
+                        life: 60, 
+                        direction: currentDir, 
+                        speedMult: speedMult, 
+                        owner: 'player', 
+                        damage: 1,
+                        pooledObj: pooledObj
+                    };
 
-                // Plus de moteur physique pour la boule = 0 rebond imprévu et meilleures performances
-                const proj = { mesh: fireball, life: 60, direction: currentDir, speedMult: speedMult, owner: 'player', damage: 1 };
+                    if (pooledObj.trail) {
+                        pooledObj.trail.start();
+                        proj._trail = pooledObj.trail;
+                    }
 
-                // Add a simple particle trail if possible
-                try {
-                    const trail = new BABYLON.ParticleSystem("trail", 200, scene);
-                    trail.particleTexture = new BABYLON.Texture("assets/particles/smoke.png", scene);
-                    trail.emitter = fireball; // attach
-                    trail.minEmitBox = new BABYLON.Vector3(0, 0, 0);
-                    trail.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
-                    trail.color1 = new BABYLON.Color4(0.2, 0.2, 0.2, 0.6);
-                    trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
-                    trail.minSize = 0.1; trail.maxSize = 0.4;
-                    trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
-                    trail.emitRate = 80;
-                    trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
-                    trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
-                    trail.gravity = new BABYLON.Vector3(0, -1, 0);
-                    trail.disposeOnStop = true;
-                    trail.start();
-                    proj._trail = trail;
-                } catch (e) {}
-
-                projectiles.push(proj);
-                try { if (fireSound) fireSound.play(); } catch(e) {}
+                    projectiles.push(proj);
+                    try { if (fireSound) fireSound.play(); } catch(e) {}
+                } else {
+                    // Fallback de sécurité si le pool est vide
+                    const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
+                    fireball.position = stickman.position.clone();
+                    fireball.position.y += 1.2;
+                    const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
+                    fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0); 
+                    fireball.material = fireMat;
+                    const proj = { mesh: fireball, life: 60, direction: currentDir, speedMult: speedMult, owner: 'player', damage: 1 };
+                    try {
+                        const trail = new BABYLON.ParticleSystem("trail", 200, scene);
+                        trail.particleTexture = new BABYLON.Texture("assets/particles/smoke.png", scene);
+                        trail.emitter = fireball;
+                        trail.minEmitBox = new BABYLON.Vector3(0, 0, 0);
+                        trail.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
+                        trail.color1 = new BABYLON.Color4(0.2, 0.2, 0.2, 0.6);
+                        trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
+                        trail.minSize = 0.1; trail.maxSize = 0.4;
+                        trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
+                        trail.emitRate = 80;
+                        trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
+                        trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
+                        trail.gravity = new BABYLON.Vector3(0, -1, 0);
+                        trail.disposeOnStop = true;
+                        trail.start();
+                        proj._trail = trail;
+                    } catch (e) {}
+                    projectiles.push(proj);
+                    try { if (fireSound) fireSound.play(); } catch(e) {}
+                }
             }
         }
 
@@ -1720,22 +1683,13 @@ window.addEventListener('DOMContentLoaded', async function () {
 
                         // Small particle explosion at hit
                         try {
-                            const ps = new BABYLON.ParticleSystem("hitSpark", 200, scene);
-                            ps.particleTexture = new BABYLON.Texture("assets/particles/spark.png", scene);
-                            ps.emitter = p.mesh.position.clone();
-                            ps.minEmitBox = new BABYLON.Vector3(-0.2, -0.2, -0.2);
-                            ps.maxEmitBox = new BABYLON.Vector3(0.2, 0.2, 0.2);
-                            ps.color1 = new BABYLON.Color4(1, 0.6, 0.1, 1.0);
-                            ps.color2 = new BABYLON.Color4(1, 0.3, 0.05, 1.0);
-                            ps.minSize = 0.05; ps.maxSize = 0.2;
-                            ps.minLifeTime = 0.2; ps.maxLifeTime = 0.6;
-                            ps.emitRate = 400;
-                            ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
-                            ps.direction2 = new BABYLON.Vector3(1, 1, 1);
-                            ps.gravity = new BABYLON.Vector3(0, -9.8, 0);
-                            ps.disposeOnStop = true;
-                            ps.start();
-                            setTimeout(() => ps.stop(), 120);
+                            let pooledSpark = gameData.getHitSpark && gameData.getHitSpark();
+                            if (pooledSpark) {
+                                pooledSpark.inUse = true;
+                                pooledSpark.ps.emitter = p.mesh.position.clone();
+                                pooledSpark.ps.start();
+                                setTimeout(() => { pooledSpark.ps.stop(); pooledSpark.inUse = false; }, 120);
+                            }
                         } catch (e) {}
 
                         try { if (gameData.hitSound) gameData.hitSound.play(); } catch(e) {}
@@ -1825,7 +1779,15 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
 
             if (p.life <= 0) {
-                p.mesh.dispose();
+                if (p.pooledObj) {
+                    p.pooledObj.mesh.isVisible = false;
+                    p.pooledObj.inUse = false;
+                    if (p.pooledObj.trail) {
+                        p.pooledObj.trail.stop();
+                    }
+                } else {
+                    p.mesh.dispose(); // S'applique toujours pour les tirs ennemis / fallback
+                }
                 projectiles.splice(i, 1);
                 i--;
             }
