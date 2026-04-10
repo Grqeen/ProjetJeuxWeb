@@ -9,14 +9,14 @@ export function createMonsters(scene, count) {
     // Create templates (hidden) of different shapes for instancing
     let template = scene.getMeshByName("_monsterTemplate");
     if (!template) {
-        template = BABYLON.MeshBuilder.CreateBox("_monsterTemplate", {size: 1}, scene);
+        template = BABYLON.MeshBuilder.CreateBox("_monsterTemplate", { size: 1 }, scene);
         template.isVisible = false;
     }
     template.material = monsterMat;
 
     let tankTemplate = scene.getMeshByName("_monsterTankTemplate");
     if (!tankTemplate) {
-        tankTemplate = BABYLON.MeshBuilder.CreateBox("_monsterTankTemplate", {width: 2.2, height: 2.2, depth: 2.2}, scene);
+        tankTemplate = BABYLON.MeshBuilder.CreateBox("_monsterTankTemplate", { width: 2.2, height: 2.2, depth: 2.2 }, scene);
         tankTemplate.isVisible = false;
     }
     tankTemplate.material = monsterMat;
@@ -24,7 +24,7 @@ export function createMonsters(scene, count) {
     let stalkerTemplate = scene.getMeshByName("_monsterStalkerTemplate");
     if (!stalkerTemplate) {
         // low-profile rectangle close to the ground
-        stalkerTemplate = BABYLON.MeshBuilder.CreateBox("_monsterStalkerTemplate", {width: 0.9, height: 0.45, depth: 1.2}, scene);
+        stalkerTemplate = BABYLON.MeshBuilder.CreateBox("_monsterStalkerTemplate", { width: 0.9, height: 0.45, depth: 1.2 }, scene);
         stalkerTemplate.isVisible = false;
     }
     stalkerTemplate.material = monsterMat;
@@ -32,7 +32,7 @@ export function createMonsters(scene, count) {
     let rangedTemplate = scene.getMeshByName("_monsterRangedTemplate");
     if (!rangedTemplate) {
         // archers are circular (sphere)
-        rangedTemplate = BABYLON.MeshBuilder.CreateSphere("_monsterRangedTemplate", {diameter: 0.9}, scene);
+        rangedTemplate = BABYLON.MeshBuilder.CreateSphere("_monsterRangedTemplate", { diameter: 0.9 }, scene);
         rangedTemplate.isVisible = false;
     }
     rangedTemplate.material = monsterMat;
@@ -40,7 +40,7 @@ export function createMonsters(scene, count) {
     // flying template (small sphere with slight elevation)
     let flyingTemplate = scene.getMeshByName("_monsterFlyingTemplate");
     if (!flyingTemplate) {
-        flyingTemplate = BABYLON.MeshBuilder.CreateSphere("_monsterFlyingTemplate", {diameter: 0.8}, scene);
+        flyingTemplate = BABYLON.MeshBuilder.CreateSphere("_monsterFlyingTemplate", { diameter: 0.8 }, scene);
         flyingTemplate.isVisible = false;
     }
     flyingTemplate.material = monsterMat;
@@ -111,27 +111,210 @@ export function createMonsters(scene, count) {
 
 export function createBoss(scene) {
     const bossMat = new BABYLON.StandardMaterial("bossMat", scene);
-    bossMat.diffuseColor = new BABYLON.Color3(0.6, 0.1, 0.8); // Violet sombre
-    bossMat.emissiveColor = new BABYLON.Color3(0.2, 0.0, 0.3); // Légère luisance
+    bossMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.35); // Gris urbain
+    bossMat.emissiveColor = new BABYLON.Color3(0.1, 0.05, 0.05); // Légère teinte rougeâtre
 
-    // Le boss est un énorme cylindre pour l'instant
-    const boss = BABYLON.MeshBuilder.CreateCylinder("boss", {height: 6, diameter: 4}, scene);
+    // Torso central ("Goliath des Ruines")
+    const boss = BABYLON.MeshBuilder.CreateBox("boss_torso", { height: 4, width: 3.5, depth: 3 }, scene);
     boss.material = bossMat;
     boss.isVisible = true;
 
+    // Membres asymétriques
+    const head = BABYLON.MeshBuilder.CreateBox("boss_head", { size: 1.5 }, scene);
+    head.parent = boss;
+    head.position.y = 2.75;
+    head.material = bossMat;
+
+    const leftArm = BABYLON.MeshBuilder.CreateBox("boss_lArm", { height: 3, width: 1.2, depth: 1.2 }, scene);
+    leftArm.parent = boss;
+    leftArm.position.x = -2.35;
+    leftArm.position.y = 0.5;
+    leftArm.material = bossMat;
+
+    const rightArm = BABYLON.MeshBuilder.CreateBox("boss_rArm", { height: 4.5, width: 1.8, depth: 1.5 }, scene); // Bras droit massif
+    rightArm.parent = boss;
+    rightArm.position.x = 2.65;
+    rightArm.position.y = 0.25;
+    rightArm.material = bossMat;
+
     boss._type = 'boss';
-    boss._hp = 400; // Beaucoup de points de vie
-    boss.maxHp = 400;
-    boss.ai = { speed: 4.0 };
+    boss._hp = 1000; // Tank
+    boss.maxHp = 1000;
+    boss.ai = { speed: 1.0 }; // Très lent
     boss._castsShadow = false;
-    
+
     // Pattern parameters
     boss._lastJumpTime = 0;
     boss._isJumping = false;
+    boss._shockwaveStep = 0; // Pour les 3 ondes successives
+
+    boss._lastThrowTime = 0;
+    boss._isAttracting = false;
+    boss._lastAttractTime = 0;
 
     // Ajouter à la liste pour les ombres potentiellement
     if (!scene._registeredMonsters) scene._registeredMonsters = [];
     scene._registeredMonsters.push(boss);
 
     return boss;
+}
+
+export function createAmalgame(scene, sizeMode = 1) {
+    // sizeMode : 1 = Mère (1000 PV), 2 = Moitié (333 PV), 4 = Quart (83 PV)
+    let diameter = 6;
+    let hp = 1000;
+    let speed = 2.5;
+
+    if (sizeMode === 2) {
+        diameter = 4;
+        hp = 333;
+        speed = 3.5;
+    } else if (sizeMode === 4) {
+        diameter = 2.5;
+        hp = 83;
+        speed = 5.0;
+    }
+
+    const mat = new BABYLON.StandardMaterial("amalgameMat", scene);
+    mat.diffuseColor = new BABYLON.Color3(0.5, 0.1, 0.9); // Violet magique
+    mat.emissiveColor = new BABYLON.Color3(0.3, 0.0, 0.5);
+    mat.alpha = 0.8; // Translucide
+
+    const amalgame = BABYLON.MeshBuilder.CreateSphere("amalgame_" + sizeMode + "_" + Date.now(), { diameter: diameter, segments: 16 }, scene);
+    amalgame.material = mat;
+    amalgame.position.y = diameter / 2;
+
+    amalgame._type = 'amalgame';
+    amalgame._sizeMode = sizeMode;
+    amalgame._hp = hp;
+    amalgame.maxHp = hp;
+    amalgame.ai = { speed: speed };
+    amalgame._castsShadow = false;
+
+    // Pour l'animation de pulsation
+    amalgame._pulsePhase = Math.random() * Math.PI * 2;
+    amalgame._baseDiameter = diameter;
+
+    if (!scene._registeredMonsters) scene._registeredMonsters = [];
+    scene._registeredMonsters.push(amalgame);
+
+    return amalgame;
+}
+
+// ===================== KRAKEN DES TERRES =====================
+export function createKraken(scene) {
+    const krakenMat = new BABYLON.StandardMaterial("krakenMat", scene);
+    krakenMat.diffuseColor = new BABYLON.Color3(0.1, 0.3, 0.35);
+    krakenMat.emissiveColor = new BABYLON.Color3(0.0, 0.15, 0.2);
+
+    // Corps central aplati (ellipsoïde enfoncé dans le sol)
+    const body = BABYLON.MeshBuilder.CreateSphere("kraken_body", { diameterX: 8, diameterY: 4, diameterZ: 8, segments: 12 }, scene);
+    body.material = krakenMat;
+    body.isVisible = true;
+
+    const tentacleMat = new BABYLON.StandardMaterial("tentacleMat", scene);
+    tentacleMat.diffuseColor = new BABYLON.Color3(0.15, 0.35, 0.3);
+    tentacleMat.emissiveColor = new BABYLON.Color3(0.0, 0.1, 0.15);
+
+    // 4 tentacules
+    const tentacles = [];
+    for (let i = 0; i < 4; i++) {
+        const t = BABYLON.MeshBuilder.CreateCylinder("kraken_tentacle_" + i, { height: 12, diameterTop: 0.4, diameterBottom: 1.5, tessellation: 8 }, scene);
+        t.material = tentacleMat;
+        t.parent = body;
+        const angle = (Math.PI * 2 / 4) * i;
+        t.position.x = Math.cos(angle) * 4;
+        t.position.z = Math.sin(angle) * 4;
+        t.position.y = 4;
+        t.rotation.z = Math.cos(angle) * 0.5;
+        t.rotation.x = Math.sin(angle) * 0.5;
+        tentacles.push(t);
+    }
+
+    body._type = 'kraken';
+    body._hp = 1500;
+    body.maxHp = 1500;
+    body.ai = { speed: 0 }; // Immobile
+    body._castsShadow = false;
+    body._tentacles = tentacles;
+    body._isVulnerable = false;
+    body._lastFloodTime = 0;
+    body._isFlooding = false;
+    body._lastTentacleSwipe = 0;
+    body._lastMudShot = 0;
+    body._tentacleBaseAngles = tentacles.map((t, i) => (Math.PI * 2 / 4) * i);
+
+    if (!scene._registeredMonsters) scene._registeredMonsters = [];
+    scene._registeredMonsters.push(body);
+    return body;
+}
+
+// ===================== SEIGNEUR DE LA NUÉE =====================
+export function createNuee(scene) {
+    const nueeMat = new BABYLON.StandardMaterial("nueeMat", scene);
+    nueeMat.diffuseColor = new BABYLON.Color3(0.6, 0.7, 0.8);
+    nueeMat.emissiveColor = new BABYLON.Color3(0.2, 0.4, 0.6);
+    nueeMat.alpha = 0.9;
+
+    // Corps principal
+    const body = BABYLON.MeshBuilder.CreateSphere("nuee_body", { diameter: 4, segments: 12 }, scene);
+    body.material = nueeMat;
+
+    // Vortex de débris (torus géant autour du corps)
+    const vortexMat = new BABYLON.StandardMaterial("vortexMat", scene);
+    vortexMat.diffuseColor = new BABYLON.Color3(0.4, 0.5, 0.6);
+    vortexMat.emissiveColor = new BABYLON.Color3(0.1, 0.3, 0.5);
+    vortexMat.alpha = 0.6;
+    vortexMat.wireframe = true;
+
+    const vortex = BABYLON.MeshBuilder.CreateTorus("nuee_vortex", { diameter: 8, thickness: 1.5, tessellation: 20 }, scene);
+    vortex.material = vortexMat;
+    vortex.parent = body;
+
+    body._type = 'nuee';
+    body._hp = 1000;
+    body.maxHp = 1000;
+    body.ai = { speed: 3.0 };
+    body._castsShadow = false;
+    body._vortex = vortex;
+    body._orbitAngle = 0;
+    body._isDiving = false;
+    body._isStunned = false;
+    body._stunEndTime = 0;
+    body._lastWindTime = 0;
+    body._lastDiveTime = 0;
+    body._lastSummonTime = 0;
+    body._diveTarget = null;
+
+    if (!scene._registeredMonsters) scene._registeredMonsters = [];
+    scene._registeredMonsters.push(body);
+    return body;
+}
+
+// ===================== LE MIMIC =====================
+export function createMimic(scene) {
+    const mimicMat = new BABYLON.StandardMaterial("mimicMat", scene);
+    mimicMat.diffuseColor = new BABYLON.Color3(0.05, 0.05, 0.08);
+    mimicMat.emissiveColor = new BABYLON.Color3(0.1, 0.1, 0.15);
+    mimicMat.alpha = 0.85;
+
+    const body = BABYLON.MeshBuilder.CreateSphere("mimic_body", { diameter: 3, segments: 12 }, scene);
+    body.material = mimicMat;
+
+    body._type = 'mimic';
+    body._hp = 1200;
+    body.maxHp = 1200;
+    body.ai = { speed: 4.0 };
+    body._castsShadow = false;
+    body._currentAbility = null;
+    body._lastAbilitySwitch = 0;
+    body._isJumping = false;
+    body._lastJumpTime = 0;
+    body._lastMissileTime = 0;
+    body._zigzagPhase = Math.random() * Math.PI * 2;
+    body._abilityColor = new BABYLON.Color3(0.1, 0.1, 0.15);
+
+    if (!scene._registeredMonsters) scene._registeredMonsters = [];
+    scene._registeredMonsters.push(body);
+    return body;
 }

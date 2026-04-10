@@ -248,7 +248,9 @@ function applyUpgrade(id, gameData) {
         if (gameData) {
             const add = 20 * level; // each level +20 HP
             gameData.maxHealth += add;
-            gameData.health = Math.min(gameData.maxHealth, gameData.health + Math.floor(add * 0.5));
+            gameData.health = Math.min(gameData.maxHealth, gameData.health + add);
+            if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
+            if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
         }
     }
     else if (id === "magnet") {
@@ -277,7 +279,19 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
     if (!bonusState._passiveKillsInWindow) bonusState._passiveKillsInWindow = 0;
     const passiveWindowMs = 1000; // 1 second window
     const passiveLimit = 3; // max passive kills per second
-    function tryPassiveKill(idx) {
+    function tryPassiveKill(idx, damage = 50) {
+        if (!gameData.monsters || !gameData.monsters[idx]) return false;
+        const m = gameData.monsters[idx];
+        if (m._type === 'boss' || m._type === 'amalgame' || m._type === 'kraken' || m._type === 'nuee' || m._type === 'mimic') {
+            m._hp -= damage;
+            if (m._hp <= 0) {
+                handleMonsterKill(idx);
+                return true;
+            }
+            try { if (gameData && gameData.showHitMarker) gameData.showHitMarker(); } catch(e){}
+            return false;
+        }
+
         const tnow = Date.now();
         if (tnow - bonusState._passiveKillWindowStart > passiveWindowMs) {
             bonusState._passiveKillWindowStart = tnow;
@@ -301,7 +315,7 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             const healAmount = 3 + bonusState.regenLevel * 2; // heal amount per tick
             gameData.health = Math.min(gameData.maxHealth, gameData.health + healAmount);
             if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
-            if (gameData.hpText) gameData.hpText.text = `HP: ${gameData.health}/${gameData.maxHealth}`;
+            if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
         }
     }
 
@@ -405,15 +419,15 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                     ps.maxEmitBox = new BABYLON.Vector3(0.2, 0.2, 0.2);
                     ps.color1 = hexToColor4(style.color || '#ff8a00', 1.0);
                     ps.color2 = hexToColor4(style.accent || style.color || '#ff8a00', 0.9);
-                    ps.minSize = 0.2; ps.maxSize = 1.0;
-                    ps.minLifeTime = 0.3; ps.maxLifeTime = 1.0;
-                    ps.emitRate = 800;
+                    ps.minSize = 1.5; ps.maxSize = 4.5;
+                    ps.minLifeTime = 0.4; ps.maxLifeTime = 1.2;
+                    ps.emitRate = 2500;
                     ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
                     ps.direction2 = new BABYLON.Vector3(1, 1, 1);
-                    ps.gravity = new BABYLON.Vector3(0, -6, 0);
+                    ps.gravity = new BABYLON.Vector3(0, -2, 0);
                     ps.disposeOnStop = true;
                     ps.start();
-                    setTimeout(() => ps.stop(), 150);
+                    setTimeout(() => ps.stop(), 250);
                 } catch (e) {}
 
                 // small camera shake on explosion if available
@@ -486,8 +500,9 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             // Tente de tuer les monstres à l'intérieur de la zone à chaque frame
             for (let j = 0; j < gameData.monsters.length; j++) {
                 if (BABYLON.Vector3.Distance(z.mesh.position, gameData.monsters[j].position) <= z.radius) {
-                    handleMonsterKill(j);
-                    j--;
+                    if (tryPassiveKill(j, 30)) { // 30 dégâts par frame sur le boss
+                        j--;
+                    }
                 }
             }
             
@@ -564,9 +579,14 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                     // Tue la cible principale (sous la contrainte du throttle de passives)
                     try {
                         if (typeof tryPassiveKill === 'function') {
-                            tryPassiveKill(targetIndex);
+                            tryPassiveKill(targetIndex, 800); // Foudre fait 800 dégâts sur le boss
                         } else {
-                            handleMonsterKill(targetIndex);
+                            if (gameData.monsters[targetIndex] && gameData.monsters[targetIndex]._type === 'boss') {
+                                gameData.monsters[targetIndex]._hp -= 800;
+                                if (gameData.monsters[targetIndex]._hp <= 0) handleMonsterKill(targetIndex);
+                            } else {
+                                handleMonsterKill(targetIndex);
+                            }
                         }
                     } catch(e) {
                         try { handleMonsterKill(targetIndex); } catch(e) {}
