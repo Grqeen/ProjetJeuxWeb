@@ -739,8 +739,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         const getFireball = () => fireballPool.find(p => !p.inUse) || null;
         const getHitSpark = () => hitSparkPool.find(p => !p.inUse) || null;
 
-        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark, bossCount: 0 };
-        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, xpContainer, hpBar, hpContainer, waveData, card1, card2, card3, kills: 0, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark };
+        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, xpContainer, hpBar, hpContainer, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, bossCount: 0, health: 100, maxHealth: 100, hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark };
 
         // attach shake function to sceneData so caller gets it
         sceneData.shakeCamera = shakeCamera;
