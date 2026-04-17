@@ -381,6 +381,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         const waveData = {
             elapsedTime: 0,
             nextWaveIndex: 1,
+            wavesSurvived: 0,
             waves: [
                 { time: 0, count: 20 },
                 { time: 10, count: 30 },   // 10 sec
@@ -624,6 +625,13 @@ window.addEventListener('DOMContentLoaded', async function () {
         endTitle.height = "80px";
         endStack.addControl(endTitle);
 
+        const endScoreMsg = new BABYLON.GUI.TextBlock();
+        endScoreMsg.text = "Calcul du score...";
+        endScoreMsg.color = "yellow";
+        endScoreMsg.fontSize = 24;
+        endScoreMsg.height = "40px";
+        endStack.addControl(endScoreMsg);
+
         const endMsg = new BABYLON.GUI.TextBlock();
         endMsg.text = "Retour au lobby ou recommencer";
         endMsg.color = "#dddddd";
@@ -802,12 +810,43 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         // Méthode pour afficher l'écran de fin depuis l'extérieur
         sceneData.isDead = false;
-        sceneData.showDeathScreen = () => {
+        sceneData.showDeathScreen = async () => {
             if (sceneData.isDead) return;
             sceneData.isDead = true;
             endPanel.isVisible = true;
             isGamePaused = true;
             try { freezeScene(scene); } catch(e) {}
+
+            const vagues = sceneData.waveData.wavesSurvived;
+            endScoreMsg.text = `Vagues survécues : ${vagues} | Sauvegarde...`;
+            const token = localStorage.getItem("token");
+
+            if (token) {
+                try {
+                    const res = await fetch('/api/scores', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ gameId: 'revenge', score: vagues })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        if (data.message && data.message.includes("meilleur")) {
+                            endScoreMsg.text = `Vagues : ${vagues} | Ton record est meilleur.`;
+                        } else {
+                            endScoreMsg.text = `Vagues : ${vagues} | Score sauvegardé !`;
+                        }
+                    } else {
+                        endScoreMsg.text = `Vagues : ${vagues} | Erreur de sauvegarde.`;
+                    }
+                } catch (e) {
+                    endScoreMsg.text = `Vagues : ${vagues} | Serveur injoignable.`;
+                }
+            } else {
+                endScoreMsg.text = `Vagues : ${vagues} | Connecte-toi pour sauvegarder`;
+            }
         };
 
         sceneData.pauseGame = () => { 
@@ -1176,6 +1215,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         if (!gameData.bossSpawned && waveData.nextWaveIndex < waveData.waves.length) {
             const nextWave = waveData.waves[waveData.nextWaveIndex];
             if (timeInSeconds >= nextWave.time) {
+                waveData.wavesSurvived++;
                 const newMobs = createMonsters(scene, nextWave.count);
                 monsters.push(...newMobs);
                 waveData.nextWaveIndex++;
@@ -1184,6 +1224,7 @@ window.addEventListener('DOMContentLoaded', async function () {
             // Cycle infini : Chaque 1 min (60s) au lieu de 2 min
             if (timeInSeconds - waveData.last2MinTick >= 60) {
                 waveData.last2MinTick += 60;
+                waveData.wavesSurvived++;
                 waveData.currentBaseCount += 20;
                 const newMobs = createMonsters(scene, waveData.currentBaseCount);
                 monsters.push(...newMobs);
@@ -1191,6 +1232,7 @@ window.addEventListener('DOMContentLoaded', async function () {
             // Cycle infini : Chaque 2.5 min (150s) au lieu de 5 min
             if (timeInSeconds - waveData.last5MinTick >= 150) {
                 waveData.last5MinTick += 150;
+                waveData.wavesSurvived++;
                 waveData.currentBaseCount += 40; // Bonus de difficulté massif
                 const newMobs = createMonsters(scene, waveData.currentBaseCount);
                 monsters.push(...newMobs);
