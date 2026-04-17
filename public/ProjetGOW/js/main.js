@@ -1,7 +1,8 @@
 import { getHeight, limitRadius, waterLevel } from "./utils.js";
 import { createTerrain } from "./terrain.js";
 import { createPlayer } from "./player.js";
-import { createMonsters, createBoss } from "./monsters.js";
+import { updateBossAI } from "./bossAI.js";
+import { createMonsters, createBoss, createAmalgame, createKraken, createNuee, createMimic } from "./monsters.js";
 import { createTrees } from "./trees.js";
 import { createSewer } from "./sewer.js";
 import { createGrass } from "./grass.js";
@@ -112,7 +113,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         // --- UI : KILLS AVANT LE BOSS ---
         const bossKillsText = new BABYLON.GUI.TextBlock();
-        bossKillsText.text = "Kills : 100";
+        bossKillsText.text = "Kills : 300";
         bossKillsText.color = "yellow"; // Rouge
         bossKillsText.fontSize = 26;
         bossKillsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -174,6 +175,17 @@ window.addEventListener('DOMContentLoaded', async function () {
         hpText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
         hpText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
         hpContainer.addControl(hpText);
+
+        // --- EFFET DE DÉGÂT SUR LES BORDS ÉCRAN ---
+        const damageVignette = new BABYLON.GUI.Rectangle("damageVignette");
+        damageVignette.width = "100%";
+        damageVignette.height = "100%";
+        damageVignette.thickness = 30; // Bordure rouge
+        damageVignette.color = "red";
+        damageVignette.alpha = 0; // invisible au début
+        damageVignette.isPointerBlocker = false;
+        gameUI.addControl(damageVignette);
+
         // --- UI : BOUTON DEBUG XP (Pour tester les niveaux) ---
         const debugXpBtn = BABYLON.GUI.Button.CreateSimpleButton("debugXpBtn", "+10 XP");
         debugXpBtn.width = "100px";
@@ -189,23 +201,75 @@ window.addEventListener('DOMContentLoaded', async function () {
             if (!gameData || isGamePaused) return; // Désactivé si le jeu est en pause
 
             gameData.kills += 10; // Donne 10 kills d'un coup
-            let killsLeft = Math.max(0, 100 - gameData.kills);
+            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
+            let killsLeft = Math.max(0, gameData.nextBossThreshold - gameData.kills);
             gameData.bossKillsText.text = "Kills : " + killsLeft;
 
-            let currentLevelKills = gameData.kills - gameData.prevUpgradeKillCount;
-            let baseRequired = gameData.nextUpgradeKillCount - gameData.prevUpgradeKillCount;
-            // Plus il y a de mobs, plus le palier est difficile (chaque mob ajoute +2%)
-            let difficultyMultiplier = 1 + (gameData.monsters ? gameData.monsters.length * 0.02 : 0);
-            let dynamicRequired = Math.max(1, Math.floor(baseRequired * difficultyMultiplier));
+            gameData.currentXp += 50; // Donne 50 XP pour le test
 
-            let progress = Math.min(100, (currentLevelKills / dynamicRequired) * 100);
+            let progress = Math.min(100, (gameData.currentXp / gameData.xpRequiredForLevel) * 100);
             gameData.xpBar.width = progress + "%";
 
-            if (currentLevelKills >= dynamicRequired) {
+            if (gameData.currentXp >= gameData.xpRequiredForLevel) {
                 showUpgradeMenu(gameData);
             }
         });
         gameUI.addControl(debugXpBtn);
+
+        // --- BOUTONS DEBUG BOSS ---
+        const bossFactories = {
+            goliath: (sc) => createBoss(sc),
+            amalgame: (sc) => createAmalgame(sc, 1),
+            kraken: (sc) => createKraken(sc),
+            nuee: (sc) => createNuee(sc),
+            mimic: (sc) => createMimic(sc)
+        };
+        // Ordre de rotation naturelle des boss (progressif)
+        const bossRotation = ['goliath', 'amalgame', 'kraken', 'nuee', 'mimic'];
+
+        const spawnBossLogic = (bossType) => {
+            if (!gameData || isGamePaused || gameData.bossSpawned) return;
+            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
+            gameData.kills = gameData.nextBossThreshold;
+            gameData.bossKillsText.text = "Kills : 0";
+            gameData.bossSpawned = true;
+            
+            setTimeout(() => {
+                if(gameData.monsters) {
+                    gameData.monsters.forEach(m => {
+                        try { m.dispose(); } catch(e){}
+                        if (m.physicsAgg) { try { m.physicsAgg.body.dispose(); m.physicsAgg.dispose(); } catch(e){} }
+                        if (m.physicsProxy) { try { m.physicsProxy.dispose(); } catch(e){} }
+                    });
+                    gameData.monsters.length = 0;
+                    
+                    let boss = bossFactories[bossType](gameData.scene);
+                    const bx = gameData.stickman.position.x + (Math.random() > 0.5 ? 30 : -30);
+                    const bz = gameData.stickman.position.z + (Math.random() > 0.5 ? 30 : -30);
+                    boss.position = new BABYLON.Vector3(bx, 20, bz);
+                    gameData.monsters.push(boss);
+                }
+            }, 50);
+        };
+
+        const bossButtons = [
+            { label: "Goliath", type: "goliath", color: "darkred" },
+            { label: "Amalgame", type: "amalgame", color: "purple" },
+            { label: "Kraken", type: "kraken", color: "teal" },
+            { label: "Nuée", type: "nuee", color: "#2980b9" },
+            { label: "Mimic", type: "mimic", color: "#2c3e50" }
+        ];
+        bossButtons.forEach((cfg, i) => {
+            const btn = BABYLON.GUI.Button.CreateSimpleButton("debug_" + cfg.type, cfg.label);
+            btn.width = "90px"; btn.height = "30px";
+            btn.color = "white"; btn.background = cfg.color;
+            btn.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+            btn.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+            btn.left = "20px"; btn.top = (50 + i * 35) + "px";
+            btn.thickness = 2; btn.cornerRadius = 8; btn.fontSize = 11;
+            btn.onPointerUpObservable.add(() => spawnBossLogic(cfg.type));
+            gameUI.addControl(btn);
+        });
 
         // --- UI : MENU D'AMÉLIORATION (LEVEL UP) ---
         const upgradePanel = new BABYLON.GUI.Rectangle();
@@ -312,7 +376,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         camera._sprintLerp = 0.12; // smoothing
         
         // --- INITIALISATION DES VAGUES DE MONSTRES ---
-        const monsters = createMonsters(scene, 10); // Vague 1 initiale
+        const monsters = createMonsters(scene, 25); // Vague 1 initiale plus nerveuse
 
         const waveData = {
             elapsedTime: 0,
@@ -658,7 +722,60 @@ window.addEventListener('DOMContentLoaded', async function () {
             } catch(e) {}
         };
 
-        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker };
+        // --- OBJECT POOLING ---
+        const fireballPool = [];
+        try {
+            const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
+            fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0);
+            for (let i = 0; i < 50; i++) {
+                const fireball = BABYLON.MeshBuilder.CreateSphere("fireball_" + i, {diameter: 0.6}, scene);
+                fireball.material = fireMat;
+                fireball.isVisible = false;
+                
+                const trail = new BABYLON.ParticleSystem("trail_" + i, 200, scene);
+                trail.particleTexture = new BABYLON.Texture("assets/particles/smoke.png", scene);
+                trail.emitter = fireball;
+                trail.minEmitBox = new BABYLON.Vector3(0, 0, 0);
+                trail.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
+                trail.color1 = new BABYLON.Color4(0.2, 0.2, 0.2, 0.6);
+                trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
+                trail.minSize = 0.1; trail.maxSize = 0.4;
+                trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
+                trail.emitRate = 80;
+                trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
+                trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
+                trail.gravity = new BABYLON.Vector3(0, -1, 0);
+                trail.disposeOnStop = false; // Important : pas de destruction automatique
+                
+                fireballPool.push({ mesh: fireball, trail: trail, inUse: false });
+            }
+        } catch(e) {}
+
+        const hitSparkPool = [];
+        try {
+            for (let i = 0; i < 20; i++) {
+                const ps = new BABYLON.ParticleSystem("hitSpark_" + i, 200, scene);
+                ps.particleTexture = new BABYLON.Texture("assets/particles/spark.png", scene);
+                ps.minEmitBox = new BABYLON.Vector3(-0.2, -0.2, -0.2);
+                ps.maxEmitBox = new BABYLON.Vector3(0.2, 0.2, 0.2);
+                ps.color1 = new BABYLON.Color4(1, 0.6, 0.1, 1.0);
+                ps.color2 = new BABYLON.Color4(1, 0.3, 0.05, 1.0);
+                ps.minSize = 0.05; ps.maxSize = 0.2;
+                ps.minLifeTime = 0.2; ps.maxLifeTime = 0.6;
+                ps.emitRate = 400;
+                ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
+                ps.direction2 = new BABYLON.Vector3(1, 1, 1);
+                ps.gravity = new BABYLON.Vector3(0, -9.8, 0);
+                ps.disposeOnStop = false; // Important
+                
+                hitSparkPool.push({ ps: ps, inUse: false });
+            }
+        } catch(e) {}
+
+        const getFireball = () => fireballPool.find(p => !p.inUse) || null;
+        const getHitSpark = () => hitSparkPool.find(p => !p.inUse) || null;
+
+        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark, bossCount: 0 };
 
         // attach shake function to sceneData so caller gets it
         sceneData.shakeCamera = shakeCamera;
@@ -705,14 +822,12 @@ window.addEventListener('DOMContentLoaded', async function () {
             try { sceneData._playerFrozen = false; } catch(e) {}
             try { unfreezeScene(currentScene); } catch(e) {}
             
-            sceneData.prevUpgradeKillCount = sceneData.nextUpgradeKillCount;
-
-            // Augmentation incrémentale du palier requis pour la prochaine amélioration
-            if (sceneData.nextUpgradeKillCount < 100) sceneData.nextUpgradeKillCount += 30; // 20, 50, 80...
-            else if (sceneData.nextUpgradeKillCount < 500) sceneData.nextUpgradeKillCount += 100; // 180, 280...
-            else sceneData.nextUpgradeKillCount += 200; // 680, 880...
+            // Conserve le surplus d'XP et augmente le palier de 20%
+            sceneData.currentXp = Math.max(0, sceneData.currentXp - sceneData.xpRequiredForLevel);
+            sceneData.xpRequiredForLevel = Math.floor(sceneData.xpRequiredForLevel * 1.8);
             
-            sceneData.xpBar.width = "0%";
+            let progress = Math.min(100, (sceneData.currentXp / sceneData.xpRequiredForLevel) * 100);
+            sceneData.xpBar.width = progress + "%";
         };
 
         // expose shake for other modules (assigned after function declaration)
@@ -806,125 +921,56 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         const { stickman, monsters, inputMap, camera, cover, birds, scene, waveData } = gameData;
 
+        // ---- LOGIQUE GLOBALE DE MORT ET D'EFFET DE DÉGÂTS ----
+        if (gameData.health <= 0 && !gameData.isDead) { // Vérification de mort globale
+            if (bonusState && bonusState.reviveLevel > 0 && !bonusState._reviveUsed) {
+                bonusState._reviveUsed = true;
+                gameData.health = Math.max(1, Math.floor(gameData.maxHealth * 0.5));
+                if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
+                if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
+                // Popup visuel du revive
+                try {
+                    const popup = new BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("reviveUI");
+                    const txt = new BABYLON.GUI.TextBlock();
+                    txt.text = "REVIVE!"; txt.color = "lightgreen"; txt.fontSize = 40;
+                    popup.addControl(txt);
+                    setTimeout(() => { popup.removeControl(txt); popup.dispose(); }, 1500);
+                } catch(e) {}
+            } else {
+                if (gameData.showDeathScreen) gameData.showDeathScreen();
+            }
+        }
+
+        // Effet de sang / vignette sur les bords si HP <= 50%
+        if (gameData.damageVignette && !gameData.isDead) {
+            if (gameData.health <= gameData.maxHealth * 0.5 && gameData.health > 0) {
+                const ratio = (gameData.maxHealth * 0.5 - gameData.health) / (gameData.maxHealth * 0.5);
+                gameData.damageVignette.alpha = Math.max(0, ratio * 0.8);
+            } else {
+                gameData.damageVignette.alpha = 0;
+            }
+        }
+
         // Dynamic camera: slight zoom-in when sprinting for speed impression
         try {
             const sprintPressed = !!inputMap[gameSettings.keys.sprint];
-            const base = (camera && camera._baseRadius) ? camera._baseRadius : 15;
-            const sprintZoom = (camera && camera._sprintZoom) ? camera._sprintZoom : 3.0;
-            const lerp = (camera && camera._sprintLerp) ? camera._sprintLerp : 0.12;
+            const base = (camera && camera._baseRadius !== undefined) ? camera._baseRadius : 15;
+            const sprintZoom = (camera && camera._sprintZoom !== undefined) ? camera._sprintZoom : 0;
+            const lerp = (camera && camera._sprintLerp !== undefined) ? camera._sprintLerp : 0.12;
             const targetRadius = sprintPressed ? (base - sprintZoom) : base;
-            if (camera) {
+            if (camera && sprintZoom > 0) {
                 camera.radius += (targetRadius - camera.radius) * lerp;
+            } else if (camera && camera.radius !== base) {
+                // Reset progressif si pas de zoom sprint
+                camera.radius += (base - camera.radius) * lerp;
             }
         } catch(e) {}
         if (birds && birds.length > 0) {
             updateBirds(birds, stickman.position); // Les oiseaux réagissent à la position du joueur
         }
         
-        // --- GESTION DU LOD (Level Of Detail) DES ARBRES ---
+        // Culling pour l'herbe (l'animation de vent est maintenant gérée sur le GPU via les Custom Shaders)
         try {
-            if (scene._treeObjects && stickman) {
-                const lodDist = 150;
-                const fadeZone = 15; // Transition douce sur 15 mètres
-                const shadowDistSq = 70 * 70; // 70 mètres pour désactiver les ombres des arbres
-                const maxDistSq = 300 * 300; // 300 mètres max pour désactiver totalement l'arbre
-                scene._treeObjects.forEach(tree => {
-                    const activeMesh = tree.lowMesh || tree.mesh;
-                    if (!activeMesh) return;
-
-                    const distSq = BABYLON.Vector3.DistanceSquared(stickman.position, activeMesh.position);
-                    
-                    // 1. Culling : Désactivation totale si très loin (Economise énormément de CPU)
-                    if (distSq > maxDistSq) {
-                        if (tree.highMesh && tree.highMesh.isEnabled()) tree.highMesh.setEnabled(false);
-                        if (tree.lowMesh && tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(false);
-                        if (tree.mesh && tree.mesh.isEnabled()) tree.mesh.setEnabled(false);
-                        
-                        // Désactiver les ombres par sécurité
-                        if (scene.shadowGenerator && tree.highMesh && tree.highMesh._castsShadow) {
-                            scene.shadowGenerator.removeShadowCaster(tree.highMesh, true);
-                            tree.highMesh._castsShadow = false;
-                        }
-                        return; // On stoppe le calcul ici, on passe à l'arbre suivant !
-                    }
-                    
-                    // Si qualité Low (pas de highMesh), on s'assure juste que l'arbre est visible
-                    if (!tree.highMesh) {
-                        if (!tree.mesh.isEnabled()) tree.mesh.setEnabled(true);
-                        return;
-                    }
-
-                    // --- Suite : Uniquement si High/Medium Quality avec LOD ---
-                    if (tree.baseScale) {
-                        // 2. LOD Géométrie avec transition fluide (Cross-Scale)
-                        const dist = Math.sqrt(distSq);
-                        if (dist > lodDist + fadeZone) { 
-                            // Complètement loin (Low uniquement)
-                            if (tree.highMesh.isEnabled()) tree.highMesh.setEnabled(false);
-                            if (!tree.lowMesh.isEnabled()) {
-                                tree.lowMesh.setEnabled(true);
-                                tree.lowMesh.scaling.x = tree.baseScale;
-                                tree.lowMesh.scaling.y = tree.baseScale;
-                                tree.lowMesh.scaling.z = tree.baseScale;
-                            }
-                        } else if (dist < lodDist - fadeZone) { 
-                            // Complètement proche (High uniquement)
-                            if (!tree.highMesh.isEnabled()) {
-                                tree.highMesh.setEnabled(true);
-                                tree.highMesh.scaling.x = tree.baseScale;
-                                tree.highMesh.scaling.y = tree.baseScale;
-                                tree.highMesh.scaling.z = tree.baseScale;
-                            }
-                            if (tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(false);
-                        } else { 
-                            // Zone de transition (les deux s'affichent et changent de taille)
-                            if (!tree.highMesh.isEnabled()) tree.highMesh.setEnabled(true);
-                            if (!tree.lowMesh.isEnabled()) tree.lowMesh.setEnabled(true);
-                            
-                            const ratio = (dist - (lodDist - fadeZone)) / (fadeZone * 2);
-                            
-                            // L'arbre low grandit quand on s'éloigne
-                            const lowScale = tree.baseScale * ratio;
-                            tree.lowMesh.scaling.x = lowScale;
-                            tree.lowMesh.scaling.y = lowScale;
-                            tree.lowMesh.scaling.z = lowScale;
-                            
-                            // L'arbre high rétrécit quand on s'éloigne
-                            const highScale = tree.baseScale * (1.0 - ratio);
-                            tree.highMesh.scaling.x = highScale;
-                            tree.highMesh.scaling.y = highScale;
-                            tree.highMesh.scaling.z = highScale;
-                        }
-                        
-                        // 3. LOD Ombres (Seuls les arbres proches projettent des ombres)
-                        if (scene.shadowGenerator) {
-                            if (distSq > shadowDistSq) {
-                                if (tree.highMesh._castsShadow) {
-                                    scene.shadowGenerator.removeShadowCaster(tree.highMesh, true);
-                                    tree.highMesh._castsShadow = false;
-                                }
-                            } else {
-                                if (!tree.highMesh._castsShadow) {
-                                    scene.shadowGenerator.addShadowCaster(tree.highMesh, true);
-                                    tree.highMesh._castsShadow = true;
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        } catch (e) {}
-
-        // Wind sway for trees and grass
-        try {
-            const tnow = Date.now();
-            if (scene._swayTrees) {
-                scene._swayTrees.forEach(tr => {
-                    const s = tr.swayData;
-                    try { s.phase += s.speed * (engine.getDeltaTime() * (gameData && gameData.timeScale ? gameData.timeScale : 1)); } catch(e) {}
-                    tr.rotation.z = (s.baseRotZ || 0) + Math.sin(s.phase) * s.amount;
-                });
-            }
             if (scene._swayGrass && stickman) {
                 const grassMaxDistSq = 150 * 150; // 150 mètres max (l'herbe est invisible au-delà de toute façon)
                 scene._swayGrass.forEach(g => {
@@ -933,20 +979,16 @@ window.addEventListener('DOMContentLoaded', async function () {
                     // Culling : Désactivation totale de l'herbe lointaine
                     if (distSq > grassMaxDistSq) {
                         if (g.isEnabled()) g.setEnabled(false);
-                        return; // On stoppe le calcul de l'animation de vent pour cette herbe !
                     } else {
                         if (!g.isEnabled()) g.setEnabled(true);
                     }
-
-                    const s = g.swayData;
-                    try { s.phase += s.speed * (engine.getDeltaTime() * (gameData && gameData.timeScale ? gameData.timeScale : 1)); } catch(e) {}
-                    g.rotation.x = Math.sin(s.phase) * s.amount;
                 });
             }
         } catch (e) {}
 
-        const handleMonsterKill = (j) => {
-            const m = monsters[j];
+        const handleMonsterKill = (m) => {
+            const j = monsters.indexOf(m);
+            if (j === -1) return;
             try {
                 if (m.physicsAgg) {
                     try { m.physicsAgg.body.dispose(); } catch(e) {}
@@ -960,6 +1002,15 @@ window.addEventListener('DOMContentLoaded', async function () {
                     try { m.physicsProxy.dispose(); } catch(e) {}
                     m.physicsProxy = null;
                 }
+            
+            // Nettoyage des bonus copiés si c'était un Mimic
+            if (m._type === 'mimic') {
+                try { if (m._auraMesh) m._auraMesh.dispose(); } catch(e){}
+                try { if (m._sawsMeshes) m._sawsMeshes.forEach(s => s.dispose()); } catch(e){}
+                try { if (m._activeMissiles) m._activeMissiles.forEach(p => p.mesh.dispose()); } catch(e){}
+                try { if (m._activeZones) m._activeZones.forEach(z => z.mesh.dispose()); } catch(e){}
+            }
+            
             } catch(e) {}
 
             // Very small chance to spawn a heal pack (+10 HP) at the monster position before disposing
@@ -993,7 +1044,27 @@ window.addEventListener('DOMContentLoaded', async function () {
             monsters.splice(j, 1);
             
             gameData.kills++;
-            // XP boost handled as extra progress below (so it participates in dynamicRequired calc)
+            
+            // --- SYSTÈME D'XP ---
+            let xpGain = 10;
+            if (m._type === 'tank' || m._type === 'ranged') {
+                xpGain = 25;
+            } else if (['boss', 'amalgame', 'kraken', 'nuee', 'mimic'].includes(m._type)) {
+                xpGain = 500;
+            }
+            
+            if (bonusState.xpBoostLevel > 0) {
+                xpGain += xpGain * (bonusState.xpBoostLevel * 0.15); // +15% d'XP par niveau
+            }
+            
+            gameData.currentXp += Math.floor(xpGain);
+            
+            let progress = Math.min(100, (gameData.currentXp / gameData.xpRequiredForLevel) * 100);
+            if(gameData.xpBar) gameData.xpBar.width = progress + "%";
+
+            if (gameData.currentXp >= gameData.xpRequiredForLevel && !gameData.upgradePanel.isVisible) {
+                showUpgradeMenu(gameData);
+            }
 
             // Magnet: small heal on kill if magnetLevel present
             try {
@@ -1001,17 +1072,45 @@ window.addEventListener('DOMContentLoaded', async function () {
                     const heal = Math.floor(2 * bonusState.magnetLevel);
                     gameData.health = Math.min(gameData.maxHealth, gameData.health + heal);
                     if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
-                    if (gameData.hpText) gameData.hpText.text = `HP: ${gameData.health}/${gameData.maxHealth}`;
+                    if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
                 }
             } catch(e) {}
 
-            if (monsters[j] && monsters[j]._type === 'boss') {
-                if (gameData.bossKillsText) {
-                    gameData.bossKillsText.text = "VICTOIRE !";
-                    gameData.bossKillsText.color = "gold";
+            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
+
+        const bossTypes = ['boss', 'amalgame', 'kraken', 'nuee', 'mimic'];
+            const isBossType = m && bossTypes.includes(m._type);
+
+            if (isBossType) {
+                // Pour l'Amalgame, on ne valide que si c'était le DERNIER morceau
+                let bossPartsLeft = 0;
+                if (m._type === 'amalgame') {
+                    bossPartsLeft = monsters.filter(x => x._type === 'amalgame').length;
+                }
+                
+                if (bossPartsLeft === 0) {
+                    gameData.bossSpawned = false;
+                    gameData.bossCount++;
+                    
+                    let nextStep = 300;
+                    if (gameData.bossCount >= 2) {
+                        nextStep = 300 + (gameData.bossCount - 1) * 100; // +400 pour le 3ème, +500 pour le 4ème, etc.
+                    }
+                    gameData.nextBossThreshold += nextStep;
+                    
+                    // Nettoyer les effets du Kraken (remettre l'eau)
+                    if (m._type === 'kraken' && gameData.currentWaterLevel !== undefined) {
+                        gameData.currentWaterLevel = waterLevel;
+                        try { if (scene.getMeshByName("water")) scene.getMeshByName("water").position.y = waterLevel; } catch(e){}
+                    }
+                    
+                    if (gameData.bossKillsText) {
+                        gameData.bossKillsText.text = "Kills : " + Math.max(0, gameData.nextBossThreshold - gameData.kills);
+                        gameData.bossKillsText.color = "yellow";
+                    }
                 }
             } else {
-                let killsLeft = Math.max(0, 100 - gameData.kills);
+                let killsLeft = Math.max(0, gameData.nextBossThreshold - gameData.kills);
                 if(gameData.bossKillsText) gameData.bossKillsText.text = "Kills : " + killsLeft;
 
                 if (killsLeft === 0 && !gameData.bossSpawned) {
@@ -1023,28 +1122,25 @@ window.addEventListener('DOMContentLoaded', async function () {
                             if (m.physicsProxy) { try { m.physicsProxy.dispose(); } catch(e){} }
                         });
                         monsters.length = 0;
-                        const boss = createBoss(scene);
+                        
+                        // Rotation sur 5 boss
+                        const bossRotationOrder = ['goliath', 'amalgame', 'kraken', 'nuee', 'mimic'];
+                        const bossFactoriesLocal = {
+                            goliath: () => createBoss(scene),
+                            amalgame: () => createAmalgame(scene, 1),
+                            kraken: () => createKraken(scene),
+                            nuee: () => createNuee(scene),
+                            mimic: () => createMimic(scene)
+                        };
+                        let bossIndex = (gameData.bossCount || 0) % 5;
+                        let boss = bossFactoriesLocal[bossRotationOrder[bossIndex]]();
+                        
                         const bx = stickman.position.x + (Math.random() > 0.5 ? 30 : -30);
                         const bz = stickman.position.z + (Math.random() > 0.5 ? 30 : -30);
                         boss.position = new BABYLON.Vector3(bx, 20, bz);
                         monsters.push(boss);
                     }, 50);
                 }
-            }
-            let currentLevelKills = gameData.kills - gameData.prevUpgradeKillCount;
-            let baseRequired = gameData.nextUpgradeKillCount - gameData.prevUpgradeKillCount;
-            // Apply xpBoost as additional fractional progress towards next upgrade
-            if (bonusState.xpBoostLevel > 0) {
-                currentLevelKills += bonusState.xpBoostLevel * 0.5;
-            }
-            // Ajuste la difficulté de niveau en fonction du nombre de monstres actifs
-            let difficultyMultiplier = 1 + (gameData.monsters ? gameData.monsters.length * 0.02 : 0);
-            let dynamicRequired = Math.max(1, Math.floor(baseRequired * difficultyMultiplier));
-            let progress = Math.min(100, (currentLevelKills / dynamicRequired) * 100);
-            if(gameData.xpBar) gameData.xpBar.width = progress + "%";
-
-            if (currentLevelKills >= dynamicRequired && !gameData.upgradePanel.isVisible) {
-                showUpgradeMenu(gameData);
             }
         };
 
@@ -1056,6 +1152,22 @@ window.addEventListener('DOMContentLoaded', async function () {
         const dt = deltaMs / 1000;
 
         updateBonuses(gameData, dt, handleMonsterKill);
+
+        // --- GESTION DU BROUILLARD DYNAMIQUE ET DE LA NUIT (POUR LE MIMIC) ---
+        const isMimicAlive = monsters.some(m => m._type === 'mimic');
+        const targetFogDensity = isMimicAlive ? 0.015 : 0.0015; // Réduit pour qu'on puisse quand même voir
+        const targetFogColor = isMimicAlive ? new BABYLON.Color3(0, 0, 0) : new BABYLON.Color3(0.08, 0.09, 0.12);
+        const targetLightIntensity = isMimicAlive ? 0.1 : 0.8; // Baisse la lumière pour simuler la nuit profonde
+        
+        if (Math.abs(scene.fogDensity - targetFogDensity) > 0.00001) {
+            // Transition en douceur du brouillard (opacité et couleur)
+            scene.fogDensity += (targetFogDensity - scene.fogDensity) * (dt * 0.5);
+            scene.fogColor = BABYLON.Color3.Lerp(scene.fogColor, targetFogColor, dt * 0.5);
+            scene.clearColor = new BABYLON.Color4(scene.fogColor.r, scene.fogColor.g, scene.fogColor.b, 1.0); // Le ciel s'assombrit
+            if (scene.dirLight) {
+                scene.dirLight.intensity += (targetLightIntensity - scene.dirLight.intensity) * (dt * 0.5);
+            }
+        }
 
         // --- GESTION DES VAGUES ---
         waveData.elapsedTime += dt;
@@ -1133,13 +1245,9 @@ window.addEventListener('DOMContentLoaded', async function () {
             moveVector.normalize().scaleInPlace(speed);
         }
 
-        const rayOrigin = stickman.position.clone();
-        const groundRay = new BABYLON.Ray(rayOrigin, new BABYLON.Vector3(0, -1, 0), 2.2);
-        // Optimisation CPU : Le rayon ne scanne QUE le sol et les bâtiments, ignorant l'herbe et les arbres
-        const hit = scene.pickWithRay(groundRay, (mesh) => {
-            return mesh.name === "ground" || mesh.name.startsWith("building");
-        });
-        const isGrounded = hit.hit;
+        // Remplacement du Raycast par une vérification mathématique pure
+        const terrainHeight = getHeight(stickman.position.x, stickman.position.z);
+        const isGrounded = stickman.position.y <= terrainHeight + 1.3; // 1.1 (centre de la capsule) + 0.2 de tolérance
 
         if (!stickman.physicsBody) {
             scene.render();
@@ -1232,9 +1340,44 @@ window.addEventListener('DOMContentLoaded', async function () {
         }
 
         let velY = currentVel.y;
-        if (isGrounded && inputMap[" "]) {
-            velY = 8;
-            inputMap[" "] = false;
+        
+        if (isGrounded) {
+            stickman.hasDoubleJumped = false;
+        }
+
+        if (inputMap[" "]) {
+            if (isGrounded) {
+                velY = 14; 
+                inputMap[" "] = false;
+            } else if (!stickman.hasDoubleJumped) {
+                velY = 12; // Impulsion du double saut (un peu moins forte que le saut initial)
+                stickman.hasDoubleJumped = true;
+                inputMap[" "] = false;
+                
+                // Petit effet visuel pour le double saut (nuage de poussière sous les pieds)
+                try {
+                    const ps = new BABYLON.ParticleSystem("djSpark", 30, scene);
+                    ps.particleTexture = new BABYLON.Texture("assets/particles/spark.png", scene); // Utilisation de spark car smoke n'existe peut-être pas
+                    ps.emitter = stickman.position.clone();
+                    ps.emitter.y -= 0.5;
+                    ps.minEmitBox = new BABYLON.Vector3(-0.2, 0, -0.2);
+                    ps.maxEmitBox = new BABYLON.Vector3(0.2, 0, 0.2);
+                    ps.color1 = new BABYLON.Color4(0.8, 0.8, 0.8, 0.8);
+                    ps.color2 = new BABYLON.Color4(1, 1, 1, 0);
+                    ps.minSize = 0.5; ps.maxSize = 1.0;
+                    ps.minLifeTime = 0.2; ps.maxLifeTime = 0.4;
+                    ps.emitRate = 100;
+                    ps.direction1 = new BABYLON.Vector3(-2, -1, -2);
+                    ps.direction2 = new BABYLON.Vector3(2, -0.5, 2);
+                    ps.disposeOnStop = true;
+                    ps.start();
+                    setTimeout(() => ps.stop(), 100);
+                } catch(e) {}
+            }
+        }
+
+        if (!isGrounded) {
+            velY -= 25 * dt; // Gravité artificielle pour annuler le flottement
         }
 
         if (stickman.position.y < waterLevel && velY < -2) {
@@ -1260,99 +1403,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             const nowMs = Date.now();
             const distToPlayer = BABYLON.Vector3.Distance(monster.position, stickman.position);
 
-            if (monster._type === 'boss') {
-                if (monster._isJumping) {
-                    monster.position.y -= 25 * dt; // Chute rapide
-                    const dir = stickman.position.subtract(monster.position);
-                    dir.y = 0;
-                    if (dir.length() > 0.1) {
-                        dir.normalize();
-                        monster.position.addInPlace(dir.scale(8 * dt)); // Ajuste sa chute vers le joueur
-                    }
-                    if (monster.position.y <= getHeight(monster.position.x, monster.position.z) + 3) {
-                        monster.position.y = getHeight(monster.position.x, monster.position.z) + 3;
-                        monster._isJumping = false;
-                        monster._lastJumpTime = nowMs;
-                        
-                        try { if (gameData.shakeCamera) gameData.shakeCamera(0.6, 600); } catch(e){}
-                        try { if (gameData.explosionSound) gameData.explosionSound.play(); } catch(e){}
-                        
-                        // Onde de choc (anneau texturé)
-                        const sw = BABYLON.MeshBuilder.CreateTorus("shockwave", {diameter: 6, thickness: 1}, scene);
-                        sw.position = monster.position.clone();
-                        sw.position.y = getHeight(sw.position.x, sw.position.z) + 0.5;
-                        const swMat = new BABYLON.StandardMaterial("swMat", scene);
-                        swMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0);
-                        swMat.alpha = 0.8; 
-                        swMat.disableLighting = true;
-                        sw.material = swMat;
-                        
-                        let swAge = 0;
-                        scene.onBeforeRenderObservable.add(function expandSW() {
-                            const sdt = engine.getDeltaTime() / 1000;
-                            swAge += sdt;
-                            sw.scaling.scaleInPlace(1 + 8 * sdt);
-                            sw.material.alpha -= 0.8 * sdt;
-                            
-                            if (!sw._hitPlayer && BABYLON.Vector3.Distance(stickman.position, sw.position) < (sw.scaling.x * 3)) {
-                                sw._hitPlayer = true;
-                                gameData.health = Math.max(0, gameData.health - 25);
-                                if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
-                                if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
-                                try { if (gameData.shakeCamera) gameData.shakeCamera(0.4, 300); } catch(e){}
-                            }
-                            if (swAge > 1.2) {
-                                sw.dispose();
-                                scene.onBeforeRenderObservable.removeCallback(expandSW);
-                            }
-                        });
-                    }
-                } else {
-                    const dir = stickman.position.subtract(monster.position);
-                    dir.y = 0;
-                    if (dir.length() > 0.1) {
-                        dir.normalize();
-                        monster.position.addInPlace(dir.scale(monster.ai.speed * dt));
-                    }
-                    monster.position.y = getHeight(monster.position.x, monster.position.z) + 3;
-                    
-                    if (nowMs - monster._lastJumpTime > 6000) {
-                        monster._isJumping = true;
-                        monster.position.y += 20; // Propulsé en l'air
-                    }
-                    if (distToPlayer < 4) {
-                        if (!monster.lastHitTime || nowMs - monster.lastHitTime > 1000) {
-                            monster.lastHitTime = nowMs;
-                            gameData.health = Math.max(0, gameData.health - 15);
-                            if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
-                            if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
-                        }
-                    }
-                }
-                
-                // Barre de vie du boss visuelle (au-dessus de sa tête)
-                if (!monster._hpBarUI) {
-                    try {
-                        const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
-                        const container = new BABYLON.GUI.Rectangle();
-                        container.width = "100px"; container.height = "15px";
-                        container.thickness = 1; container.background = "black";
-                        advancedTexture.addControl(container);
-                        container.linkWithMesh(monster);
-                        container.linkOffsetY = -100;
-                        const hpBar = new BABYLON.GUI.Rectangle();
-                        hpBar.width = "100%"; hpBar.height = "100%";
-                        hpBar.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-                        hpBar.background = "red"; hpBar.thickness = 0;
-                        container.addControl(hpBar);
-                        monster._hpBarUI = { root: advancedTexture, bar: hpBar, container };
-                        monster.onDisposeObservable.add(() => advancedTexture.dispose());
-                    } catch(e){}
-                } else {
-                    monster._hpBarUI.bar.width = Math.max(0, (monster._hp / monster.maxHp) * 100) + "%";
-                }
-                
-                return; // Skips generic AI for the boss
+            if (updateBossAI(monster, stickman, scene, gameData, dt, nowMs, distToPlayer, engine, waterLevel, bonusState, projectiles, getHeight, monsters)) {
+                return;
             }
 
             // Handle stun
@@ -1537,12 +1589,12 @@ window.addEventListener('DOMContentLoaded', async function () {
                             } else {
                                 // Armor reduces damage by a percentage per level (with caps)
                                 const baseDamage = 1;
-                                const reduction = Math.min(0.6, 0.12 * (bonusState.armorLevel || 0)); // up to 60%
+                                const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0))); // Rendement dégressif, max 75%
                                 const damageFloat = baseDamage * (1 - reduction);
                                 const damage = Math.max(0.25, damageFloat); // always some minimum damage so player can die
                                 gameData.health = Math.max(0, gameData.health - damage);
                                 if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
-                                if (gameData.hpText) gameData.hpText.text = `HP: ${gameData.health}/${gameData.maxHealth}`;
+                                if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
 
                                 // Armor reflect chance
                                 if (bonusState.armorReflectLevel > 0) {
@@ -1556,25 +1608,20 @@ window.addEventListener('DOMContentLoaded', async function () {
                                                 if (d < 4 && d < nd) { nd = d; nearestIdx = mi; }
                                             }
                                             if (nearestIdx !== -1) {
-                                                handleMonsterKill(nearestIdx);
+                                                let rMob = monsters[nearestIdx];
+                                                if (rMob && rMob._type === 'boss') {
+                                                    rMob._hp -= 300;
+                                                    if (rMob._hp <= 0) handleMonsterKill(rMob);
+                                                } else {
+                                                    handleMonsterKill(rMob);
+                                                }
                                             }
                                         } catch(e) {}
                                     }
                                 }
 
                                 try { if (gameData.shakeCamera) gameData.shakeCamera(0.18, 250); } catch(e) {}
-                                if (gameData.health <= 0) {
-                                    // Revive if available and not used
-                                    if (bonusState.reviveLevel > 0 && !bonusState._reviveUsed) {
-                                        bonusState._reviveUsed = true;
-                                        gameData.health = Math.max(1, Math.floor(gameData.maxHealth * 0.5));
-                                        if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
-                                        if (gameData.hpText) gameData.hpText.text = `HP: ${gameData.health}/${gameData.maxHealth}`;
-                                    } else {
-                                        if (gameData && gameData.showDeathScreen) gameData.showDeathScreen();
-                                        else { isGamePaused = true; if (gameData.pausePanel) gameData.pausePanel.isVisible = true; }
-                                    }
-                                }
+                                // La logique de mort / revive est mainteneant gérée globalement en haut de la boucle de rendu
                             }
                         }
                     } catch(e) {}
@@ -1606,7 +1653,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         const now = Date.now();
         const cooldownMultiplier = Math.max(0.25, 1 - 0.08 * (bonusState.cooldownReductionLevel || 0));
-        const fireCooldown = Math.floor(Math.max(200, 2500 - (bonusState.fireRateLevel * 400)) * cooldownMultiplier);
+        const fireCooldown = Math.floor(Math.max(100, 2500 - (bonusState.fireRateLevel * 600)) * cooldownMultiplier);
         
         // --- 1. CRÉATION DES TIRS ---
         if (now - lastFireTime > fireCooldown) { 
@@ -1653,39 +1700,60 @@ window.addEventListener('DOMContentLoaded', async function () {
                     currentDir = BABYLON.Vector3.TransformNormal(targetDir, rotMat);
                 }
 
-                const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
-                fireball.position = stickman.position.clone();
-                fireball.position.y += 1.2;
+                let pooledObj = gameData.getFireball && gameData.getFireball();
+                if (pooledObj) {
+                    pooledObj.inUse = true;
+                    pooledObj.mesh.position = stickman.position.clone();
+                    pooledObj.mesh.position.y += 1.2;
+                    pooledObj.mesh.isVisible = true;
 
-                const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
-                fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0); 
-                fireball.material = fireMat;
+                    const proj = { 
+                        mesh: pooledObj.mesh, 
+                        life: 60, 
+                        direction: currentDir, 
+                        speedMult: speedMult, 
+                        owner: 'player', 
+                        damage: 1,
+                        pooledObj: pooledObj
+                    };
 
-                // Plus de moteur physique pour la boule = 0 rebond imprévu et meilleures performances
-                const proj = { mesh: fireball, life: 60, direction: currentDir, speedMult: speedMult, owner: 'player', damage: 1 };
+                    if (pooledObj.trail) {
+                        pooledObj.trail.start();
+                        proj._trail = pooledObj.trail;
+                    }
 
-                // Add a simple particle trail if possible
-                try {
-                    const trail = new BABYLON.ParticleSystem("trail", 200, scene);
-                    trail.particleTexture = new BABYLON.Texture("assets/particles/smoke.png", scene);
-                    trail.emitter = fireball; // attach
-                    trail.minEmitBox = new BABYLON.Vector3(0, 0, 0);
-                    trail.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
-                    trail.color1 = new BABYLON.Color4(0.2, 0.2, 0.2, 0.6);
-                    trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
-                    trail.minSize = 0.1; trail.maxSize = 0.4;
-                    trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
-                    trail.emitRate = 80;
-                    trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
-                    trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
-                    trail.gravity = new BABYLON.Vector3(0, -1, 0);
-                    trail.disposeOnStop = true;
-                    trail.start();
-                    proj._trail = trail;
-                } catch (e) {}
-
-                projectiles.push(proj);
-                try { if (fireSound) fireSound.play(); } catch(e) {}
+                    projectiles.push(proj);
+                    try { if (fireSound) fireSound.play(); } catch(e) {}
+                } else {
+                    // Fallback de sécurité si le pool est vide
+                    const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
+                    fireball.position = stickman.position.clone();
+                    fireball.position.y += 1.2;
+                    const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
+                    fireMat.emissiveColor = new BABYLON.Color3(1, 0.2, 0); 
+                    fireball.material = fireMat;
+                    const proj = { mesh: fireball, life: 60, direction: currentDir, speedMult: speedMult, owner: 'player', damage: 1 };
+                    try {
+                        const trail = new BABYLON.ParticleSystem("trail", 200, scene);
+                        trail.particleTexture = new BABYLON.Texture("assets/particles/smoke.png", scene);
+                        trail.emitter = fireball;
+                        trail.minEmitBox = new BABYLON.Vector3(0, 0, 0);
+                        trail.maxEmitBox = new BABYLON.Vector3(0, 0, 0);
+                        trail.color1 = new BABYLON.Color4(0.2, 0.2, 0.2, 0.6);
+                        trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
+                        trail.minSize = 0.1; trail.maxSize = 0.4;
+                        trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
+                        trail.emitRate = 80;
+                        trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
+                        trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
+                        trail.gravity = new BABYLON.Vector3(0, -1, 0);
+                        trail.disposeOnStop = true;
+                        trail.start();
+                        proj._trail = trail;
+                    } catch (e) {}
+                    projectiles.push(proj);
+                    try { if (fireSound) fireSound.play(); } catch(e) {}
+                }
             }
         }
 
@@ -1720,22 +1788,13 @@ window.addEventListener('DOMContentLoaded', async function () {
 
                         // Small particle explosion at hit
                         try {
-                            const ps = new BABYLON.ParticleSystem("hitSpark", 200, scene);
-                            ps.particleTexture = new BABYLON.Texture("assets/particles/spark.png", scene);
-                            ps.emitter = p.mesh.position.clone();
-                            ps.minEmitBox = new BABYLON.Vector3(-0.2, -0.2, -0.2);
-                            ps.maxEmitBox = new BABYLON.Vector3(0.2, 0.2, 0.2);
-                            ps.color1 = new BABYLON.Color4(1, 0.6, 0.1, 1.0);
-                            ps.color2 = new BABYLON.Color4(1, 0.3, 0.05, 1.0);
-                            ps.minSize = 0.05; ps.maxSize = 0.2;
-                            ps.minLifeTime = 0.2; ps.maxLifeTime = 0.6;
-                            ps.emitRate = 400;
-                            ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
-                            ps.direction2 = new BABYLON.Vector3(1, 1, 1);
-                            ps.gravity = new BABYLON.Vector3(0, -9.8, 0);
-                            ps.disposeOnStop = true;
-                            ps.start();
-                            setTimeout(() => ps.stop(), 120);
+                            let pooledSpark = gameData.getHitSpark && gameData.getHitSpark();
+                            if (pooledSpark) {
+                                pooledSpark.inUse = true;
+                                pooledSpark.ps.emitter = p.mesh.position.clone();
+                                pooledSpark.ps.start();
+                                setTimeout(() => { pooledSpark.ps.stop(); pooledSpark.inUse = false; }, 120);
+                            }
                         } catch (e) {}
 
                         try { if (gameData.hitSound) gameData.hitSound.play(); } catch(e) {}
@@ -1762,9 +1821,10 @@ window.addEventListener('DOMContentLoaded', async function () {
 
                         // Damage monster by projectile.damage (default 1)
                         try {
-                            const dmg = p.damage || 1;
+                            let dmg = p.damage || 1;
+                            if (monsters[j]._type === 'boss' && monsters[j]._isAttracting) dmg = 0; // Boss est invulnérable s'il attire
                             monsters[j]._hp = (monsters[j]._hp || 1) - dmg;
-                            try { if (gameData && gameData.showHitMarker) gameData.showHitMarker(); } catch(e) {}
+                            try { if (gameData && gameData.showHitMarker && dmg > 0) gameData.showHitMarker(); } catch(e) {}
                         } catch (e) {}
 
                         // Show small damage popup
@@ -1782,7 +1842,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                         } catch(e) {}
 
                         if ((monsters[j]._hp || 0) <= 0) {
-                            handleMonsterKill(j);
+                            handleMonsterKill(monsters[j]);
                         }
 
                         p.life = 0;
@@ -1808,12 +1868,12 @@ window.addEventListener('DOMContentLoaded', async function () {
                                         try { if (gameData.scene && gameData.scene._shieldMesh) { gameData.scene._shieldMesh.dispose(); gameData.scene._shieldMesh = null; } } catch(e) {}
                                     }
                                 } else {
-                                    const reduction = Math.min(0.6, 0.12 * (bonusState.armorLevel || 0));
+                                    const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0))); // Rendement dégressif, max 75%
                                     const damageFloat = baseDamage * (1 - reduction);
                                     const damage = Math.max(0.25, damageFloat);
                                     gameData.health = Math.max(0, gameData.health - damage);
                                     if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
-                                    if (gameData.hpText) gameData.hpText.text = `HP: ${gameData.health}/${gameData.maxHealth}`;
+                                    if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
                                 }
                             }
                         } catch(e) {}
@@ -1825,7 +1885,15 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
 
             if (p.life <= 0) {
-                p.mesh.dispose();
+                if (p.pooledObj) {
+                    p.pooledObj.mesh.isVisible = false;
+                    p.pooledObj.inUse = false;
+                    if (p.pooledObj.trail) {
+                        p.pooledObj.trail.stop();
+                    }
+                } else {
+                    p.mesh.dispose(); // S'applique toujours pour les tirs ennemis / fallback
+                }
                 projectiles.splice(i, 1);
                 i--;
             }
@@ -1848,7 +1916,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                                 const heal = 10;
                                 gameData.health = Math.min(gameData.maxHealth, gameData.health + heal);
                                 if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
-                                if (gameData.hpText) gameData.hpText.text = `HP: ${gameData.health}/${gameData.maxHealth}`;
+                                if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
 
                                 // popup
                                 try {

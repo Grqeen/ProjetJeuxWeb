@@ -8,6 +8,8 @@ export const bonusState = {
     extraProjectilesLevel: 0
 };
 
+import { getHeight } from "./utils.js"; // Indispensable pour les météorites
+
 // Defensive and utility bonuses
 bonusState.armorLevel = 0; // Plate armor: reduces fixed damage per hit (2 per level)
 bonusState.armorReflectLevel = 0; // chance to reflect some damage
@@ -28,7 +30,7 @@ const availableUpgrades = [
     { id: "saws", name: "Scies Orbitantes" },
     { id: "fireRate", name: "Vitesse Tir Principal" },
     { id: "missile", name: "Missiles Explosifs (AoE)" },
-    { id: "zone", name: "Zone de Frappe Aléatoire" },
+    { id: "zone", name: "Météorite Aléatoire" },
     { id: "lightning", name: "Foudre Aléatoire" },
     { id: "extraProjectiles", name: "Projectiles Supplémentaires" }
 ];
@@ -192,7 +194,8 @@ function applyUpgrade(id, gameData) {
             aura.checkCollisions = false;
             bonusState.auraMesh = aura;
         }
-        const newScale = 1 + (level - 1) * 0.3;
+        const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
+        const newScale = (1 + (level - 1) * 0.3) * aoeMultiplier;
         bonusState.auraMesh.scaling = new BABYLON.Vector3(newScale, 1, newScale);
         // color
         try { bonusState.auraMesh.material.emissiveColor = hexToColor3(upgradeStyles.aura.color); } catch(e) {}
@@ -248,7 +251,9 @@ function applyUpgrade(id, gameData) {
         if (gameData) {
             const add = 20 * level; // each level +20 HP
             gameData.maxHealth += add;
-            gameData.health = Math.min(gameData.maxHealth, gameData.health + Math.floor(add * 0.5));
+            gameData.health = Math.min(gameData.maxHealth, gameData.health + add);
+            if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
+            if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
         }
     }
     else if (id === "magnet") {
@@ -261,7 +266,13 @@ function applyUpgrade(id, gameData) {
         // Reduces cooldowns globally; used where cooldowns are computed
     }
     else if (id === "aoeSize") {
-        // Affects explosion/radius sizes in bonuses
+        // Met à jour la taille de l'aura immédiatement si elle existe
+        if (bonusState.auraMesh) {
+            const baseScale = 1 + (bonusState.auraLevel - 1) * 0.3;
+            const aoeMultiplier = 1 + (level * 0.25);
+            const finalScale = baseScale * aoeMultiplier;
+            bonusState.auraMesh.scaling.set(finalScale, 1, finalScale);
+        }
     }
     else if (id === "revive") {
         bonusState._reviveUsed = false; // allow revive when acquired
@@ -277,15 +288,35 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
     if (!bonusState._passiveKillsInWindow) bonusState._passiveKillsInWindow = 0;
     const passiveWindowMs = 1000; // 1 second window
     const passiveLimit = 3; // max passive kills per second
-    function tryPassiveKill(idx) {
+    function tryPassiveKill(m, damage = 10, cooldownId = null) {
+        if (!m || m.isDisposed()) return false;
         const tnow = Date.now();
+
+        if (cooldownId) {
+            if (!m._passiveCooldowns) m._passiveCooldowns = {};
+            if (m._passiveCooldowns[cooldownId] && tnow < m._passiveCooldowns[cooldownId]) {
+                return false;
+            }
+            m._passiveCooldowns[cooldownId] = tnow + 500; // 0.5s ICD
+        }
+
+        if (m._type === 'boss' || m._type === 'amalgame' || m._type === 'kraken' || m._type === 'nuee' || m._type === 'mimic') {
+            m._hp -= damage;
+            if (m._hp <= 0) {
+                handleMonsterKill(m);
+                return true;
+            }
+            try { if (gameData && gameData.showHitMarker) gameData.showHitMarker(); } catch(e){}
+            return false;
+        }
+
         if (tnow - bonusState._passiveKillWindowStart > passiveWindowMs) {
             bonusState._passiveKillWindowStart = tnow;
             bonusState._passiveKillsInWindow = 0;
         }
         if (bonusState._passiveKillsInWindow < passiveLimit) {
             bonusState._passiveKillsInWindow++;
-            handleMonsterKill(idx);
+            handleMonsterKill(m);
             return true;
         }
         return false;
@@ -301,17 +332,22 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             const healAmount = 3 + bonusState.regenLevel * 2; // heal amount per tick
             gameData.health = Math.min(gameData.maxHealth, gameData.health + healAmount);
             if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
-            if (gameData.hpText) gameData.hpText.text = `HP: ${gameData.health}/${gameData.maxHealth}`;
+            if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
         }
     }
 
     if (bonusState.auraLevel > 0 && bonusState.auraMesh) {
+        const baseScale = 1 + (bonusState.auraLevel - 1) * 0.3;
+        const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
+        const finalScale = baseScale * aoeMultiplier;
+        bonusState.auraMesh.scaling.set(finalScale, 1, finalScale);
+
         bonusState.auraMesh.rotation.y += 2 * dt; 
-        const radius = (8 * bonusState.auraMesh.scaling.x) / 2;
+        const radius = (8 * finalScale) / 2;
         
         for (let j = 0; j < gameData.monsters.length; j++) {
             if (BABYLON.Vector3.Distance(gameData.stickman.position, gameData.monsters[j].position) < radius + 0.5) {
-                if (tryPassiveKill(j)) { j--; }
+                if (tryPassiveKill(gameData.monsters[j], 10, 'aura')) { j--; }
             }
         }
     }
@@ -319,19 +355,24 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
     if (bonusState.sawsLevel > 0) {
         bonusState.sawsAngle += 3 * dt;
         
+        const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
+        const orbitRadius = 5.0 * aoeMultiplier;
+        const sawRadius = 1.5 * aoeMultiplier;
+        
         bonusState.sawsMeshes.forEach((saw, index) => {
             const angleOffset = (Math.PI * 2 / bonusState.sawsMeshes.length) * index;
             const currentAngle = bonusState.sawsAngle + angleOffset;
             
-            saw.position.x = gameData.stickman.position.x + Math.cos(currentAngle) * 5.0;
-            saw.position.z = gameData.stickman.position.z + Math.sin(currentAngle) * 5.0;
+            saw.position.x = gameData.stickman.position.x + Math.cos(currentAngle) * orbitRadius;
+            saw.position.z = gameData.stickman.position.z + Math.sin(currentAngle) * orbitRadius;
             saw.position.y = gameData.stickman.position.y + 0.2; 
             
+            saw.scaling.set(aoeMultiplier, aoeMultiplier, aoeMultiplier);
             saw.rotation.y += 15 * dt;
 
             for (let j = 0; j < gameData.monsters.length; j++) {
-                if (BABYLON.Vector3.Distance(saw.position, gameData.monsters[j].position) < 1.5) {
-                    if (tryPassiveKill(j)) { j--; }
+                if (BABYLON.Vector3.Distance(saw.position, gameData.monsters[j].position) < sawRadius) {
+                    if (tryPassiveKill(gameData.monsters[j], 10, 'saws')) { j--; }
                 }
             }
         });
@@ -393,7 +434,8 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             }
             
             if (hit || m.life <= 0) {
-                let radius = (3 + bonusState.missileLevel * 1) * (1 + (bonusState.aoeSizeLevel || 0) * 0.2); // scale with aoeSize
+                const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
+                let radius = (3 + bonusState.missileLevel * 1) * aoeMultiplier;
                 
                 // Visuel de l'explosion via ParticleSystem, colorisé selon le style missile
                 try {
@@ -405,15 +447,15 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                     ps.maxEmitBox = new BABYLON.Vector3(0.2, 0.2, 0.2);
                     ps.color1 = hexToColor4(style.color || '#ff8a00', 1.0);
                     ps.color2 = hexToColor4(style.accent || style.color || '#ff8a00', 0.9);
-                    ps.minSize = 0.2; ps.maxSize = 1.0;
-                    ps.minLifeTime = 0.3; ps.maxLifeTime = 1.0;
-                    ps.emitRate = 800;
+                    ps.minSize = 1.5 * aoeMultiplier; ps.maxSize = 4.5 * aoeMultiplier;
+                    ps.minLifeTime = 0.4; ps.maxLifeTime = 1.2;
+                    ps.emitRate = 2500;
                     ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
                     ps.direction2 = new BABYLON.Vector3(1, 1, 1);
-                    ps.gravity = new BABYLON.Vector3(0, -6, 0);
+                    ps.gravity = new BABYLON.Vector3(0, -2, 0);
                     ps.disposeOnStop = true;
                     ps.start();
-                    setTimeout(() => ps.stop(), 150);
+                    setTimeout(() => ps.stop(), 250);
                 } catch (e) {}
 
                 // small camera shake on explosion if available
@@ -423,7 +465,7 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                 // Dégâts de zone (AoE)
                 for (let j = 0; j < gameData.monsters.length; j++) {
                     if (BABYLON.Vector3.Distance(m.mesh.position, gameData.monsters[j].position) <= radius) {
-                        if (tryPassiveKill(j)) { j--; }
+                        if (tryPassiveKill(gameData.monsters[j])) { j--; }
                     }
                 }
                 
@@ -446,55 +488,99 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
         }
     }
 
-    // --- 5) ZONE DE FRAPPE ALÉATOIRE ---
+    // --- 5) MÉTÉORITES ALÉATOIRES (CUBES DE PIERRE) ---
     if (bonusState.zoneLevel > 0) {
-        const zoneCooldown = 10000; // 10 secondes fixes
-        if (now - bonusState.lastZoneTime > zoneCooldown) {
-            bonusState.lastZoneTime = now;
-            
-            let radius = 4 + bonusState.zoneLevel * 1.5; // Le rayon augmente avec le niveau
-            let spawnPos = gameData.stickman.position.clone();
-            
-            // On essaie de la faire spawn directement sur un monstre aléatoire pour être utile
-            if (gameData.monsters.length > 0) {
-                let randMob = gameData.monsters[Math.floor(Math.random() * gameData.monsters.length)];
-                spawnPos = randMob.position.clone();
-                spawnPos.y -= 0.4;
-            } else {
-                spawnPos.y -= 1.0;
-            }
-
-            const zone = BABYLON.MeshBuilder.CreateCylinder("zone", { diameter: radius * 2, height: 0.2 }, gameData.scene);
-            zone.position = spawnPos;
-            zone.checkCollisions = false;
-            
-            const mat = new BABYLON.StandardMaterial("zoneMat", gameData.scene);
-            mat.emissiveColor = new BABYLON.Color3(0.6, 0, 0.8); // Violet
-            mat.alpha = 0.5;
-            zone.material = mat;
-            
-            bonusState.activeZones.push({ mesh: zone, radius: radius, life: 3.0 }); // Dure 3 secondes
-        }
+        const meteorCooldown = Math.max(1000, 6000 - bonusState.zoneLevel * 800);
+        const cooldownMultiplier = Math.max(0.25, 1 - 0.08 * (bonusState.cooldownReductionLevel || 0));
         
-        for (let i = 0; i < bonusState.activeZones.length; i++) {
-            let z = bonusState.activeZones[i];
-            z.life -= dt;
-            
-            // Effet visuel : la zone clignote légèrement
-            z.mesh.material.alpha = 0.3 + Math.sin(now * 0.01) * 0.2;
-            
-            // Tente de tuer les monstres à l'intérieur de la zone à chaque frame
-            for (let j = 0; j < gameData.monsters.length; j++) {
-                if (BABYLON.Vector3.Distance(z.mesh.position, gameData.monsters[j].position) <= z.radius) {
-                    handleMonsterKill(j);
-                    j--;
-                }
-            }
-            
-            if (z.life <= 0) {
-                z.mesh.dispose();
-                bonusState.activeZones.splice(i, 1);
-                i--;
+        if (!bonusState.lastZoneTime) bonusState.lastZoneTime = 0;
+
+        if (now - bonusState.lastZoneTime > (meteorCooldown * cooldownMultiplier)) {
+            bonusState.lastZoneTime = now;
+
+            let numMeteors = 1 + Math.floor(bonusState.zoneLevel / 2);
+            let meteorRadius = 25; // Zone un peu plus large pour favoriser le luring
+
+            for (let i = 0; i < numMeteors; i++) {
+                setTimeout(() => {
+                    if (!gameData.stickman || !gameData.scene) return;
+
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = Math.random() * meteorRadius;
+                    const targetX = gameData.stickman.position.x + Math.cos(angle) * distance;
+                    const targetZ = gameData.stickman.position.z + Math.sin(angle) * distance;
+                    const targetY = getHeight(targetX, targetZ);
+                    const targetPos = new BABYLON.Vector3(targetX, targetY, targetZ);
+
+                    // 1. Création du Cube Gris Foncé
+                    const meteor = BABYLON.MeshBuilder.CreateBox("meteor", { size: 2.5 }, gameData.scene);
+                    meteor.position = new BABYLON.Vector3(targetX, targetY + 40, targetZ); // Plus haut pour la durée
+                    
+                    const metMat = new BABYLON.StandardMaterial("metMat", gameData.scene);
+                    metMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Gris foncé
+                    metMat.emissiveColor = new BABYLON.Color3(0.05, 0.05, 0.05); // Légère visibilité
+                    meteor.material = metMat;
+                    
+                    // Rotation aléatoire pour le style "débris"
+                    meteor.rotation = new BABYLON.Vector3(Math.random(), Math.random(), Math.random());
+
+                    // 2. Indicateur d'impact (Indispensable pour le luring)
+                    const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
+                    const explosionRadius = (5 + bonusState.zoneLevel * 1.2) * aoeMultiplier;
+                    
+                    const shadow = BABYLON.MeshBuilder.CreateDisc("impactZone", { radius: explosionRadius }, gameData.scene);
+                    shadow.position = new BABYLON.Vector3(targetX, targetY + 0.15, targetZ);
+                    shadow.rotation.x = Math.PI / 2;
+                    const shadMat = new BABYLON.StandardMaterial("shadMat", gameData.scene);
+                    shadMat.diffuseColor = new BABYLON.Color3(0.8, 0, 0);
+                    shadMat.alpha = 0.4;
+                    shadow.material = shadMat;
+
+                    // 3. Animation de chute ralentie
+                    let fallProgress = 0;
+                    const fallSpeed = 0.008; // Vitesse très réduite (environ 2-3 secondes de chute)
+                    
+                    const observer = gameData.scene.onBeforeRenderObservable.add(() => {
+                        fallProgress += fallSpeed;
+                        
+                        if (meteor && !meteor.isDisposed()) {
+                            meteor.position.y = BABYLON.Scalar.Lerp(targetY + 40, targetY, fallProgress);
+                            meteor.rotation.x += 0.02; // Rotation lente pendant la chute
+                        }
+                        
+                        if (fallProgress >= 1) {
+                            gameData.scene.onBeforeRenderObservable.remove(observer);
+                            
+                            // IMPACT !
+                            try {
+                                if (gameData.explosionSound) gameData.explosionSound.play();
+                                if (gameData.shakeCamera) gameData.shakeCamera(0.5, 400);
+                            } catch(e) {}
+
+                            // Dégâts massifs à l'impact
+                            const damage = 60 + bonusState.zoneLevel * 30;
+                            for (let j = 0; j < gameData.monsters.length; j++) {
+                                const m = gameData.monsters[j];
+                                if (!m || m.isDisposed()) continue;
+                                
+                                const dist = BABYLON.Vector3.Distance(new BABYLON.Vector3(targetX, targetY, targetZ), m.position);
+                                if (dist <= explosionRadius) {
+                                    const bossTypes = ['boss', 'amalgame', 'kraken', 'nuee', 'mimic'];
+                                    if (m._type && bossTypes.includes(m._type)) {
+                                        m._hp -= damage;
+                                        if (gameData.showHitMarker) gameData.showHitMarker();
+                                        if (m._hp <= 0) handleMonsterKill(m);
+                                    } else {
+                                        handleMonsterKill(m);
+                                    }
+                                }
+                            }
+
+                            if (meteor) meteor.dispose();
+                            if (shadow) shadow.dispose();
+                        }
+                    });
+                }, i * 500);
             }
         }
     }
@@ -505,36 +591,35 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
         if (now - bonusState.lastLightningTime > lightningCooldown && gameData.monsters.length > 0) {
             bonusState.lastLightningTime = now;
 
-            let numStrikes = 1 + Math.floor((bonusState.lightningLevel - 1) / 2); // lvl 1,2: 1 éclair, lvl 3,4: 2 éclairs, etc.
-            let stunDuration = bonusState.lightningLevel > 1 ? 2.0 : 0; // 2 secondes d'étourdissement au niveau 2+ (AoE)
+            let numStrikes = 1 + Math.floor((bonusState.lightningLevel - 1) / 2);
+            let stunDuration = bonusState.lightningLevel > 1 ? 2.0 : 0;
 
-            // On trie les monstres par distance par rapport au joueur
+            // Dégâts divisés encore par 2 : 50 au niveau 1, puis +25 par niveau supplémentaire
+            let lightningDamage = 25 + (bonusState.lightningLevel * 25);
+
             let sortedMonsters = [...gameData.monsters].sort((a, b) => {
                 return BABYLON.Vector3.DistanceSquared(gameData.stickman.position, a.position) - 
-                       BABYLON.Vector3.DistanceSquared(gameData.stickman.position, b.position);
+                    BABYLON.Vector3.DistanceSquared(gameData.stickman.position, b.position);
             });
 
             for (let i = 0; i < Math.min(numStrikes, sortedMonsters.length); i++) {
                 let target = sortedMonsters[i];
-                let targetIndex = gameData.monsters.indexOf(target);
-
-                if (targetIndex !== -1) {
+                
+                if (target && !target.isDisposed()) {
                     let targetPos = target.position.clone();
                     
-                    // Création de l'éclair visuel
+                    // Création visuelle (identique à ton code actuel)
                     const lightning = BABYLON.MeshBuilder.CreateCylinder("lightning", { diameterTop: 0.5, diameterBottom: 0.1, height: 40 }, gameData.scene);
                     lightning.position = targetPos.clone();
-                    lightning.position.y += 20; // Vient du ciel
+                    lightning.position.y += 20;
                     const mat = new BABYLON.StandardMaterial("lightningMat", gameData.scene);
                     mat.emissiveColor = new BABYLON.Color3(0, 0.8, 1);
                     mat.alpha = 0.8;
                     lightning.material = mat;
 
-                    setTimeout(() => {
-                        lightning.dispose();
-                    }, 200);
+                    setTimeout(() => { if(lightning) lightning.dispose(); }, 200);
 
-                    // Effet de zone (Stun des ennemis autour de la cible)
+                    // Effet de zone (Stun)
                     if (stunDuration > 0) {
                         if (!gameData.scene.stunMat) {
                             gameData.scene.stunMat = new BABYLON.StandardMaterial("stunMat", gameData.scene);
@@ -542,10 +627,8 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                         }
                         for (let j = 0; j < gameData.monsters.length; j++) {
                             let m = gameData.monsters[j];
-                            // On cherche ceux proches de la foudre, et on marque comme étourdi
                             if (m !== target && BABYLON.Vector3.DistanceSquared(new BABYLON.Vector3(targetPos.x, m.position.y, targetPos.z), m.position) < 36) {
                                 m.stunTime = Date.now() + stunDuration * 1000;
-                                // Create a small glow mesh to indicate stun (avoids changing instance.material)
                                 if (!m._stunGlow) {
                                     try {
                                         const glow = BABYLON.MeshBuilder.CreateSphere("stunGlow_" + j, { diameter: 1.2 }, gameData.scene);
@@ -561,15 +644,18 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                         }
                     }
 
-                    // Tue la cible principale (sous la contrainte du throttle de passives)
+                    // Application des nouveaux dégâts réduits
                     try {
-                        if (typeof tryPassiveKill === 'function') {
-                            tryPassiveKill(targetIndex);
+                        const bossTypes = ['boss', 'amalgame', 'kraken', 'nuee', 'mimic'];
+                        if (target._type && bossTypes.includes(target._type)) {
+                            target._hp -= lightningDamage; // Utilise la valeur réduite (25 + 25*lvl)
+                            if (gameData.showHitMarker) gameData.showHitMarker();
+                            if (target._hp <= 0) handleMonsterKill(target);
                         } else {
-                            handleMonsterKill(targetIndex);
+                            handleMonsterKill(target);
                         }
                     } catch(e) {
-                        try { handleMonsterKill(targetIndex); } catch(e) {}
+                        try { handleMonsterKill(target); } catch(err) {}
                     }
                 }
             }

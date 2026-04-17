@@ -112,6 +112,11 @@ export function createTrees(scene, count, quality = "high") {
             trunkCollider.isVisible = false;
             const agg = new BABYLON.PhysicsAggregate(trunkCollider, BABYLON.PhysicsShapeType.CYLINDER, { mass: 0, friction: 0.8 }, scene);
             
+            // Ajout des ombres (le "true" inclut les branches et le tronc)
+            if (scene.shadowGenerator) {
+                scene.shadowGenerator.addShadowCaster(instance, true);
+            }
+
             scene._treeObjects.push({ mesh: instance, collider: trunkCollider, agg: agg, baseScale: scale });
         });
     } else {
@@ -153,7 +158,6 @@ export function createTrees(scene, count, quality = "high") {
                 
                 // --- CRÉATION DE LA VERSION LOW-POLY POUR LE LOD (Level Of Detail) ---
                 const lowInstance = simpleTreeModel.instantiateHierarchy();
-                lowInstance.setEnabled(false); // Désactivé par défaut si on est proche
                 lowInstance.scaling = new BABYLON.Vector3(scale, scale, scale);
                 lowInstance.position = new BABYLON.Vector3(data.x, data.y, data.z);
                 lowInstance.rotation.x = data.rotX;
@@ -164,11 +168,20 @@ export function createTrees(scene, count, quality = "high") {
                 };
                 scene._swayTrees.push(lowInstance);
 
+                // Application du système LOD natif
+                instance.addLODLevel(150, lowInstance);
+                instance.addLODLevel(300, null);
+
                 // --- AJOUT DES COLLISIONS POUR L'ARBRE (Hitbox cylindrique invisible sur le tronc) ---
                 const trunkCollider = BABYLON.MeshBuilder.CreateCylinder("trunkCollider" + i, { height: scale * 2.5, diameter: scale * 0.35 }, scene);
                 trunkCollider.position = new BABYLON.Vector3(data.x, data.y + (scale * 1.25), data.z);
                 trunkCollider.isVisible = false;
                 const agg = new BABYLON.PhysicsAggregate(trunkCollider, BABYLON.PhysicsShapeType.CYLINDER, { mass: 0, friction: 0.8 }, scene);
+
+                // Ajout des ombres
+                if (scene.shadowGenerator) {
+                    scene.shadowGenerator.addShadowCaster(instance, true);
+                }
 
                 scene._treeObjects.push({ highMesh: instance, lowMesh: lowInstance, collider: trunkCollider, agg: agg, baseScale: scale });
             });
