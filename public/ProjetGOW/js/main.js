@@ -113,7 +113,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         // --- UI : KILLS AVANT LE BOSS ---
         const bossKillsText = new BABYLON.GUI.TextBlock();
-        bossKillsText.text = "Kills : 150";
+        bossKillsText.text = "Kills : 300";
         bossKillsText.color = "yellow"; // Rouge
         bossKillsText.fontSize = 26;
         bossKillsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
@@ -201,20 +201,16 @@ window.addEventListener('DOMContentLoaded', async function () {
             if (!gameData || isGamePaused) return; // Désactivé si le jeu est en pause
 
             gameData.kills += 10; // Donne 10 kills d'un coup
-            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 150;
+            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
             let killsLeft = Math.max(0, gameData.nextBossThreshold - gameData.kills);
             gameData.bossKillsText.text = "Kills : " + killsLeft;
 
-            let currentLevelKills = gameData.kills - gameData.prevUpgradeKillCount;
-            let baseRequired = gameData.nextUpgradeKillCount - gameData.prevUpgradeKillCount;
-            // Plus il y a de mobs, plus le palier est difficile (chaque mob ajoute +2%)
-            let difficultyMultiplier = 1 + (gameData.monsters ? gameData.monsters.length * 0.02 : 0);
-            let dynamicRequired = Math.max(1, Math.floor(baseRequired * difficultyMultiplier));
+            gameData.currentXp += 50; // Donne 50 XP pour le test
 
-            let progress = Math.min(100, (currentLevelKills / dynamicRequired) * 100);
+            let progress = Math.min(100, (gameData.currentXp / gameData.xpRequiredForLevel) * 100);
             gameData.xpBar.width = progress + "%";
 
-            if (currentLevelKills >= dynamicRequired) {
+            if (gameData.currentXp >= gameData.xpRequiredForLevel) {
                 showUpgradeMenu(gameData);
             }
         });
@@ -228,12 +224,12 @@ window.addEventListener('DOMContentLoaded', async function () {
             nuee: (sc) => createNuee(sc),
             mimic: (sc) => createMimic(sc)
         };
-        // Ordre de rotation naturelle des boss (tous les 150 kills)
+        // Ordre de rotation naturelle des boss (progressif)
         const bossRotation = ['goliath', 'amalgame', 'kraken', 'nuee', 'mimic'];
 
         const spawnBossLogic = (bossType) => {
             if (!gameData || isGamePaused || gameData.bossSpawned) return;
-            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 150;
+            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
             gameData.kills = gameData.nextBossThreshold;
             gameData.bossKillsText.text = "Kills : 0";
             gameData.bossSpawned = true;
@@ -380,7 +376,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         camera._sprintLerp = 0.12; // smoothing
         
         // --- INITIALISATION DES VAGUES DE MONSTRES ---
-        const monsters = createMonsters(scene, 10); // Vague 1 initiale
+        const monsters = createMonsters(scene, 25); // Vague 1 initiale plus nerveuse
 
         const waveData = {
             elapsedTime: 0,
@@ -779,7 +775,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         const getFireball = () => fireballPool.find(p => !p.inUse) || null;
         const getHitSpark = () => hitSparkPool.find(p => !p.inUse) || null;
 
-        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark };
+        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark, bossCount: 0 };
 
         // attach shake function to sceneData so caller gets it
         sceneData.shakeCamera = shakeCamera;
@@ -826,14 +822,12 @@ window.addEventListener('DOMContentLoaded', async function () {
             try { sceneData._playerFrozen = false; } catch(e) {}
             try { unfreezeScene(currentScene); } catch(e) {}
             
-            sceneData.prevUpgradeKillCount = sceneData.nextUpgradeKillCount;
-
-            // Augmentation incrémentale du palier requis pour la prochaine amélioration
-            if (sceneData.nextUpgradeKillCount < 100) sceneData.nextUpgradeKillCount += 30; // 20, 50, 80...
-            else if (sceneData.nextUpgradeKillCount < 500) sceneData.nextUpgradeKillCount += 100; // 180, 280...
-            else sceneData.nextUpgradeKillCount += 200; // 680, 880...
+            // Conserve le surplus d'XP et augmente le palier de 20%
+            sceneData.currentXp = Math.max(0, sceneData.currentXp - sceneData.xpRequiredForLevel);
+            sceneData.xpRequiredForLevel = Math.floor(sceneData.xpRequiredForLevel * 1.8);
             
-            sceneData.xpBar.width = "0%";
+            let progress = Math.min(100, (sceneData.currentXp / sceneData.xpRequiredForLevel) * 100);
+            sceneData.xpBar.width = progress + "%";
         };
 
         // expose shake for other modules (assigned after function declaration)
@@ -992,8 +986,9 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         } catch (e) {}
 
-        const handleMonsterKill = (j) => {
-            const m = monsters[j];
+        const handleMonsterKill = (m) => {
+            const j = monsters.indexOf(m);
+            if (j === -1) return;
             try {
                 if (m.physicsAgg) {
                     try { m.physicsAgg.body.dispose(); } catch(e) {}
@@ -1049,7 +1044,27 @@ window.addEventListener('DOMContentLoaded', async function () {
             monsters.splice(j, 1);
             
             gameData.kills++;
-            // XP boost handled as extra progress below (so it participates in dynamicRequired calc)
+            
+            // --- SYSTÈME D'XP ---
+            let xpGain = 10;
+            if (m._type === 'tank' || m._type === 'ranged') {
+                xpGain = 25;
+            } else if (['boss', 'amalgame', 'kraken', 'nuee', 'mimic'].includes(m._type)) {
+                xpGain = 500;
+            }
+            
+            if (bonusState.xpBoostLevel > 0) {
+                xpGain += xpGain * (bonusState.xpBoostLevel * 0.15); // +15% d'XP par niveau
+            }
+            
+            gameData.currentXp += Math.floor(xpGain);
+            
+            let progress = Math.min(100, (gameData.currentXp / gameData.xpRequiredForLevel) * 100);
+            if(gameData.xpBar) gameData.xpBar.width = progress + "%";
+
+            if (gameData.currentXp >= gameData.xpRequiredForLevel && !gameData.upgradePanel.isVisible) {
+                showUpgradeMenu(gameData);
+            }
 
             // Magnet: small heal on kill if magnetLevel present
             try {
@@ -1061,7 +1076,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                 }
             } catch(e) {}
 
-            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 150;
+            if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
 
         const bossTypes = ['boss', 'amalgame', 'kraken', 'nuee', 'mimic'];
             const isBossType = m && bossTypes.includes(m._type);
@@ -1075,7 +1090,13 @@ window.addEventListener('DOMContentLoaded', async function () {
                 
                 if (bossPartsLeft === 0) {
                     gameData.bossSpawned = false;
-                    gameData.nextBossThreshold += 150;
+                    gameData.bossCount++;
+                    
+                    let nextStep = 300;
+                    if (gameData.bossCount >= 2) {
+                        nextStep = 300 + (gameData.bossCount - 1) * 100; // +400 pour le 3ème, +500 pour le 4ème, etc.
+                    }
+                    gameData.nextBossThreshold += nextStep;
                     
                     // Nettoyer les effets du Kraken (remettre l'eau)
                     if (m._type === 'kraken' && gameData.currentWaterLevel !== undefined) {
@@ -1111,8 +1132,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                             nuee: () => createNuee(scene),
                             mimic: () => createMimic(scene)
                         };
-                        let bossIndex = (Math.floor(gameData.kills / 150) - 1) % 5;
-                        if (bossIndex < 0) bossIndex = 0;
+                        let bossIndex = (gameData.bossCount || 0) % 5;
                         let boss = bossFactoriesLocal[bossRotationOrder[bossIndex]]();
                         
                         const bx = stickman.position.x + (Math.random() > 0.5 ? 30 : -30);
@@ -1121,21 +1141,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                         monsters.push(boss);
                     }, 50);
                 }
-            }
-            let currentLevelKills = gameData.kills - gameData.prevUpgradeKillCount;
-            let baseRequired = gameData.nextUpgradeKillCount - gameData.prevUpgradeKillCount;
-            // Apply xpBoost as additional fractional progress towards next upgrade
-            if (bonusState.xpBoostLevel > 0) {
-                currentLevelKills += bonusState.xpBoostLevel * 0.5;
-            }
-            // Ajuste la difficulté de niveau en fonction du nombre de monstres actifs
-            let difficultyMultiplier = 1 + (gameData.monsters ? gameData.monsters.length * 0.02 : 0);
-            let dynamicRequired = Math.max(1, Math.floor(baseRequired * difficultyMultiplier));
-            let progress = Math.min(100, (currentLevelKills / dynamicRequired) * 100);
-            if(gameData.xpBar) gameData.xpBar.width = progress + "%";
-
-            if (currentLevelKills >= dynamicRequired && !gameData.upgradePanel.isVisible) {
-                showUpgradeMenu(gameData);
             }
         };
 
@@ -1584,7 +1589,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                             } else {
                                 // Armor reduces damage by a percentage per level (with caps)
                                 const baseDamage = 1;
-                                const reduction = Math.min(0.6, 0.12 * (bonusState.armorLevel || 0)); // up to 60%
+                                const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0))); // Rendement dégressif, max 75%
                                 const damageFloat = baseDamage * (1 - reduction);
                                 const damage = Math.max(0.25, damageFloat); // always some minimum damage so player can die
                                 gameData.health = Math.max(0, gameData.health - damage);
@@ -1606,9 +1611,9 @@ window.addEventListener('DOMContentLoaded', async function () {
                                                 let rMob = monsters[nearestIdx];
                                                 if (rMob && rMob._type === 'boss') {
                                                     rMob._hp -= 300;
-                                                    if (rMob._hp <= 0) handleMonsterKill(nearestIdx);
+                                                    if (rMob._hp <= 0) handleMonsterKill(rMob);
                                                 } else {
-                                                    handleMonsterKill(nearestIdx);
+                                                    handleMonsterKill(rMob);
                                                 }
                                             }
                                         } catch(e) {}
@@ -1837,7 +1842,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                         } catch(e) {}
 
                         if ((monsters[j]._hp || 0) <= 0) {
-                            handleMonsterKill(j);
+                            handleMonsterKill(monsters[j]);
                         }
 
                         p.life = 0;
@@ -1863,7 +1868,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                                         try { if (gameData.scene && gameData.scene._shieldMesh) { gameData.scene._shieldMesh.dispose(); gameData.scene._shieldMesh = null; } } catch(e) {}
                                     }
                                 } else {
-                                    const reduction = Math.min(0.6, 0.12 * (bonusState.armorLevel || 0));
+                                    const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0))); // Rendement dégressif, max 75%
                                     const damageFloat = baseDamage * (1 - reduction);
                                     const damage = Math.max(0.25, damageFloat);
                                     gameData.health = Math.max(0, gameData.health - damage);

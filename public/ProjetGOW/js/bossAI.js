@@ -390,13 +390,18 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 } else {
                     // Vol orbital autour du joueur
-                    monster._orbitAngle += 0.8 * dt;
-                    const orbitRadius = 25;
-                    const targetX = stickman.position.x + Math.cos(monster._orbitAngle) * orbitRadius;
-                    const targetZ = stickman.position.z + Math.sin(monster._orbitAngle) * orbitRadius;
-                    monster.position.x += (targetX - monster.position.x) * 2 * dt;
-                    monster.position.z += (targetZ - monster.position.z) * 2 * dt;
-                    monster.position.y = getHeight(monster.position.x, monster.position.z) + 15;
+                    if (!monster._isPreparingDive) {
+                        monster._orbitAngle += 0.8 * dt;
+                        const orbitRadius = 25;
+                        const targetX = stickman.position.x + Math.cos(monster._orbitAngle) * orbitRadius;
+                        const targetZ = stickman.position.z + Math.sin(monster._orbitAngle) * orbitRadius;
+                        monster.position.x += (targetX - monster.position.x) * 2 * dt;
+                        monster.position.z += (targetZ - monster.position.z) * 2 * dt;
+                        monster.position.y = getHeight(monster.position.x, monster.position.z) + 15;
+                    } else {
+                        // S'immobilise et s'élève légèrement pendant la préparation de l'attaque
+                        monster.position.y += (getHeight(monster.position.x, monster.position.z) + 18 - monster.position.y) * 2 * dt;
+                    }
 
                     // Vent (pousse le joueur vers le bord)
                     try {
@@ -409,9 +414,33 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     } catch(e){}
 
                     // Piqué (toutes les 10s)
-                    if (nowMs - monster._lastDiveTime > 10000) {
-                        monster._isDiving = true;
+                    if (nowMs - monster._lastDiveTime > 10000 && !monster._isPreparingDive) {
+                        monster._isPreparingDive = true;
                         monster._diveTarget = stickman.position.clone();
+                        
+                        // Création de l'indicateur visuel au sol
+                        try {
+                            // Un diamètre de 10 correspond au rayon de collision de l'impact (< 5)
+                            const indicator = BABYLON.MeshBuilder.CreateTorus("diveIndicator", { diameter: 10, thickness: 0.3 }, scene);
+                            indicator.position = monster._diveTarget.clone();
+                            indicator.position.y = getHeight(indicator.position.x, indicator.position.z) + 0.5;
+                            
+                            const indMat = new BABYLON.StandardMaterial("indMat", scene);
+                            indMat.emissiveColor = new BABYLON.Color3(1, 0, 0); // Rouge vif
+                            indMat.alpha = 0.8;
+                            indicator.material = indMat;
+
+                            setTimeout(() => { try { indicator.dispose(); } catch(e){} }, 1000);
+                        } catch(e) {}
+
+                        // Lance le véritable piqué après 1 seconde
+                        setTimeout(() => {
+                            if (!monster.isDisposed()) {
+                                monster._isPreparingDive = false;
+                                monster._isDiving = true;
+                                monster._lastDiveTime = Date.now(); // Réinitialise le délai à partir du début du piqué
+                            }
+                        }, 1000);
                     }
 
                     // Invocation gardes volants (toutes les 12s)
@@ -854,8 +883,11 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                     monster.position.y = getHeight(monster.position.x, monster.position.z) + 3;
                     
+                    const isRaging = monster._hp < monster.maxHp * 0.3;
+                    const jumpCooldown = isRaging ? 4000 : 8000;
+                    
                     // Saut
-                    if (!isRecovering && nowMs - monster._lastJumpTime > 8000) {
+                    if (!isRecovering && nowMs - monster._lastJumpTime > jumpCooldown) {
                         monster._isJumping = true;
                         monster.position.y += 20; 
                     }

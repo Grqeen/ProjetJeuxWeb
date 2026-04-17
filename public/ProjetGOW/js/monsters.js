@@ -1,6 +1,9 @@
 import { mapSize, getHeight } from "./utils.js";
 
 export function createMonsters(scene, count) {
+    // Augmente le nombre total de monstres à générer par vague (+50%)
+    count = Math.floor(count * 1.5);
+
     const monsters = [];
 
     const monsterMat = new BABYLON.StandardMaterial("monsterMat", scene);
@@ -56,13 +59,14 @@ export function createMonsters(scene, count) {
         }
 
         const y = getHeight(x, z) + 0.5;
-        // Choose a type first: 0=standard, 1=tank, 2=stalker (fast fragile), 3=ranged
+        // Logique d'apparition modifiée
         const r = Math.random();
         let type = 'standard';
-        if (r < 0.08) type = 'tank';
-        else if (r < 0.28) type = 'stalker';
-        else if (r < 0.42) type = 'ranged';
-        else if (r < 0.55) type = 'flying';
+        if (r < 0.03) type = 'tank'; // 3% de chance d'être un tank
+        else if (r < 0.43) type = 'stalker'; // 40% stalker
+        else if (r < 0.53) type = 'ranged'; // 10% ranged
+        else if (r < 0.63) type = 'flying'; // 10% flying
+        // Les 37% restants sont 'standard'
 
         // choose template by type
         let templateRef = template;
@@ -80,10 +84,10 @@ export function createMonsters(scene, count) {
         // set AI stats & HP based on type (visual shape comes from template)
         if (type === 'tank') {
             instance.ai = { speed: 1.2 };
-            instance._hp = 4; // requires multiple hits
+            instance._hp = 6; // Garde les monstres tank avec plus de PV
         } else if (type === 'stalker') {
-            instance.ai = { speed: 4.5 };
-            instance._hp = 1; // fragile
+            instance.ai = { speed: 8.5 };
+            instance._hp = 1; // PV limités à 1 pour être éliminés en masse
         } else if (type === 'ranged') {
             instance.ai = { speed: 2.0 };
             instance._hp = 1;
@@ -92,7 +96,7 @@ export function createMonsters(scene, count) {
             instance._preferredRange = 10; // meters
         } else {
             instance.ai = { speed: 2.5 + Math.random() * 1.5 };
-            instance._hp = 1;
+            instance._hp = 1; // PV limités à 1 pour être éliminés en masse
         }
 
         // Avoid adding all monsters as shadow casters: we'll manage dynamically in main loop
@@ -138,8 +142,8 @@ export function createBoss(scene) {
     rightArm.material = bossMat;
 
     boss._type = 'boss';
-    boss._hp = 1000; // Tank
-    boss.maxHp = 1000;
+    boss._hp = 500; // Tank
+    boss.maxHp = 500;
     boss.ai = { speed: 1.0 }; // Très lent
     boss._castsShadow = false;
 
