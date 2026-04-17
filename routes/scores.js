@@ -7,8 +7,9 @@ const authMiddleware = require('../middleware/auth');
 router.get('/:gameId', async (req, res) => {
   try {
     const { gameId } = req.params;
+    
     // Pour 'escape', trier par temps croissant (le plus rapide en premier)
-    // Pour les autres jeux, trier par score décroissant
+    // Pour les autres jeux, trier par score décroissant (le plus haut en premier)
     const sortOrder = gameId === 'escape' ? 1 : -1;
     const topScores = await Score.find({ gameId })
                                  .sort({ score: sortOrder })
@@ -20,6 +21,7 @@ router.get('/:gameId', async (req, res) => {
         id: s._id,
         username: s.user ? s.user.username : 'Inconnu',
         score: s.score,
+        time: s.time, // NOUVEAU : On renvoie le temps de survie pour l'affichage du tableau
         date: s.date
     }));
 
@@ -33,7 +35,8 @@ router.get('/:gameId', async (req, res) => {
 // Un seul score par joueur par jeu, mis à jour uniquement si meilleur
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { gameId, score } = req.body;
+    // NOUVEAU : On extrait "time" du corps de la requête
+    const { gameId, score, time } = req.body; 
     
     // Chercher si le joueur a déjà un score pour ce jeu
     const existing = await Score.findOne({ user: req.user.userId, gameId });
@@ -47,9 +50,10 @@ router.post('/', authMiddleware, async (req, res) => {
       
       if (isBetter) {
         existing.score = score;
+        existing.time = time; // NOUVEAU : On met à jour le temps de survie
         existing.date = Date.now();
         await existing.save();
-        res.status(200).json({ message: "Nouveau record ! Temps mis à jour.", score: existing });
+        res.status(200).json({ message: "Nouveau record ! Score mis à jour.", score: existing });
       } else {
         res.status(200).json({ message: "Ton record actuel est meilleur, pas de mise à jour." });
       }
@@ -58,7 +62,8 @@ router.post('/', authMiddleware, async (req, res) => {
       const newScore = new Score({
         user: req.user.userId,
         gameId,
-        score
+        score,
+        time // NOUVEAU : On sauvegarde le temps de survie
       });
       await newScore.save();
       res.status(201).json({ message: "Score enregistré avec succès !", score: newScore });
