@@ -18,6 +18,9 @@ import Fan from "./Fan.js";
 // init
 window.onload = init;
 
+const targetFPS = 60;
+const frameInterval = 1000 / targetFPS;
+
 // couleurs
 const colorMap = {
   red: "#ff0000",

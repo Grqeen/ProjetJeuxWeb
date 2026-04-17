@@ -2,6 +2,33 @@
   box-sizing: border-box;
 }
 
+html {
+  /* proximity est plus doux que mandatory au scroll */
+  scroll-snap-type: y proximity; 
+  scroll-behavior: smooth;
+}
+
+/* --- ANIMATIONS FLUIDES AU SCROLL --- */
+.hero-content {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.hero-mockup {
+  opacity: 0;
+  transform: translateY(50px);
+  /* Un petit délai (0.2s) pour que l'image arrive juste après le texte */
+  transition: opacity 0.8s ease-out 0.2s, transform 0.8s ease-out 0.2s; 
+}
+
+/* La classe qui sera ajoutée par le Javascript quand on est sur le jeu */
+.game-hero.is-active .hero-content,
+.game-hero.is-active .hero-mockup {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 a {
   text-decoration: none;
   color: inherit;
@@ -33,7 +60,11 @@ body {
   align-items: center;
   padding: 30px 50px;
   background: #1a1a1a;
-  position: relative;
+  /* MODIFIÉ : Menu fixé en haut */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
   z-index: 1000;
 }
 
@@ -54,7 +85,6 @@ body {
   align-items: center;
 }
 
-/* Le burger est caché par défaut sur ordinateur */
 .burger {
   display: none;
   cursor: pointer;
@@ -86,7 +116,7 @@ body {
   align-items: flex-end;
   justify-content: flex-start;
   padding: 0 10%;
-  perspective: 1000px; /* Important pour l'effet 3D */
+  perspective: 1000px;
 }
 
 .cards-container {
@@ -95,7 +125,7 @@ body {
   left: 50%;
   transform: translate(-50%, -40%);
   display: flex;
-  gap: 40px; /* Ajustez cette valeur selon l'espacement désiré */
+  gap: 40px;
 }
 
 .card {
@@ -107,29 +137,11 @@ body {
   transition: transform 0.3s;
 }
 
-/* Effet d'éventail (inclinaison) */
-
-.card-1 {
-  transform: rotateY(25deg) translateZ(-50px);
-}
-
-.card-2 {
-  transform: rotateY(15deg) translateZ(0px);
-}
-
-.card-3 {
-  transform: scale(1.1);
-  z-index: 10;
-  border: 2px solid var(--gold);
-}
-
-.card-4 {
-  transform: rotateY(-15deg) translateZ(0px);
-}
-
-.card-5 {
-  transform: rotateY(-25deg) translateZ(-50px);
-}
+.card-1 { transform: rotateY(25deg) translateZ(-50px); }
+.card-2 { transform: rotateY(15deg) translateZ(0px); }
+.card-3 { transform: scale(1.1); z-index: 10; border: 2px solid var(--gold); }
+.card-4 { transform: rotateY(-15deg) translateZ(0px); }
+.card-5 { transform: rotateY(-25deg) translateZ(-50px); }
 
 /* --- Boite d'info --- */
 
@@ -183,7 +195,7 @@ body {
   padding: 80px 10%;
   text-align: center;
   background-color: #121212;
-  margin-bottom: 80px; /* Ajoute de l'espace sous la section des jeux */
+  margin-bottom: 80px;
 }
 
 .section-title {
@@ -203,15 +215,11 @@ body {
   text-decoration: underline;
 }
 
-/* Grille */
-
 .games-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 30px;
 }
-
-/* Cartes de jeu */
 
 .game-card {
   text-align: left;
@@ -226,7 +234,7 @@ body {
 .game-image {
   width: 100%;
   aspect-ratio: 1 / 1;
-  background-color: #333; /* Remplacer par vos images plus tard */
+  background-color: #333;
   border-radius: 4px;
   margin-bottom: 15px;
   background-size: cover;
@@ -234,23 +242,10 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Couleurs temporaires pour différencier les jeux */
-
-.blob-escape {
-  background-image: linear-gradient(45deg, #2e7d32, #81c784);
-}
-
-.blobs-revenge {
-  background-image: url('blobrevenge.png');
-}
-
-.blob-legends {
-  background-image: linear-gradient(45deg, #1565c0, #42a5f5);
-}
-
-.blob-education {
-  background-image: linear-gradient(45deg, #ef6c00, #ffb74d);
-}
+.blob-escape { background-image: linear-gradient(45deg, #2e7d32, #81c784); }
+.blobs-revenge { background-image: url('blobrevenge.png'); }
+.blob-legends { background-image: linear-gradient(45deg, #1565c0, #42a5f5); }
+.blob-education { background-image: linear-gradient(45deg, #ef6c00, #ffb74d); }
 
 .game-info h3 {
   margin: 5px 0;
@@ -286,15 +281,13 @@ body {
 .trailers-container {
   display: flex;
   flex-direction: column;
-  background-color: #313131; /* Couleur de fond du cadre */
-  border: 4px solid #4a4a4a; /* Bordure épaisse style UI */
+  background-color: #313131;
+  border: 4px solid #4a4a4a;
   margin-top: 30px;
   max-width: 1000px;
   margin-left: auto;
   margin-right: auto;
 }
-
-/* Onglets en haut */
 
 .trailers-tabs {
   width: 100%;
@@ -322,7 +315,7 @@ body {
 .tab img {
   width: 24px;
   height: 24px;
-  image-rendering: pixelated; /* Pour le look rétro si tu as des icônes pixel */
+  image-rendering: pixelated;
 }
 
 .tab:hover {
@@ -332,19 +325,18 @@ body {
 .tab.active {
   background-color: #4a4a4a;
   color: white;
-  border-bottom: 4px solid var(--gold); /* Petite barre dorée pour l'onglet actif */
+  border-bottom: 4px solid var(--gold);
 }
-
-/* --- Ajustements du Lecteur Vidéo --- */
 
 .video-viewer {
   width: 100%;
   background-color: #000;
-  padding: 0; /* On retire le padding pour que la vidéo touche les bords du cadre interne */
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   aspect-ratio: 16 / 9;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
 }
 
 .video-responsive {
@@ -363,12 +355,6 @@ body {
   border: none;
 }
 
-/* Optionnel : Ajout d'une ombre interne pour le look UI */
-
-.video-viewer {
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
-}
-
 /* --- Style des sections de jeux (Style Launcher) --- */
 
 .game-hero {
@@ -376,12 +362,13 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 100px 10%;
-  min-height: 70vh;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* MODIFIÉ : Prend toute la hauteur et active le point d'arrêt du scroll */
+  height: 100vh;
+  scroll-snap-align: start;
 }
 
 /* Fonds spécifiques pour chaque jeu */
-
 .blob-escape-hero {
   background:
     linear-gradient(to right, #121212 40%, rgba(18, 18, 18, 0.7)),
@@ -394,6 +381,15 @@ body {
   background:
     linear-gradient(to right, #121212 40%, rgba(18, 18, 18, 0.7)),
     url("ProjetGOW/assets/menuBackground.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+/* NOUVEAU : Blob Defense */
+.blob-defense-hero {
+  background:
+    linear-gradient(to right, #121212 40%, rgba(18, 18, 18, 0.7)),
+    url("ProjetDOM/dom_bg_hero.png");
   background-size: cover;
   background-position: center;
 }
@@ -425,8 +421,6 @@ body {
   line-height: 1.6;
 }
 
-/* Bouton JOUER (Style Vert Minecraft) */
-
 .btn-play {
   display: inline-block;
   background-color: #3d8c40;
@@ -449,8 +443,6 @@ body {
   transform: translateY(2px);
   border-bottom: 0;
 }
-
-/* Image penchée à droite */
 
 .hero-mockup {
   flex: 1;
@@ -485,8 +477,6 @@ body {
   margin: 0;
 }
 
-/* Adaptation de la grille de fonctionnalités du bas */
-
 .features-section {
   padding: 80px 10%;
   background: #0f0f0f;
@@ -503,13 +493,11 @@ body {
 /* --- Responsive & Burger Menu --- */
 
 @media (max-width: 900px) {
-  /* Affichage du burger */
   .burger {
     display: block;
     z-index: 1100;
   }
 
-  /* Transformation du menu en overlay latéral */
   .nav-links {
     position: fixed;
     right: 0px;
@@ -534,24 +522,16 @@ body {
     margin: 20px 0;
   }
 
-  /* Animations du burger (quand actif) */
-  .toggle .line1 {
-    transform: rotate(-45deg) translate(-5px, 6px);
-  }
-  .toggle .line2 {
-    opacity: 0;
-  }
-  .toggle .line3 {
-    transform: rotate(45deg) translate(-5px, -6px);
-  }
+  .toggle .line1 { transform: rotate(-45deg) translate(-5px, 6px); }
+  .toggle .line2 { opacity: 0; }
+  .toggle .line3 { transform: rotate(45deg) translate(-5px, -6px); }
 
-  /* Sections de jeux adaptées pour le centrage vertical */
   .game-hero {
     flex-direction: column;
     text-align: center;
     padding: 0 5%;
-    height: 100vh; /* Utilise toute la hauteur de l'écran pour le centrage */
-    justify-content: center; /* Centre verticalement le contenu flex */
+    height: 100vh; 
+    justify-content: center; 
     border-bottom: none;
   }
 
@@ -560,7 +540,7 @@ body {
   } 
 
   .hero-content {
-    flex: none; /* Désactive le flex auto pour éviter des décalages */
+    flex: none; 
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -592,7 +572,6 @@ body {
     margin-bottom: 30px;
 }
 
-/* Bannière large */
 .project-banner {
     width: 100%;
     height: 350px;
@@ -623,10 +602,9 @@ body {
     letter-spacing: 2px;
 }
 
-/* Grille d'infos Nolark */
 .project-info-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr); /* 5 colonnes comme sur l'image */
+    grid-template-columns: repeat(5, 1fr); 
     gap: 20px;
     margin-bottom: 40px;
 }
@@ -657,7 +635,6 @@ body {
     text-decoration: underline;
 }
 
-/* Séparateur et Footer */
 .project-separator {
     border: 0;
     height: 1px;
@@ -688,10 +665,9 @@ body {
     margin-left: 5px;
 }
 
-/* Responsive */
 @media (max-width: 900px) {
     .project-info-grid {
-        grid-template-columns: repeat(2, 1fr); /* 2 colonnes sur tablette */
+        grid-template-columns: repeat(2, 1fr); 
         gap: 30px;
     }
     .project-main-title { font-size: 1.8rem; }
@@ -699,20 +675,17 @@ body {
 
 @media (max-width: 600px) {
     .project-info-grid {
-        grid-template-columns: 1fr; /* 1 colonne sur mobile */
+        grid-template-columns: 1fr; 
     }
 }
-
-/* ===== HERO BANNER VERSION MINECRAFT STYLE ===== */
 
 .hero-banner {
   position: relative;
   height: 85vh;
   background: url("hero-bg.jpg") center/cover no-repeat;
-  margin-bottom: 80px; /* Ajoute de l'espace sous la bannière d'accueil */
+  margin-bottom: 80px; 
 }
 
-/* Overlay sombre */
 .hero-overlay {
   width: 100%;
   height: 100%;
@@ -727,7 +700,6 @@ body {
   padding: 60px 10%;
 }
 
-/* Boîte noire style launcher */
 .hero-content-box {
   background: rgba(20, 20, 20, 0.95);
   padding: 40px;
@@ -745,7 +717,6 @@ body {
   line-height: 1.6;
 }
 
-/* Bouton style jeu */
 .btn-cta {
   background: #3d8c40;
   color: white;
@@ -768,7 +739,7 @@ body {
   border-bottom: 0;
 }
 
-/* --- Classements (Leaderboards) --- */
+/* --- Classements --- */
 
 .leaderboard-viewer {
   width: 100%;
@@ -784,7 +755,7 @@ body {
   border-collapse: collapse;
   text-align: left;
   color: #ddd;
-  min-width: 500px; /* Assure que le tableau ne s'écrase pas sur mobile */
+  min-width: 500px; 
 }
 
 .leaderboard-table th, 
@@ -818,7 +789,6 @@ body {
   margin-left: 10px;
 }
 
-/* Responsive */
 @media (max-width: 900px) {
   .hero-overlay {
     align-items: center;
