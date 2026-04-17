@@ -60,6 +60,82 @@ export const gameSettings = {
 };
 
 window.addEventListener('DOMContentLoaded', async function () {
+    // --- Auth Status (coin haut-droit de l'écran) ---
+    let authStatusMenu = document.getElementById("authStatusMenu");
+    if (!authStatusMenu) {
+        authStatusMenu = document.createElement("div");
+        authStatusMenu.id = "authStatusMenu";
+        document.body.appendChild(authStatusMenu);
+        
+        const style = document.createElement("style");
+        style.innerHTML = `
+            #authStatusMenu {
+                position: fixed;
+                top: 20px;
+                right: 25px;
+                z-index: 50;
+                font-family: 'Lilita One', 'Segoe UI', cursive, sans-serif;
+                font-size: 1rem;
+                color: white;
+                text-shadow: 2px 2px 0 #000;
+                text-align: right;
+                pointer-events: auto;
+            }
+            #authStatusMenu span {
+                color: #ffcc00;
+                text-shadow: 2px 2px 0 #b8860b;
+            }
+            #authStatusMenu a {
+                font-family: 'Lilita One', 'Segoe UI', cursive, sans-serif;
+                color: #333;
+                text-decoration: none;
+                background: #ffcc00;
+                border: 2px solid #b8860b;
+                padding: 8px 18px;
+                border-radius: 10px;
+                display: inline-block;
+                margin-top: 5px;
+                text-shadow: none;
+                transition: all 0.3s ease;
+                font-size: 1rem;
+                box-shadow: 0 4px 0 #b8860b;
+            }
+            #authStatusMenu a:hover {
+                transform: scale(1.05) rotate(-2deg);
+                box-shadow: 0 6px 0 #b8860b;
+            }
+            #authStatusMenu #menuLogoutBtn {
+                background: #ff5252;
+                border: 2px solid #c62828;
+                box-shadow: 0 3px 0 #c62828;
+                padding: 5px 12px;
+                font-size: 0.7rem;
+                color: white !important;
+                text-shadow: none;
+                border-radius: 8px;
+            }
+            #authStatusMenu #menuLogoutBtn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 5px 0 #c62828;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const token = localStorage.getItem("token");
+    const username = localStorage.getItem("username");
+    if(token && username) {
+        authStatusMenu.innerHTML = `Connecté en tant que <span>${username}</span> <br><a href="#" id="menuLogoutBtn">Déconnexion</a>`;
+        document.getElementById('menuLogoutBtn').onclick = (e) => {
+            e.preventDefault();
+            localStorage.removeItem("token");
+            localStorage.removeItem("username");
+            window.location.reload();
+        };
+    } else {
+        authStatusMenu.innerHTML = `<a href="/login.html?redirect=/ProjetGOW/index.html">Se connecter</a>`;
+    }
+
     if (!BABYLON.GUI) {
         alert("Erreur critique : La librairie Babylon.js GUI est manquante.\nVeuillez ajouter <script src='https://cdn.babylonjs.com/gui/babylon.gui.min.js'></script> dans votre fichier HTML.");
         throw new Error("Babylon.js GUI not found");
@@ -563,9 +639,31 @@ window.addEventListener('DOMContentLoaded', async function () {
             isGamePaused = false;
             if (panel) panel.isVisible = false;
             if (gameData && gameData.pausePanel) gameData.pausePanel.isVisible = false;
+            if (gameData && gameData.quitButton) gameData.quitButton.isVisible = false;
             try { unfreezeScene(currentScene); } catch(e) {}
         });
         const pausePanel = settingsPanelData.panel;
+
+        // --- BOUTON QUITTER (POUR LE MENU PAUSE) ---
+        const quitButton = BABYLON.GUI.Button.CreateSimpleButton("quitBtn", "Quitter la partie");
+        quitButton.width = "200px";
+        quitButton.height = "50px";
+        quitButton.color = "white";
+        quitButton.background = "#e74c3c";
+        quitButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        quitButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
+        quitButton.left = "-20px";
+        quitButton.top = "-20px";
+        quitButton.thickness = 2;
+        quitButton.cornerRadius = 10;
+        quitButton.isVisible = false;
+        quitButton.onPointerUpObservable.add(() => {
+            try { if (currentScene) currentScene.dispose(); } catch (e) {}
+            currentScene = createMenuScene(engine, startGame, gameSettings);
+            gameData = null;
+            isGamePaused = false;
+        });
+        pauseTexture.addControl(quitButton);
 
         // --- UI : ECRAN DE FIN (MASQUÉ PAR DÉFAUT) ---
         const endPanel = new BABYLON.GUI.Rectangle();
@@ -747,7 +845,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         const getFireball = () => fireballPool.find(p => !p.inUse) || null;
         const getHitSpark = () => hitSparkPool.find(p => !p.inUse) || null;
 
-        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, xpContainer, hpBar, hpContainer, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, bossCount: 0, health: 100, maxHealth: 100, hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark };
+        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, quitButton, upgradePanel, xpBar, xpContainer, hpBar, hpContainer, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, bossCount: 0, health: 100, maxHealth: 100, hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark };
 
         // attach shake function to sceneData so caller gets it
         sceneData.shakeCamera = shakeCamera;
@@ -859,10 +957,14 @@ window.addEventListener('DOMContentLoaded', async function () {
 
     window.addEventListener("keydown", (evt) => {
         if (evt.key === "Escape" && gameData) {
+            if (gameData.isDead) return; // Empêche de montrer la pause si on est mort
             if (gameData.upgradePanel && gameData.upgradePanel.isVisible) return; // Empêche de quitter le menu d'amélioration avec Echap
             togglePause();
             if (gameData.pausePanel) {
                 gameData.pausePanel.isVisible = isGamePaused;
+            }
+            if (gameData.quitButton) {
+                gameData.quitButton.isVisible = isGamePaused;
             }
         }
     });
