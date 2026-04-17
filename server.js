@@ -19,16 +19,16 @@ app.use('/api/scores', require('./routes/scores'));
 
 // Redirection globale vers l'accueil si on tape une URL non gérée par l'API
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Lancement du serveur
 const PORT = process.env.PORT || 3000;
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
-        console.log(`Serveur démarré sur http://localhost:${PORT}`);
-    });
-}
+
+app.listen(PORT, () => {
+    console.log(`Serveur démarré sur http://localhost:${PORT}`);
+});
+
 
 // Connexion à MongoDB Atlas
 mongoose.connect(process.env.MONGO_URI).then(() => {
