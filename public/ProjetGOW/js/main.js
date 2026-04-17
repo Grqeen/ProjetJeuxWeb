@@ -11,12 +11,43 @@ import { createWater } from "./water.js";
 import { createBuildings } from "./buildings.js";
 import { createBridges } from "./bridges.js";
 import { createMenuScene } from "./menu.js";
+import { buildSettingsPanel } from "./settingsPanel.js";
 import { bonusState, showUpgradeMenu, updateBonuses, resetBonuses } from "./bonus.js";
 
 export const gameSettings = {
     fullscreen: false,
     quality: "high",
     resolution: 1.0,
+    vsync: true,
+    shadows: true,
+    grass: true,
+    particles: true,
+    fov: 80,
+    bloom: true,
+    motionBlur: false,
+    ambientOcclusion: false,
+    showFps: false,
+    display: {
+        fullscreen: false,
+        vsync: true,
+        fps: false
+    },
+    audio: {
+        master: 1.0,
+        music: 0.5,
+        sfx: 0.8,
+        spatial: true
+    },
+    controls: {
+        sensitivity: 1.0,
+        invertY: false,
+        vibration: true,
+        deadzone: 0.1
+    },
+    gameplay: {
+        language: "fr",
+        showHUD: true
+    },
     keys: {
         forward: "z",
         backward: "s",
@@ -92,10 +123,63 @@ window.addEventListener('DOMContentLoaded', async function () {
         const camera = new BABYLON.ArcRotateCamera("camera1", -Math.PI / 2, 1.0, 8, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
         
+        // --- APPLICATION DES CONTROLES (Sensibilité et Inversion Y) ---
+        const baseSensibility = 2000;
+        camera.angularSensibilityX = baseSensibility / gameSettings.controls.sensitivity;
+        camera.angularSensibilityY = (gameSettings.controls.invertY ? -1 : 1) * (baseSensibility / gameSettings.controls.sensitivity);
+
         camera.checkCollisions = true; // Empêche la caméra de traverser le sol
         camera.collisionRadius = new BABYLON.Vector3(0.5, 0.5, 0.5); // Taille de la "boîte" de la caméra
         camera.upperBetaLimit = Math.PI / 2 - 0.05;
         camera.maxZ = 2000; // On augmente la distance de vue pour voir toute la map sans coupure
+
+        // --- GESTION DES GAMEPADS (Manettes) ---
+        window.gamepadManager = {
+            lastVibration: 0,
+            vibrationDuration: 0,
+            vibrate: function(intensity = 1.0, duration = 100) {
+                if (!gameSettings.controls.vibration) return;
+                
+                const gamepad = navigator.getGamepads && navigator.getGamepads()[0];
+                if (gamepad && gamepad.vibrationActuator) {
+                    try {
+                        gamepad.vibrationActuator.playEffect("dual-rumble", {
+                            startDelay: 0,
+                            duration: duration,
+                            weakMagnitude: intensity * 0.7,
+                            strongMagnitude: intensity
+                        });
+                    } catch(e) {}
+                }
+            },
+            getAnalogStick: function(stickIndex = 0) {
+                const gamepad = navigator.getGamepads && navigator.getGamepads()[0];
+                if (!gamepad || stickIndex < 0) return { x: 0, y: 0 };
+                
+                const indices = stickIndex === 0 ? [0, 1] : [2, 3];
+                let x = gamepad.axes[indices[0]] || 0;
+                let y = gamepad.axes[indices[1]] || 0;
+                
+                // Appliquer la zone morte
+                const deadzone = gameSettings.controls.deadzone;
+                const magnitude = Math.sqrt(x * x + y * y);
+                
+                if (magnitude < deadzone) {
+                    return { x: 0, y: 0 };
+                }
+                
+                // Rescaler après la zone morte pour éviter un "trou" au centre
+                const normalizedMagnitude = Math.min(1, (magnitude - deadzone) / (1 - deadzone));
+                return {
+                    x: (x / magnitude) * normalizedMagnitude,
+                    y: (y / magnitude) * normalizedMagnitude
+                };
+            }
+        };
+        
+        // Exposer les paramètres du gamepad au manager, pour qu'on puisse y accéder globalement
+        window.gameAudioManager = window.gameAudioManager || {};
+        window.gameAudioManager.gamepadManager = window.gamepadManager;
 
         const gameUI = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("gameUI", true, scene);
         const fpsText = new BABYLON.GUI.TextBlock();
@@ -120,6 +204,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         bossKillsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         bossKillsText.left = "-20px";
         bossKillsText.top = "10px";
+        bossKillsText.isVisible = gameSettings.gameplay.showHUD;
         gameUI.addControl(bossKillsText);
 
         // --- UI : BARRE D'XP ---
@@ -134,6 +219,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         xpContainer.color = "#bdc3c7";
         xpContainer.cornerRadius = 12;
         xpContainer.zIndex = 50;
+        xpContainer.isVisible = gameSettings.gameplay.showHUD;
         gameUI.addControl(xpContainer);
 
         const xpBar = new BABYLON.GUI.Rectangle();
@@ -157,6 +243,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         hpContainer.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         hpContainer.left = "10px";
         hpContainer.top = "10px";
+        hpContainer.isVisible = gameSettings.gameplay.showHUD;
         gameUI.addControl(hpContainer);
 
         const hpBar = new BABYLON.GUI.Rectangle();
@@ -317,11 +404,42 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         // --- Audio (files must exist in assets/sounds/) ---
         let fireSound = null, explosionSound = null, hitSound = null;
+        const soundReferences = []; // Garder une trace de tous les sons pour l'audio spatial
         try {
-            fireSound = new BABYLON.Sound("fire", "assets/sounds/fireball.wav", scene, null, { volume: 0.6 });
-            explosionSound = new BABYLON.Sound("explosion", "assets/sounds/explosion.wav", scene, null, { volume: 0.7 });
-            hitSound = new BABYLON.Sound("hit", "assets/sounds/hit.wav", scene, null, { volume: 0.5 });
+            fireSound = new BABYLON.Sound("fire", "assets/sounds/fireball.wav", scene, null, { volume: 0.6, spatialSound: gameSettings.audio.spatial });
+            explosionSound = new BABYLON.Sound("explosion", "assets/sounds/explosion.wav", scene, null, { volume: 0.7, spatialSound: gameSettings.audio.spatial });
+            hitSound = new BABYLON.Sound("hit", "assets/sounds/hit.wav", scene, null, { volume: 0.5, spatialSound: gameSettings.audio.spatial });
+            soundReferences.push(fireSound, explosionSound, hitSound);
         } catch (e) {}
+
+        // Fonction pour mettre à jour les volumes de tous les sons selon les paramètres audio
+        const updateAudioVolumes = () => {
+            const master = gameSettings.audio.master;
+            const musicVol = gameSettings.audio.music;
+            const sfxVol = gameSettings.audio.sfx;
+            const spatial = gameSettings.audio.spatial;
+            
+            // Mettre à jour les volumes des SFX
+            if (fireSound) fireSound.setVolume(0.6 * master * sfxVol);
+            if (explosionSound) explosionSound.setVolume(0.7 * master * sfxVol);
+            if (hitSound) hitSound.setVolume(0.5 * master * sfxVol);
+            
+            // Mettre à jour l'audio spatial
+            soundReferences.forEach(sound => {
+                if (sound) {
+                    sound.spatialSound = spatial;
+                    if (spatial && camera) {
+                        sound.setLocalDirectionToMesh(camera.getDirection(BABYLON.Axis.Z));
+                    }
+                }
+            });
+        };
+
+        // Appliquer les paramètres audio initiaux
+        updateAudioVolumes();
+        
+        // Exposer les sons et la fonction pour que menu.js puisse y accéder
+        window.gameAudioManager = { fireSound, explosionSound, hitSound, soundReferences, updateAudioVolumes };
 
         // --- AJOUT DE LA LUMIÈRE DIRECTIONNELLE ET DES OMBRES ---
         const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -0.5), scene);
@@ -329,7 +447,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         dirLight.intensity = 0.8;
         scene.dirLight = dirLight; // Stocké pour pouvoir réactiver les ombres plus tard
 
-        if (gameSettings.quality === "high") {
+        if (gameSettings.shadows) {
             // Optimisation dynamique des ombres (Cascades) : 
             // HD de près, basse qualité de loin, ignoré derrière la caméra
             const shadowGenerator = new BABYLON.CascadedShadowGenerator(512, dirLight);
@@ -339,16 +457,25 @@ window.addEventListener('DOMContentLoaded', async function () {
             scene.shadowGenerator = shadowGenerator; // Expose globalement au niveau de la scène
         }
 
-        // --- POST-PROCESSING: Bloom + FXAA ---
+        // --- POST-PROCESSING: Bloom + FXAA + Motion Blur + AO ---
         try {
             const pipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene, [camera]);
-            pipeline.bloomEnabled = true;
+            pipeline.bloomEnabled = gameSettings.bloom;
             pipeline.bloomThreshold = 0.7;
             pipeline.bloomWeight = 0.35;
             pipeline.fxaaEnabled = true;
             pipeline.imageProcessingEnabled = true;
             pipeline.imageProcessing.vignetteEnabled = true;
             pipeline.imageProcessing.vignetteWeight = 0.3;
+
+            if (gameSettings.motionBlur) {
+                const mb = new BABYLON.MotionBlurPostProcess("mb", scene, 1.0, camera);
+                mb.isObjectBased = true;
+            }
+
+            if (gameSettings.ambientOcclusion) {
+                const ssao = new BABYLON.SSAORenderingPipeline("ssao", scene, { ssaoRatio: 0.5, combineRatio: 1.0 }, [camera]);
+            }
         } catch (e) {
             // DefaultRenderingPipeline may be unavailable depending on included scripts
             console.warn("DefaultRenderingPipeline unavailable:", e);
@@ -370,6 +497,7 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         camera.lockedTarget = stickman;
         camera.radius = 15; // Ajuste le rayon de la caméra
+        camera.fov = gameSettings.fov * (Math.PI / 180);
         // store base radius and sprint zoom params for dynamic camera effects
         camera._baseRadius = camera.radius;
         camera._sprintZoom = 0.0; // how much the camera zooms in when sprinting (désactivé)
@@ -396,7 +524,9 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         const { cover } = createSewer(scene);
 
-        createGrass(scene, 1000, gameSettings.quality);
+        if (gameSettings.grass) {
+            createGrass(scene, 1000, gameSettings.quality);
+        }
 
         let birds = [];
         if (gameSettings.quality !== "low") {
@@ -428,179 +558,13 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         const pauseTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("PauseUI", true, scene);
 
-        const pausePanel = new BABYLON.GUI.StackPanel();
-        pausePanel.width = "450px";
-        pausePanel.background = "#2c3e50";
-        pausePanel.paddingTop = "10px";
-        pausePanel.paddingBottom = "10px";
-        pausePanel.cornerRadius = 20;
-        pausePanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-        pausePanel.isVisible = false;
-        pauseTexture.addControl(pausePanel);
-
-        const createHeader = (text) => {
-            const header = new BABYLON.GUI.TextBlock();
-            header.text = text;
-            header.color = "white";
-            header.fontSize = 24;
-            header.height = "40px";
-            header.fontWeight = "bold";
-            return header;
-        };
-
-        pausePanel.addControl(createHeader("PAUSE - PARAMÈTRES"));
-
-        const videoRow = new BABYLON.GUI.StackPanel();
-        videoRow.isVertical = false;
-        videoRow.height = "40px";
-        pausePanel.addControl(videoRow);
-
-        const fsCheckbox = new BABYLON.GUI.Checkbox();
-        fsCheckbox.width = "20px"; fsCheckbox.height = "20px";
-        fsCheckbox.isChecked = gameSettings.fullscreen;
-        fsCheckbox.color = "#3498db";
-        fsCheckbox.onIsCheckedChangedObservable.add(v => {
-            gameSettings.fullscreen = v;
-            if (v) engine.enterFullscreen(); else engine.exitFullscreen();
-        });
-        videoRow.addControl(fsCheckbox);
-
-        const fsLabel = new BABYLON.GUI.TextBlock();
-        fsLabel.text = " Plein Écran  |  FPS ";
-        fsLabel.color = "white"; fsLabel.width = "150px";
-        videoRow.addControl(fsLabel);
-
-        const fpsCheckbox = new BABYLON.GUI.Checkbox();
-        fpsCheckbox.width = "20px"; fpsCheckbox.height = "20px";
-        fpsCheckbox.isChecked = gameSettings.showFps;
-        fpsCheckbox.color = "#3498db";
-        fpsCheckbox.onIsCheckedChangedObservable.add(v => {
-            gameSettings.showFps = v;
-            if (fpsText) {
-                fpsText.isVisible = v;
-                if (v) {
-                    fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-                    fpsText.bottom = null;
-                    fpsText.top = "42px";
-                    fpsText.left = "10px";
-                }
-            }
-        });
-        videoRow.addControl(fpsCheckbox);
-
-        pausePanel.addControl(createHeader("QUALITÉ"));
-        const qRow = new BABYLON.GUI.StackPanel();
-        qRow.isVertical = false; qRow.height = "40px";
-        pausePanel.addControl(qRow);
-
-        const qualityBtns = [];
-        ["Low", "Medium", "High"].forEach(q => {
-            const btn = BABYLON.GUI.Button.CreateSimpleButton("q"+q, q);
-            btn.width = "80px"; btn.height = "30px"; btn.color = "white";
-            btn.background = gameSettings.quality.toLowerCase() === q.toLowerCase() ? "#3498db" : "#7f8c8d";
-            btn.onPointerUpObservable.add(() => {
-                const newQuality = q.toLowerCase();
-                if (gameSettings.quality === newQuality) return;
-
-                gameSettings.quality = newQuality;
-                gameSettings.resolution = 1.0; // On conserve toujours la résolution native
-
-                // Mise à jour visuelle
-                qualityBtns.forEach(b => b.background = "#7f8c8d");
-                btn.background = "#3498db";
-
-                // --- HOT-SWAP DES PARAMÈTRES GRAPHIQUES ---
-                
-                // 1. Ombres
-                if (newQuality === "high") {
-                    if (!scene.shadowGenerator && scene.dirLight) {
-                        const shadowGenerator = new BABYLON.CascadedShadowGenerator(512, scene.dirLight);
-                        shadowGenerator.lambda = 0.7;
-                        shadowGenerator.shadowMaxZ = 120; // Ne calcule plus les ombres au-delà de 120m
-                        shadowGenerator.usePercentageCloserFiltering = true;
-                        scene.shadowGenerator = shadowGenerator;
-
-                        // Rétablir les ombres sur les éléments principaux de la carte
-                        scene.meshes.forEach(m => {
-                            if (m.name === "stickman" || m.name.includes("building") || m.name.includes("bridge")) {
-                                shadowGenerator.addShadowCaster(m, true);
-                            }
-                        });
-                    }
-                } else {
-                    if (scene.shadowGenerator) {
-                        scene.shadowGenerator.dispose();
-                        scene.shadowGenerator = null;
-                    }
-                }
-
-                // 2. Oiseaux
-                if (newQuality === "low") {
-                    if (gameData && gameData.birds) {
-                        gameData.birds.forEach(b => b.dispose());
-                        gameData.birds = [];
-                    }
-                } else {
-                    if (gameData && (!gameData.birds || gameData.birds.length === 0)) {
-                        gameData.birds = createBirds(scene, 50);
-                    }
-                }
-
-                // 3. Arbres (Rechargement dynamique)
-                createTrees(scene, 600, newQuality); // Augmentation massive du nombre d'arbres
-
-                // 4. Herbe (Désactivée en Low)
-                createGrass(scene, 1000, newQuality);
-            });
-            qualityBtns.push(btn);
-            qRow.addControl(btn);
-        });
-
-        pausePanel.addControl(createHeader("TOUCHES"));
-        const keysContainer = new BABYLON.GUI.ScrollViewer();
-        keysContainer.width = "400px"; keysContainer.height = "150px";
-        keysContainer.background = "#34495e";
-        pausePanel.addControl(keysContainer);
-
-        const keysList = new BABYLON.GUI.StackPanel();
-        keysContainer.addControl(keysList);
-
-        const addKeySetting = (label, prop) => {
-            const row = new BABYLON.GUI.StackPanel();
-            row.isVertical = false; row.height = "35px";
-            const t = new BABYLON.GUI.TextBlock();
-            t.text = label; t.color = "white"; t.width = "180px";
-            row.addControl(t);
-            const b = BABYLON.GUI.Button.CreateSimpleButton("k"+prop, gameSettings.keys[prop].toUpperCase());
-            b.width = "100px"; b.height = "25px"; b.color = "white"; b.background = "#95a5a6";
-            b.onPointerUpObservable.add(() => {
-                b.textBlock.text = "...";
-                const listener = (e) => {
-                    gameSettings.keys[prop] = e.key.toLowerCase();
-                    b.textBlock.text = e.key.toUpperCase();
-                    window.removeEventListener("keydown", listener);
-                };
-                window.addEventListener("keydown", listener);
-            });
-            row.addControl(b);
-            keysList.addControl(row);
-        };
-        addKeySetting("Avancer", "forward");
-        addKeySetting("Reculer", "backward");
-        addKeySetting("Gauche", "left");
-        addKeySetting("Droite", "right");
-        addKeySetting("Sprint", "sprint");
-        addKeySetting("S'accroupir", "crouch");
-
-        const resumeBtn = BABYLON.GUI.Button.CreateSimpleButton("resume", "REPRENDRE");
-        resumeBtn.height = "40px"; resumeBtn.width = "200px"; resumeBtn.color = "white";
-        resumeBtn.background = "#27ae60"; resumeBtn.marginTop = "10px";
-        resumeBtn.onPointerUpObservable.add(() => {
+        const settingsPanelData = buildSettingsPanel(pauseTexture, engine, gameSettings, (panel) => {
             isGamePaused = false;
-            pausePanel.isVisible = false;
+            if (panel) panel.isVisible = false;
+            if (gameData && gameData.pausePanel) gameData.pausePanel.isVisible = false;
             try { unfreezeScene(currentScene); } catch(e) {}
         });
-        pausePanel.addControl(resumeBtn);
+        const pausePanel = settingsPanelData.panel;
 
         // --- UI : ECRAN DE FIN (MASQUÉ PAR DÉFAUT) ---
         const endPanel = new BABYLON.GUI.Rectangle();
@@ -741,7 +705,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                 trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
                 trail.minSize = 0.1; trail.maxSize = 0.4;
                 trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
-                trail.emitRate = 80;
+                trail.emitRate = gameSettings.particles ? 80 : 0;
                 trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
                 trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
                 trail.gravity = new BABYLON.Vector3(0, -1, 0);
@@ -762,7 +726,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                 ps.color2 = new BABYLON.Color4(1, 0.3, 0.05, 1.0);
                 ps.minSize = 0.05; ps.maxSize = 0.2;
                 ps.minLifeTime = 0.2; ps.maxLifeTime = 0.6;
-                ps.emitRate = 400;
+                ps.emitRate = gameSettings.particles ? 400 : 0;
                 ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
                 ps.direction2 = new BABYLON.Vector3(1, 1, 1);
                 ps.gravity = new BABYLON.Vector3(0, -9.8, 0);
@@ -776,6 +740,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         const getHitSpark = () => hitSparkPool.find(p => !p.inUse) || null;
 
         const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark, bossCount: 0 };
+        const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, upgradePanel, xpBar, xpContainer, hpBar, hpContainer, waveData, card1, card2, card3, kills: 0, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, health: 100, maxHealth: 100, hpBar: hpBar, hpText: hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark };
 
         // attach shake function to sceneData so caller gets it
         sceneData.shakeCamera = shakeCamera;
@@ -846,6 +811,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         const data = createGameScene();
         currentScene = data.scene;
         gameData = data;
+        window.currentGameData = data; // Exposer les données du jeu globalement pour le menu
         isGamePaused = false;
         projectiles = [];
         lastFireTime = 0;
@@ -918,6 +884,22 @@ window.addEventListener('DOMContentLoaded', async function () {
             currentScene.render();
             return;
         }
+
+        // Mettre à jour l'audio spatial 3D en temps réel
+        try {
+            if (gameSettings.audio.spatial && window.gameAudioManager && window.gameAudioManager.soundReferences) {
+                const camera = gameData?.camera;
+                window.gameAudioManager.soundReferences.forEach(sound => {
+                    if (sound && camera) {
+                        sound.spatialSound = true;
+                        // Positionner le son relative à la caméra
+                        const camDirection = camera.getDirection(BABYLON.Axis.Z);
+                        const camPosition = camera.position.clone();
+                        sound.setLocalDirectionToMesh(camDirection);
+                    }
+                });
+            }
+        } catch (e) {}
 
         const { stickman, monsters, inputMap, camera, cover, birds, scene, waveData } = gameData;
 
@@ -1366,7 +1348,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                     ps.color2 = new BABYLON.Color4(1, 1, 1, 0);
                     ps.minSize = 0.5; ps.maxSize = 1.0;
                     ps.minLifeTime = 0.2; ps.maxLifeTime = 0.4;
-                    ps.emitRate = 100;
+                    ps.emitRate = gameSettings.particles ? 100 : 0;
                     ps.direction1 = new BABYLON.Vector3(-2, -1, -2);
                     ps.direction2 = new BABYLON.Vector3(2, -0.5, 2);
                     ps.disposeOnStop = true;
@@ -1743,7 +1725,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                         trail.color2 = new BABYLON.Color4(0.05, 0.05, 0.05, 0.2);
                         trail.minSize = 0.1; trail.maxSize = 0.4;
                         trail.minLifeTime = 0.2; trail.maxLifeTime = 0.8;
-                        trail.emitRate = 80;
+                        trail.emitRate = gameSettings.particles ? 80 : 0;
                         trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
                         trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
                         trail.gravity = new BABYLON.Vector3(0, -1, 0);
