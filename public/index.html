@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blob Odyssey - Site Officiel</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="icon" type="image/png" href="ProjetCanvas1/assets/favicon/favicon.ico" />  
 </head>
 
 <body>
@@ -65,31 +66,31 @@
       </div>
 
       <div class="game-card">
-        <div class="game-image blob-legends"></div>
+        <a href="ProjetDOM/index.html">
+          <div class="game-image blob-defense"></div>
+        </a>
         <div class="game-info">
-          <h3>Coming soon</h3>
-          <p class="game-genre">Coming Soon</p>
+          <h3>Blob Defense</h3>
+          <p class="game-genre">Typing Defense</p>
           <p class="game-players">Jeu Solo</p>
         </div>
       </div>
     </div>
   </section>
+
   <section class="trailers-section">
     <h2 class="section-title">BANDE-ANNONCES DU JEU</h2>
 
     <div class="trailers-container">
       <div class="trailers-tabs">
         <div class="tab active">
-          <img src="https://via.placeholder.com/24" alt="icon">
           <span>Blob Escape</span>
         </div>
         <div class="tab">
-          <img src="https://via.placeholder.com/24" alt="icon">
           <span>Blob's Revenge</span>
         </div>
         <div class="tab">
-          <img src="https://via.placeholder.com/24" alt="icon">
-          <span>Blob Legends</span>
+          <span>Blob Defense</span>
         </div>
       </div>
 
@@ -117,10 +118,11 @@
     const tabs = document.querySelectorAll('.tab');
     const iframe = document.querySelector('.video-responsive iframe');
 
+    // MODIFIÉ : Clés mises à jour avec Blob Defense
     const videoIds = {
       "Blob Escape": "jW2C5XMW_Go",
       "Blob's Revenge": "VIDEO_ID_2",
-      "Blob Legends": "VIDEO_ID_3",
+      "Blob Defense": "VIDEO_ID_3", // N'oublie pas de mettre le vrai ID de ta vidéo YouTube ici plus tard !
     };
 
     tabs.forEach(tab => {
@@ -134,7 +136,7 @@
       });
     });
   </script>
-  <script src="auth-ui.js"></script>
+  <script src="./js/auth-ui.js"></script>
 </body>
 
 </html>

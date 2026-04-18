@@ -5,7 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blob Odyssey - Classements</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="icon" type="image/png" href="ProjetCanvas1/assets/favicon/favicon.ico" />  
 </head>
 
 <body>
@@ -33,6 +34,7 @@
     <p class="section-subtitle" style="text-align: center; margin-bottom: 40px;">Battez les records et entrez dans la légende de Blob Odyssey.</p>
 
     <div class="trailers-container" style="min-height: auto; margin-top: 0;">
+      
       <div class="trailers-tabs">
         <div class="tab active" data-target="leaderboard-escape">
           <span>Blob Escape</span>
@@ -40,16 +42,20 @@
         <div class="tab" data-target="leaderboard-revenge">
           <span>Blob's Revenge</span>
         </div>
+        <div class="tab" data-target="leaderboard-defense">
+          <span>Blob Defense</span>
+        </div>
       </div>
 
       <div class="leaderboard-viewer">
+        
         <div id="leaderboard-escape" class="leaderboard active">
           <table class="leaderboard-table">
             <thead>
               <tr>
                 <th>Rang</th>
                 <th>Joueur</th>
-                <th>Temps</th>
+                <th>Temps record</th>
                 <th>Date</th>
               </tr>
             </thead>
@@ -74,6 +80,24 @@
             </tbody>
           </table>
         </div>
+
+        <div id="leaderboard-defense" class="leaderboard" style="display: none;">
+          <table class="leaderboard-table">
+            <thead>
+              <tr>
+                <th>Rang</th>
+                <th>Joueur</th>
+                <th>Temps de survie</th>
+                <th>Score</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-defense">
+              <tr><td colspan="5" style="text-align:center;">Chargement des scores...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
       </div>
     </div>
   </main>
@@ -112,8 +136,12 @@
             const scores = await res.json();
             
             tbody.innerHTML = '';
+            
+            // Ajuster le colspan si c'est le jeu Defense
+            const colCount = gameId === 'defense' ? 5 : 4;
+
             if(scores.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Aucun score pour le moment. Soyez le premier !</td></tr>';
+                tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;">Aucun score pour le moment. Soyez le premier !</td></tr>`;
                 return;
             }
 
@@ -122,27 +150,43 @@
                 let medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '';
                 let dateStr = new Date(s.date).toLocaleDateString('fr-FR');
                 
-                // Pour escape, afficher le score comme un temps
-                let scoreDisplay = gameId === 'escape' ? s.score.toFixed(2) + 's' : s.score;
-
-                tbody.innerHTML += `
-                  <tr class="${rankClass}">
-                    <td>${index + 1} <span class="medal">${medal}</span></td>
-                    <td>${s.username}</td>
-                    <td>${scoreDisplay}</td>
-                    <td>${dateStr}</td>
-                  </tr>
-                `;
+                if (gameId === 'defense') {
+                    // Si ton API n'envoie pas encore le temps, on affiche "--:--"
+                    let timeDisplay = s.time ? s.time : '--:--';
+                    
+                    tbody.innerHTML += `
+                      <tr class="${rankClass}">
+                        <td>${index + 1} <span class="medal">${medal}</span></td>
+                        <td>${s.username}</td>
+                        <td>${timeDisplay}</td>
+                        <td >${s.score}</td>
+                        <td>${dateStr}</td>
+                      </tr>
+                    `;
+                } else {
+                    let scoreDisplay = gameId === 'escape' ? s.score.toFixed(2) + 's' : s.score;
+                    
+                    tbody.innerHTML += `
+                      <tr class="${rankClass}">
+                        <td>${index + 1} <span class="medal">${medal}</span></td>
+                        <td>${s.username}</td>
+                        <td>${scoreDisplay}</td>
+                        <td>${dateStr}</td>
+                      </tr>
+                    `;
+                }
             });
         } catch {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#ff5252;">Erreur de connexion au serveur.</td></tr>';
+            const colCount = gameId === 'defense' ? 5 : 4;
+            tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align:center;color:#ff5252;">Erreur de connexion au serveur.</td></tr>`;
         }
     }
 
     loadScores('escape', 'tbody-escape');
     loadScores('revenge', 'tbody-revenge');
+    loadScores('defense', 'tbody-defense');
   </script>
-  <script src="auth-ui.js"></script>
+  <script src="./js/auth-ui.js"></script>
 </body>
 
 </html>
