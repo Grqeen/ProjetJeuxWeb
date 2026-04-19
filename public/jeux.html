@@ -1,78 +1,120 @@
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blob Odyssey - Nos Jeux</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body class="jeux-page">
-    <header>
-      <nav class="navbar">
-        <div class="logo">BLOB ODYSSEY</div>
-        
-        <ul class="nav-links" id="nav-links">
-          <li><a href="index.html">ACCUEIL</a></li>
-          <li><a href="jeux.html">JEUX</a></li>
-          <li><a href="#">ACTUALITÉS</a></li>
-          <li><a href="#">NOTRE ÉQUIPE</a></li>
-        </ul>
 
-        <div class="burger" id="burger">
-          <div class="line1"></div>
-          <div class="line2"></div>
-          <div class="line3"></div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blob Odyssey - Nos Jeux</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="icon" type="image/png" href="ProjetCanvas1/assets/favicon/favicon.ico" />
+</head>
+
+<body class="jeux-page">
+  <header>
+    <nav class="navbar">
+      <div class="logo">BLOB ODYSSEY</div>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">ACCUEIL</a></li>
+        <li><a href="jeux.html">JEUX</a></li>
+        <li><a href="classements.html">CLASSEMENTS</a></li>
+        <li><a href="equipe.html">NOTRE ÉQUIPE</a></li>
+      </ul>
+
+      <div class="burger" id="burger">
+        <div class="line1"></div>
+        <div class="line2"></div>
+        <div class="line3"></div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="game-hero blob-escape-hero">
+      <div class="hero-content">
+        <p class="game-category">PARKOUR 2D</p>
+        <h1>BLOB ESCAPE</h1>
+        <p class="game-description">
+          Aidez Blob à s'échapper d'un laboratoire diabolique. Sautez, esquivez et survivez !
+        </p>
+        <a href="ProjetCanvas1/index.html" class="btn-play" target="_blank">JOUER MAINTENANT</a>
+      </div>
+      <div class="hero-mockup">
+        <div class="mockup-wrapper">
+          <img src="ProjetCanvas1/assets/images/gameBackground.png" alt="Blob Escape Preview">
         </div>
-      </nav>
-    </header>
+      </div>
+    </section>
 
-    <main>
-      <section class="game-hero blob-escape-hero">
-        <div class="hero-content">
-          <p class="game-category">PARKOUR 2D</p>
-          <h1>BLOB ESCAPE</h1>
-          <p class="game-description">
-            Aidez Blob à s'échapper d'un laboratoire diabolique. Sautez, esquivez et survivez !
-          </p>
-          <a href="ProjetCanvas1/index.html" class="btn-play">JOUER MAINTENANT</a>
+    <section class="game-hero blobs-revenge-hero">
+      <div class="hero-content">
+        <p class="game-category">3D SURVIVOR</p>
+        <h1>BLOB'S REVENGE</h1>
+        <p class="game-description">
+          La vengeance est un plat qui se mange gluant. Affrontez des vagues d'ennemis !
+        </p>
+        <a href="ProjetGOW/index.html" class="btn-play" target="_blank">JOUER MAINTENANT</a>
+      </div>
+      <div class="hero-mockup">
+        <div class="mockup-wrapper">
+          <img src="ProjetGOW/assets/menuBackground.jpg" alt="Blob's Revenge Preview">
         </div>
-        <div class="hero-mockup">
-          <div class="mockup-wrapper">
-             <img src="ProjetCanvas1/assets/images/gameBackground.png" alt="Blob Escape Preview">
-          </div>
+      </div>
+    </section>
+
+    <section class="game-hero blob-defense-hero">
+      <div class="hero-content">
+        <p class="game-category">TYPING DEFENSE</p>
+        <h1>BLOB DEFENSE</h1>
+        <p class="game-description">
+          Protégez le noyau central de l'invasion rouge. Tapez les mots pour activer vos défenses et survivez !
+        </p>
+        <a href="ProjetDOM/index.html" class="btn-play" target="_blank">JOUER MAINTENANT</a>
+      </div>
+      <div class="hero-mockup">
+        <div class="mockup-wrapper">
+          <img src="ProjetDOM/assets/dom_bg_hero.png" alt="Blob Defense Preview"
+            onerror="this.src='https://via.placeholder.com/500x300/1a1a1a/52c256?text=Blob+Defense'">
         </div>
-      </section>
+      </div>
+    </section>
+  </main>
 
-      <hr class="separator">
+  <script>
+    const burger = document.getElementById('burger');
+    const nav = document.getElementById('nav-links');
 
-      <section class="game-hero blobs-revenge-hero">
-        <div class="hero-content">
-          <p class="game-category">3D SURVIVOR</p>
-          <h1>BLOB'S REVENGE</h1>
-          <p class="game-description">
-            La vengeance est un plat qui se mange gluant. Affrontez des vagues d'ennemis !
-          </p>
-          <a href="ProjetGOW/index.html" class="btn-play">JOUER MAINTENANT</a>
-        </div>
-        <div class="hero-mockup">
-          <div class="mockup-wrapper">
-             <img src="ProjetGOW/assets/menuBackground.jpg" alt="Blob's Revenge Preview">
-          </div>
-        </div>
-      </section>
-    </main>
+    burger.addEventListener('click', () => {
+      nav.classList.toggle('nav-active');
+      burger.classList.toggle('toggle');
+    });
 
-    <script>
-      const burger = document.getElementById('burger');
-      const nav = document.getElementById('nav-links');
+    // --- NOUVEAU : ANIMATION FLUIDE AU SCROLL ---
+    const heroSections = document.querySelectorAll('.game-hero');
 
-      burger.addEventListener('click', () => {
-          // Toggle le menu
-          nav.classList.toggle('nav-active');
-          // Animation du burger (le transformer en X)
-          burger.classList.toggle('toggle');
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.4 // Déclenche l'animation quand 40% du jeu est visible à l'écran
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Le jeu est visible : on lance l'animation
+          entry.target.classList.add('is-active');
+        } else {
+          // Le jeu n'est plus visible : on reset pour rejouer l'animation plus tard
+          entry.target.classList.remove('is-active');
+        }
       });
-    </script>
-    <script src="auth-ui.js"></script>
+    }, observerOptions);
+
+    heroSections.forEach(section => {
+      observer.observe(section);
+    });
+  </script>
+  <script src="./js/auth-ui.js"></script>
 </body>
+
 </html>

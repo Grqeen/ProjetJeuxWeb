@@ -1,25 +1,40 @@
-# Projet Jeu Canvas - Blob Escape
+Blob Escape - Projet Jeu Web (Canvas API)
 
-JUNGERS Enzo / CHARRIER Logan / AIT-ELDJOUDI Dylan
+Blob Escape est un jeu d'arcade et de réflexion en 2D développé en JavaScript natif (ES6+). Ce projet a été réalisé dans le cadre d'un module universitaire pour démontrer la maîtrise de l'API HTML5 Canvas, de la programmation orientée objet (POO) et de la gestion de moteurs de jeu (physique, collisions, cycle de vie).
 
-Un jeu d'arcade en 2D développé en JavaScript natif utilisant l'API HTML5 Canvas. Le joueur doit naviguer à travers différents niveaux, résoudre des puzzles simples avec des clés, éviter des obstacles et atteindre la sortie.
+👥 Équipe de développement
+- Enzo JUNGERS
+- Logan CHARRIER
+- Dylan AIT-ELDJOUDI
 
-## 🎮 Fonctionnalités
+🚀 Technologies utilisées
+- Langage : JavaScript avec modules.
+- Moteur de rendu : HTML5 Canvas API.
+- Style : CSS3 pour l'interface de menu et l'overlay de jeu.
+- Assets : Graphismes pixel-art et effets sonores personnalisés.
 
-- **Système de Niveaux** : 3 niveaux uniques avec une difficulté progressive.
-- **Physique & Collisions** :
-  - Collisions Rectangle-Rectangle (AABB) pour les murs.
-  - Collisions avancées (SAT - Separating Axis Theorem) pour les obstacles rotatifs.
-  - Rebond physique sur les "Bumpers" (triangles oranges).
-- **Objets Interactifs** :
-  - **Clés (Keypads)** : Activent des mécanismes pour ouvrir les portes colorées.
-  - **Portes Fantômes (Fading Doors)** : Obstacles qui deviennent invisibles temporairement.
-  - **Potions de Vitesse** : Donnent un boost de vitesse temporaire.
-  - **Potions de Taille** : Modifient la taille du joueur pour passer dans des endroits étroits.
-- **Contrôles** : Support du clavier (Flèches directionnelles) et interface tactile virtuelle.
+🎮 Fonctionnalités principales
+1. Système de Jeu
+- Gestion des niveaux : Système de chargement dynamique de niveaux à partir de fichiers de configuration (JSON/Objects).
+- Timer & UI : Affichage en temps réel du temps écoulé, du niveau actuel et d'un clavier virtuel réactif aux entrées du joueur.
+- Compte à rebours : Overlay animé "3-2-1-GO" avant chaque début de niveau.
 
-## 🕹️ Comment Jouer
+2. Mécaniques et Physique
+Moteur de Collisions avancé :
+- Pour les collisions simples avec les murs et obstacles fixes.
+- Gérer les collisions précises avec les obstacles en rotation (RotatingObstacle).
+- Collisions Cercle-Rectangle : Pour les obstacles circulaires et le portail de fin.
+- Physique de rebond : Gestion du recul lors des impacts avec des Bumpers.
+- Effets de vent : Système de ventilateurs appliquant une force directionnelle continue sur le joueur selon sa distance.
 
-1. **Lancer le jeu** : Cliquez sur "Start Game" ou choisissez un niveau dans le menu.
-2. **Déplacement** : Utilisez les flèches du clavier (`Haut`, `Bas`, `Gauche`, `Droite`).
-3. **Objectif** : Atteignez le portail de fin (cercle ou carré coloré) pour passer au niveau suivant.
+3. Objets Interactifs
+- Keypads & Fading Doors : Système de clés colorées permettant d'ouvrir (rendre invisible) des portes temporairement pour progresser.
+- Potions de Vitesse : Augmente la vélocité du joueur pendant une durée limitée.
+- Potions de Taille : Modifie la taille du Blob pour lui permettre d'emprunter des passages étroits.
+- Téléporteurs : Points de passage instantanés entre deux coordonnées du canvas.
+
+📈 Perspectives d'évolution :
+- Système de High-Score persistant via LocalStorage.
+- Niveaux supplémentaires avec de nouveaux biomes.
+
+Ce projet a été réalisé dans un but pédagogique pour illustrer les principes de programmation de jeux vidéo web.

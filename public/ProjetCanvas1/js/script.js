@@ -18,6 +18,9 @@ import Fan from "./Fan.js";
 // init
 window.onload = init;
 
+const targetFPS = 60;
+const frameInterval = 1000 / targetFPS;
+
 // couleurs
 const colorMap = {
   red: "#ff0000",
@@ -1291,6 +1294,9 @@ async function init() {
 
     let start = currentLevelPage * levelsPerPage + 1;
     let end = Math.min(start + levelsPerPage - 1, maxLevels);
+    // Calcul dynamique pour équilibrer les colonnes (ex: 8 niveaux => 4 à gauche, 4 à droite)
+    let count = end - start + 1;
+    let splitPoint = start + Math.ceil(count / 2);
 
     let leftCol = document.createElement("div");
     leftCol.className = "levelColumn";
@@ -1316,7 +1322,7 @@ async function init() {
       };
 
       // colonnes
-      if (i < start + 5) {
+      if (i < splitPoint) {
         leftCol.appendChild(btn);
       } else {
         rightCol.appendChild(btn);
@@ -1614,7 +1620,6 @@ async function init() {
       game.lives--;
       updateLives();
       if (game.lives === 0) {
-        alert("Game Over !");
         if (btnExitLevel) btnExitLevel.click();
       } else {
         game.start(game.currentLevel);
