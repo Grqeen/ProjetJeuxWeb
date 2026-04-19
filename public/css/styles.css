@@ -288,11 +288,12 @@ body {
 
 .equipe-member img {
   width: 50%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
   background-color: #333;
   margin-bottom: 15px;
-  background-size: cover;
-  background-position: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
 
 }
 
