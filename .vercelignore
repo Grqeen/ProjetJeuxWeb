@@ -1,0 +1,19 @@
+# Fichiers de conception graphique 2D
+**/*.psd
+**/*.ai
+**/*.xcf
+**/*.fig
+
+# Fichiers sources 3D lourds (le web utilise tes .glb)
+**/*.fbx
+**/*.blend
+**/*.obj
+**/*.mtl
+**/*.stl
+
+# Documentation non nécessaire en production (sauf si tu as une route qui la lit)
+**/*.md
+
+# Dossiers de configuration des éditeurs
+.vscode/
+.idea/
