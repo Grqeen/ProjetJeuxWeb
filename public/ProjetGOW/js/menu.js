@@ -134,7 +134,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
     const scene = new BABYLON.Scene(engine);
     scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1);
 
-    const background = new BABYLON.Layer("menuBg", "assets/menuBackground.jpg", scene, true);
+    const background = new BABYLON.Layer("menuBg", "assets/backgroundimg.png", scene, true);
     const camera = new BABYLON.FreeCamera("menuCam", new BABYLON.Vector3(0, 0, 0), scene);
     const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
 
@@ -157,7 +157,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + Math.random(), text);
         btn.width = "300px";
         btn.height = "60px";
-        btn.color = "#FFD700";
+        btn.color = "white";
         btn.thickness = 0;
         btn.background = "transparent";
         btn.hoverCursor = "pointer";
@@ -167,28 +167,71 @@ export function createMenuScene(engine, startGameCallback, settings) {
         btn.textBlock.outlineWidth = 4;
         btn.textBlock.outlineColor = "black";
         btn.textBlock.fontFamily = "Verdana";
+        btn.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        btn.textBlock.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+        btn.transformCenterX = 0; // Le grossissement se fera à partir de la gauche
+        
+        // Variables cibles pour l'animation fluide
+        let targetScale = 1.0;
+        let targetLeft = 0;
+        let targetRotation = 0;
+
         btn.onPointerEnterObservable.add(() => {
-            btn.color = "white";
-            btn.textBlock.outlineColor = "#e67e22";
-            btn.scaleX = 1.1;
-            btn.scaleY = 1.1;
+            btn.color = "#f1c40f"; // Nouveau jaune doré éclatant
+            btn.textBlock.outlineColor = "#d35400"; // Contour orange sombre
+            btn.textBlock.shadowColor = "black";
+            btn.textBlock.shadowOffsetX = 3;
+            btn.textBlock.shadowOffsetY = 3;
+            targetScale = 1.15; // Grossit un peu plus
+            targetLeft = 25; // Glisse plus loin
+            targetRotation = -0.04; // Se penche légèrement vers le haut
         });
         btn.onPointerOutObservable.add(() => {
-            btn.color = "#FFD700";
+            btn.color = "white";
             btn.textBlock.outlineColor = "black";
-            btn.scaleX = 1.0;
-            btn.scaleY = 1.0;
+            btn.textBlock.shadowOffsetX = 0;
+            btn.textBlock.shadowOffsetY = 0;
+            targetScale = 1.0;
+            targetLeft = 0;
+            targetRotation = 0;
+        });
+
+        // Boucle d'animation pour rendre le mouvement ultra fluide (Lerp)
+        const animObserver = scene.onBeforeRenderObservable.add(() => {
+            if (btn.isDisposed) {
+                scene.onBeforeRenderObservable.remove(animObserver);
+                return;
+            }
+            
+            let currentLeft = parseFloat(btn.left) || 0;
+            
+            // Continue l'animation fluidement dans les deux sens (entrée et sortie)
+            if (Math.abs(targetScale - btn.scaleX) > 0.001 || Math.abs(targetLeft - currentLeft) > 0.1) {
+                btn.scaleX += (targetScale - btn.scaleX) * 0.15;
+                btn.scaleY += (targetScale - btn.scaleY) * 0.15;
+                btn.rotation += (targetRotation - btn.rotation) * 0.15;
+                btn.left = (currentLeft + (targetLeft - currentLeft) * 0.15) + "px";
+            } else if (btn.scaleX !== targetScale) {
+                // Verrouille précisément les valeurs quand l'animation est presque finie pour préserver les performances
+                btn.scaleX = targetScale;
+                btn.scaleY = targetScale;
+                btn.rotation = targetRotation;
+                btn.left = targetLeft + "px";
+            }
         });
         return btn;
     };
 
     const mainMenuPanel = new BABYLON.GUI.StackPanel();
     mainMenuPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
+    mainMenuPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
+    mainMenuPanel.left = "10%"; // Marge de 10% par rapport au bord gauche
+    mainMenuPanel.width = "600px";
     advancedTexture.addControl(mainMenuPanel);
 
     const title = new BABYLON.GUI.TextBlock();
     title.text = t("title");
-    title.color = "#FFD700";
+    title.color = "white";
     title.fontSize = 80;
     title.height = "120px";
     title.fontWeight = "bold";
@@ -197,6 +240,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
     title.shadowColor = "black";
     title.shadowOffsetX = 4;
     title.shadowOffsetY = 4;
+    title.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
     mainMenuPanel.addControl(title);
 
     const startBtn = createBtn(t("start"));
@@ -618,27 +662,31 @@ export function createMenuScene(engine, startGameCallback, settings) {
     updateContentPanel("video");
 
     // === BOUTON RETOUR (Fixé en bas au milieu) ===
-    const backBtn = createBtn(t("back"));
-    backBtn.width = "150px";
-    backBtn.height = "40px";
-    backBtn.fontSize = 18;
+    const backBtn = BABYLON.GUI.Button.CreateSimpleButton("backBtn", t("back"));
+    backBtn.width = "200px";
+    backBtn.height = "50px";
+    backBtn.color = "white";
     backBtn.background = "#c0392b";
-    backBtn.cornerRadius = 8;
+    backBtn.thickness = 0;
+    backBtn.cornerRadius = 10;
+    backBtn.fontSize = 20;
+    backBtn.fontWeight = "bold";
     backBtn.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
     backBtn.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    backBtn.paddingBottom = "15px";
+    backBtn.top = "-15px";
+    backBtn.hoverCursor = "pointer";
     
-    // Hover effect professionnel
+    // Hover effect propre (sans conflit avec createBtn)
     backBtn.onPointerEnterObservable.add(() => {
         backBtn.background = "#e74c3c";
-        backBtn.fontSize = 19;
-        backBtn.height = "42px";
+        backBtn.scaleX = 1.05;
+        backBtn.scaleY = 1.05;
     });
     
     backBtn.onPointerOutObservable.add(() => {
         backBtn.background = "#c0392b";
-        backBtn.fontSize = 18;
-        backBtn.height = "40px";
+        backBtn.scaleX = 1.0;
+        backBtn.scaleY = 1.0;
     });
     
     backBtn.onPointerUpObservable.add(() => {
@@ -663,17 +711,21 @@ export function createMenuScene(engine, startGameCallback, settings) {
 
     // Fonction complète pour mettre à jour TOUT le menu quand on change de langue
     window.fullUpdateLanguage = () => {
-        // Mettre à jour les boutons principaux du menu
-        window.refreshUIText?.();
-        // Rafraîchir à nouveau le tab actuel
-        updateContentPanel(currentTab);
-        // Réappliquer les titres des onglets
-        tabs.forEach((tab, index) => {
-            const button = tabButtons[tab.id];
-            if (button) {
-                button.textBlock.text = t("tab_" + tab.id);
-            }
-        });
+        try {
+            // Mettre à jour les boutons principaux du menu
+            window.refreshUIText?.();
+            // Rafraîchir à nouveau le tab actuel
+            updateContentPanel(currentTab);
+            // Réappliquer les titres des onglets
+            tabs.forEach((tab, index) => {
+                const button = tabButtons[tab.id];
+                if (button) {
+                    button.textBlock.text = t("tab_" + tab.id);
+                }
+            });
+        } catch (e) {
+            // Sécurité au cas où la scène du menu a été détruite
+        }
     };
 
     return scene;

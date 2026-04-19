@@ -59,6 +59,9 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
     header.fontWeight = "bold";
     mainContainer.addControl(header);
 
+    // Déclaration préalable pour y accéder dans l'événement du bouton de langue
+    let backBtn;
+
     // === ONGLETS ===
     const tabsContainer = new BABYLON.GUI.StackPanel();
     tabsContainer.isVertical = false;
@@ -412,7 +415,28 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
                     settings.gameplay.language = lang.toLowerCase();
                     langPanel.children.filter(c => c instanceof BABYLON.GUI.Button).forEach(b => b.background = "#555");
                     btn.background = "#1abc9c";
+                
+                try {
+                    // Tente de mettre à jour le menu principal (s'il existe encore)
                     if (window.fullUpdateLanguage) window.fullUpdateLanguage();
+                } catch (e) { /* Le menu principal est détruit in-game, on ignore l'erreur */ }
+
+                // Met à jour les textes de l'interface in-game
+                header.text = t("settings");
+                if (backBtn) backBtn.textBlock.text = t("back") || "RETOUR";
+                tabs.forEach(tab => {
+                    if (tabButtons[tab.id]) {
+                        tabButtons[tab.id].textBlock.text = t("tab_" + tab.id);
+                    }
+                });
+
+                // Met à jour le bouton Quitter du menu pause
+                if (window.currentGameData && window.currentGameData.quitButton) {
+                    window.currentGameData.quitButton.textBlock.text = t("quit") || "Quitter";
+                }
+
+                // Recharge le contenu de l'onglet avec un léger délai pour éviter les conflits de clic
+                setTimeout(() => updateContentPanel(currentTab), 10);
                 });
                 langPanel.addControl(btn);
             });
@@ -433,26 +457,30 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
 
     updateContentPanel("video");
 
-    const backBtn = createBtn(t("back") || "RETOUR");
-    backBtn.width = "150px";
-    backBtn.height = "40px";
-    backBtn.fontSize = 18;
+    backBtn = BABYLON.GUI.Button.CreateSimpleButton("backBtn", t("back") || "RETOUR");
+    backBtn.width = "200px";
+    backBtn.height = "50px";
+    backBtn.color = "white";
     backBtn.background = "#c0392b";
-    backBtn.cornerRadius = 8;
+    backBtn.thickness = 0;
+    backBtn.cornerRadius = 10;
+    backBtn.fontSize = 20;
+    backBtn.fontWeight = "bold";
     backBtn.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
     backBtn.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    backBtn.paddingBottom = "15px";
+    backBtn.top = "-15px";
+    backBtn.hoverCursor = "pointer";
     
     backBtn.onPointerEnterObservable.add(() => {
         backBtn.background = "#e74c3c";
-        backBtn.fontSize = 19;
-        backBtn.height = "42px";
+        backBtn.scaleX = 1.05;
+        backBtn.scaleY = 1.05;
     });
     
     backBtn.onPointerOutObservable.add(() => {
         backBtn.background = "#c0392b";
-        backBtn.fontSize = 18;
-        backBtn.height = "40px";
+        backBtn.scaleX = 1.0;
+        backBtn.scaleY = 1.0;
     });
     
     backBtn.onPointerUpObservable.add(() => {

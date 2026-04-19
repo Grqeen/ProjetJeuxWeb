@@ -1,6 +1,6 @@
-# Projet DOM : Défense Cybernétique
+# Projet DOM : Blob Défense
 
-Un jeu de type **Typing Tower Defense** développé entièrement en HTML, CSS et JavaScript Vanilla (manipulation directe du DOM, sans canvas). 
+Un jeu de type **Typing Tower Defense** développé entièrement en HTML, CSS et JavaScript Vanilla (manipulation directe du DOM, sans Canvas). 
 Incarnez le noyau d'un système informatique et repoussez des vagues continues de virus, bots et cyber-attaques en tapant les mots qui les identifient le plus rapidement possible.
 
 ## 🎮 Gameplay
@@ -17,8 +17,8 @@ Incarnez le noyau d'un système informatique et repoussez des vagues continues d
 ## ⌨️ Contrôles
 
 - **Touches (A-Z) :** Saisir les lettres pour cibler et attaquer les ennemis.
-- **Echap / Retour Arrière (Backspace) :** Annuler la cible actuelle pour pouvoir verrouiller un autre ennemi.
-- **Barre d'Espace :** Déclencher une Impulsion Électromagnétique (EMP). Provoque un flash qui inflige de lourds dégâts à tous les ennemis à l'écran. *(Coûte 50 ADN)*.
+- **Échap / Retour arrière (Backspace) :** Annuler la cible actuelle pour pouvoir verrouiller un autre ennemi.
+- **Barre d'espace :** Déclencher une Impulsion Électromagnétique (EMP). Provoque un flash qui inflige de lourds dégâts à tous les ennemis à l'écran. *(Coûte 50 ADN)*.
 
 ## 🛒 Boutique et Améliorations
 
