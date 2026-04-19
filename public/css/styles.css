@@ -308,7 +308,7 @@ body {
 }
 
 .blob-escape {
-  background-image: url('../ProjetCanvas1/assets/images/PhotoEscape.png');
+  background-image: url('../images/PhotoEscape.png');
 }
 
 .blobs-revenge {
@@ -316,7 +316,7 @@ body {
 }
 
 .blob-defense {
-  background-image: url('../ProjetDOM/assets/PhotoDom.png');
+  background-image: url('../images/PhotoDom.png');
 }
 
 .blob-legends {
