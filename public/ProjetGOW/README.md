@@ -8,7 +8,7 @@ Affrontez des hordes de monstres, récoltez de l'expérience, montez de niveau e
 
 - **Survie et Vagues Dynamiques :** La difficulté augmente au fil du temps avec l'apparition de nouveaux types de monstres (Tanks, Traqueurs, Tireurs, Volants).
 - **Système d'Améliorations (Rogue-lite) :** À chaque montée de niveau, choisissez parmi 3 cartes d'améliorations aléatoires.
-  - *Compétences Actives :* Aura de feu, Scies orbitantes, Missiles explosifs, Météorites, Foudre.
+  - *Compétences Actives :* Aura de feu, Scies orbitales, Missiles explosifs, Météorites, Foudre.
   - *Bonus Passifs :* Augmentation de la cadence de tir, Armure, Réflexion de dégâts, Régénération, Bouclier, Vitesse, Aimant à XP, etc.
 - **5 Boss Épiques avec des mécaniques uniques :**
   - 🪨 *Le Goliath des Ruines :* Ondes de choc dévastatrices et jets de gravats.
@@ -22,14 +22,15 @@ Affrontez des hordes de monstres, récoltez de l'expérience, montez de niveau e
 ## 🎮 Contrôles (Modifiables en jeu)
 
 | Action | Touche par défaut |
+|---|---|
 | **Avancer** | `Z` |
 | **Reculer** | `S` |
 | **Aller à gauche** | `Q` |
 | **Aller à droite** | `D` |
-| **Tirer (Boule de feu)** | visée avec la souris |
+| **Tirer (Boule de feu)** | Visée avec la souris |
 | **Sauter / Double Saut** | `Espace` |
 | **Sprinter** | `Shift` (Maj) |
-| **S'accroupir** | `C` | pas encore fonctionnel
+| **S'accroupir** | `C` *(pas encore fonctionnel)* |
 | **Mettre en pause** | `Échap` (Esc) |
 
 ## 🛠️ Technologies Utilisées
