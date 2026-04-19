@@ -1,157 +1,5 @@
-// --- SYSTÈME DE TRADUCTION ---
-const translations = {
-    fr: {
-        // Menu principal
-        title: "Blob's Revenge",
-        start: "Démarrer",
-        settings: "Paramètres",
-        quit: "Quitter",
-        back: "RETOUR",
-        
-        // Onglets
-        tab_video: "Vidéo",
-        tab_audio: "Audio",
-        tab_controls: "Contrôles",
-        tab_gameplay: "Jeu",
-        
-        // Vidéo
-        fullscreen: "Plein Écran",
-        vsync: "V-Sync",
-        fps: "FPS",
-        resolution: "Résolution",
-        fov: "FOV",
-        quality: "Qualité",
-        
-        // Graphismes
-        graphics: "Graphismes",
-        specific_details: "Détails Spécifiques",
-        shadows: "Ombres",
-        grass: "Herbe",
-        particles: "Particules",
-        post_processing: "Post-Traitement",
-        bloom: "Bloom",
-        motion_blur: "Flou Mouvement",
-        ambient_occlusion: "AO",
-        
-        // Audio
-        master_volume: "Volume Principal",
-        music_volume: "Musique",
-        sfx_volume: "Effets Spéciaux",
-        spatial_audio: "Audio Spatial 3D",
-        
-        // Contrôles
-        keybindings: "Touches",
-        forward: "Avancer",
-        backward: "Reculer",
-        left: "Gauche",
-        right: "Droite",
-        sprint: "Sprint",
-        crouch: "S'accroupir",
-        mouse_sensitivity: "Sensibilité Souris",
-        invert_y: "Inverser Axe Y",
-        gamepad_vibration: "Vibrations Manette",
-        stick_deadzone: "Zone Morte Sticks",
-        
-        // Gameplay
-        language: "Langue",
-        show_hud: "Afficher HUD",
-    },
-    en: {
-        // Main menu
-        title: "Blob's Revenge",
-        start: "Start",
-        settings: "Settings",
-        quit: "Quit",
-        back: "BACK",
-        
-        // Tabs
-        tab_video: "Video",
-        tab_audio: "Audio",
-        tab_controls: "Controls",
-        tab_gameplay: "Gameplay",
-        
-        // Video
-        fullscreen: "Fullscreen",
-        vsync: "V-Sync",
-        fps: "FPS",
-        resolution: "Resolution",
-        fov: "FOV",
-        quality: "Quality",
-        
-        // Graphics
-        graphics: "Graphics",
-        specific_details: "Specific Details",
-        shadows: "Shadows",
-        grass: "Grass",
-        particles: "Particles",
-        post_processing: "Post-Processing",
-        bloom: "Bloom",
-        motion_blur: "Motion Blur",
-        ambient_occlusion: "AO",
-        
-        // Audio
-        master_volume: "Master Volume",
-        music_volume: "Music",
-        sfx_volume: "Sound Effects",
-        spatial_audio: "Spatial Audio 3D",
-        
-        // Controls
-        keybindings: "Key Bindings",
-        forward: "Forward",
-        backward: "Backward",
-        left: "Left",
-        right: "Right",
-        sprint: "Sprint",
-        crouch: "Crouch",
-        mouse_sensitivity: "Mouse Sensitivity",
-        invert_y: "Invert Y Axis",
-        gamepad_vibration: "Gamepad Vibration",
-        stick_deadzone: "Stick Deadzone",
-        
-        // Gameplay
-        language: "Language",
-        show_hud: "Show HUD",
-    }
-};
-
-const t = (key) => {
-    const lang = window.gameSettings?.gameplay?.language || "fr";
-    return translations[lang]?.[key] || translations.fr[key] || key;
-};
-
-// Exposer les traductions globalement
-window.getTranslation = t;
-window.refreshUIText = null; // Sera défini dans createMenuScene
-
-export function updateMenuTexts() {
-    if (window.refreshUIText) {
-        window.refreshUIText();
-    }
-}
-
-export function createMenuScene(engine, startGameCallback, settings) {
-    window.gameSettings = settings;
-    const scene = new BABYLON.Scene(engine);
-    scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1);
-
-    const background = new BABYLON.Layer("menuBg", "assets/menuBackground.jpg", scene, true);
-    const camera = new BABYLON.FreeCamera("menuCam", new BABYLON.Vector3(0, 0, 0), scene);
-    const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI");
-
-    const fpsText = new BABYLON.GUI.TextBlock();
-    fpsText.text = "0 FPS";
-    fpsText.color = "yellow";
-    fpsText.fontSize = 24;
-    fpsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
-    fpsText.left = "10px";
-    fpsText.top = "10px";
-    fpsText.isVisible = settings.showFps;
-    advancedTexture.addControl(fpsText);
-    scene.fpsText = fpsText;
-    
-    // Exposer fpsText globalement pour accès depuis le menu
-    window.menuFpsText = fpsText;
+export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCallback) {
+    const t = window.getTranslation || ((k) => k);
 
     const createBtn = (text) => {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + Math.random(), text);
@@ -181,34 +29,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         });
         return btn;
     };
-
-    const mainMenuPanel = new BABYLON.GUI.StackPanel();
-    mainMenuPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
-    advancedTexture.addControl(mainMenuPanel);
-
-    const title = new BABYLON.GUI.TextBlock();
-    title.text = t("title");
-    title.color = "#FFD700";
-    title.fontSize = 80;
-    title.height = "120px";
-    title.fontWeight = "bold";
-    title.outlineWidth = 5;
-    title.outlineColor = "black";
-    title.shadowColor = "black";
-    title.shadowOffsetX = 4;
-    title.shadowOffsetY = 4;
-    mainMenuPanel.addControl(title);
-
-    const startBtn = createBtn(t("start"));
-    startBtn.onPointerUpObservable.add(() => { startGameCallback(); });
-    mainMenuPanel.addControl(startBtn);
-
-    const settingsBtn = createBtn(t("settings"));
-    settingsBtn.onPointerUpObservable.add(() => {
-        mainMenuPanel.isVisible = false;
-        settingsPanel.isVisible = true;
-    });
-    mainMenuPanel.addControl(settingsBtn);
 
     // === PANEL PARAMÈTRES AVEC ONGLETS ===
     const settingsPanel = new BABYLON.GUI.Rectangle();
@@ -322,7 +142,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         container.addControl(panel);
 
         const lbl = new BABYLON.GUI.TextBlock();
-        // Gérer les cas spéciaux pour resolution et fov
         let currentValue = settings[propCategory]?.[prop] ?? settings[prop];
         lbl.text = labelText + " : " + Math.round(currentValue * (isPercentage ? 100 : 1)) + (isPercentage ? "%" : "");
         lbl.color = "white";
@@ -395,7 +214,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         const checkbox = new BABYLON.GUI.Checkbox();
         checkbox.width = "25px";
         checkbox.height = "25px";
-        // Gérer les cas spéciaux où la propriété est au niveau racine
         let currentChecked = propCategory ? (settings[propCategory]?.[prop] ?? false) : (settings[prop] ?? false);
         checkbox.isChecked = currentChecked;
         checkbox.color = color;
@@ -427,6 +245,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
         title.marginTop = "15px";
         contentStack.addControl(title);
     };
+    
     // Fonction pour créer une rangée d'attribution de touche
     let currentBindingKey = null;
     const createKeyBindingRow = (actionName, keyProperty, color, settingsObj) => {
@@ -445,7 +264,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         stackH.width = "100%";
         container.addControl(stackH);
         
-        // Bouton pour afficher/changer la touche
         const currentKey = settingsObj?.keys?.[keyProperty] ? settingsObj.keys[keyProperty].toUpperCase() : "?";
         const displayText = `${t(actionName)}: ${currentKey}`;
         const keyButton = BABYLON.GUI.Button.CreateSimpleButton(`keyBtn_${keyProperty}`, displayText);
@@ -482,6 +300,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
         
         return container;
     };
+    
     // Fonction pour mettre à jour le contenu selon l'onglet
     const updateContentPanel = (tabId) => {
         contentStack.children.slice().forEach(child => contentStack.removeControl(child));
@@ -502,6 +321,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
 
             const { panel: fpsPanel } = createCheckboxControl(t("fps"), "display", "fps", "#3498db", (v) => {
                 if (window.menuFpsText) window.menuFpsText.isVisible = v;
+                if (window.currentGameData?.fpsText) window.currentGameData.fpsText.isVisible = v;
             });
             contentStack.addControl(fpsPanel);
         }
@@ -519,7 +339,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
             contentStack.addControl(spatialPanel);
         }
         else if (tabId === "controls") {
-            // Section Touches
             createContentSection(t("keybindings"));
             contentStack.addControl(createKeyBindingRow("forward", "forward", "#e67e22", settings));
             contentStack.addControl(createKeyBindingRow("backward", "backward", "#e67e22", settings));
@@ -528,7 +347,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
             contentStack.addControl(createKeyBindingRow("sprint", "sprint", "#e67e22", settings));
             contentStack.addControl(createKeyBindingRow("crouch", "crouch", "#e67e22", settings));
             
-            // Section Contrôles de Souris/Manette
             createContentSection(t("mouse_sensitivity"));
             contentStack.addControl(createSliderControl(t("mouse_sensitivity"), "controls", "sensitivity", 0.1, 5.0, false, "#e67e22"));
 
@@ -594,8 +412,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
                     settings.gameplay.language = lang.toLowerCase();
                     langPanel.children.filter(c => c instanceof BABYLON.GUI.Button).forEach(b => b.background = "#555");
                     btn.background = "#1abc9c";
-                    // METTRE À JOUR TOUT LE MENU EN ANGLAIS
-                    window.fullUpdateLanguage?.();
+                    if (window.fullUpdateLanguage) window.fullUpdateLanguage();
                 });
                 langPanel.addControl(btn);
             });
@@ -614,11 +431,9 @@ export function createMenuScene(engine, startGameCallback, settings) {
         }
     };
 
-    // Initialiser le contenu
     updateContentPanel("video");
 
-    // === BOUTON RETOUR (Fixé en bas au milieu) ===
-    const backBtn = createBtn(t("back"));
+    const backBtn = createBtn(t("back") || "RETOUR");
     backBtn.width = "150px";
     backBtn.height = "40px";
     backBtn.fontSize = 18;
@@ -628,7 +443,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
     backBtn.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     backBtn.paddingBottom = "15px";
     
-    // Hover effect professionnel
     backBtn.onPointerEnterObservable.add(() => {
         backBtn.background = "#e74c3c";
         backBtn.fontSize = 19;
@@ -642,39 +456,21 @@ export function createMenuScene(engine, startGameCallback, settings) {
     });
     
     backBtn.onPointerUpObservable.add(() => {
-        settingsPanel.isVisible = false;
-        mainMenuPanel.isVisible = true;
+        if (onCloseCallback) onCloseCallback(settingsPanel);
     });
     settingsPanel.addControl(backBtn);
 
-    // Fonction pour rafraîchir les textes du menu lors du changement de langue
-    window.refreshUIText = () => {
-        settingsBtn.textBlock.text = t("settings");
-        startBtn.textBlock.text = t("start");
-        title.text = t("title");
-        header.text = t("settings");
-        backBtn.textBlock.text = t("back");
-        tabs.forEach(tab => {
-            if (tabButtons[tab.id]) {
-                tabButtons[tab.id].textBlock.text = t("tab_" + tab.id);
-            }
-        });
+    return {
+        panel: settingsPanel,
+        refreshLanguage: () => {
+            updateContentPanel(currentTab);
+            tabs.forEach(tab => {
+                if (tabButtons[tab.id]) {
+                    tabButtons[tab.id].textBlock.text = t("tab_" + tab.id);
+                }
+            });
+            backBtn.textBlock.text = t("back");
+            header.text = t("settings");
+        }
     };
-
-    // Fonction complète pour mettre à jour TOUT le menu quand on change de langue
-    window.fullUpdateLanguage = () => {
-        // Mettre à jour les boutons principaux du menu
-        window.refreshUIText?.();
-        // Rafraîchir à nouveau le tab actuel
-        updateContentPanel(currentTab);
-        // Réappliquer les titres des onglets
-        tabs.forEach((tab, index) => {
-            const button = tabButtons[tab.id];
-            if (button) {
-                button.textBlock.text = t("tab_" + tab.id);
-            }
-        });
-    };
-
-    return scene;
 }
