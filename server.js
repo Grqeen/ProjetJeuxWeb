@@ -10,8 +10,11 @@ const app = express();
 app.use(cors());
 app.use(express.json()); // Pour analyser les requêtes JSON
 
-// Servir les fichiers statiques du dossier 'public'
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir les fichiers statiques du dossier 'public' uniquement en local
+// Vercel définit process.env.VERCEL = "1" automatiquement en production
+if (!process.env.VERCEL) {
+    app.use(express.static(path.join(process.cwd(), 'public')));
+}
 
 // === ROUTES API ICI ===
 app.use('/api/auth', require('./routes/auth'));
@@ -24,7 +27,9 @@ app.use((req, res) => {
         return res.status(404).json({ message: "Route API introuvable" });
     }
     // Pour le développement local (sur Vercel, le fichier vercel.json s'en occupe)
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    if (!process.env.VERCEL) {
+        res.sendFile(path.join(process.cwd(), 'public', 'index.html'));
+    }
 });
 
 // Lancement du serveur
