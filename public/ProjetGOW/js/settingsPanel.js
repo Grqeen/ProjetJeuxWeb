@@ -1,6 +1,8 @@
+// Met en place l'ensemble des éléments de l'interface des paramètres en jeu.
 export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCallback) {
     const t = window.getTranslation || ((k) => k);
 
+// Construit un bouton animé réutilisable du menu principal.
     const createBtn = (text) => {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + Math.random(), text);
         btn.width = "300px";
@@ -30,7 +32,6 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
         return btn;
     };
 
-    // === PANEL PARAMÈTRES AVEC ONGLETS ===
     const settingsPanel = new BABYLON.GUI.Rectangle();
     settingsPanel.isVisible = false;
     settingsPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
@@ -43,14 +44,12 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
     settingsPanel.color = "#e67e22";
     advancedTexture.addControl(settingsPanel);
 
-    // Conteneur principal (header + tabs + content + buttons)
     const mainContainer = new BABYLON.GUI.StackPanel();
     mainContainer.width = "100%";
     mainContainer.height = "100%";
     mainContainer.isVertical = true;
     settingsPanel.addControl(mainContainer);
 
-    // === EN-TÊTE ===
     const header = new BABYLON.GUI.TextBlock();
     header.text = t("settings");
     header.color = "#FFD700";
@@ -59,10 +58,8 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
     header.fontWeight = "bold";
     mainContainer.addControl(header);
 
-    // Déclaration préalable pour y accéder dans l'événement du bouton de langue
     let backBtn;
 
-    // === ONGLETS ===
     const tabsContainer = new BABYLON.GUI.StackPanel();
     tabsContainer.isVertical = false;
     tabsContainer.height = "50px";
@@ -79,6 +76,7 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
     const tabButtons = {};
     let currentTab = "video";
 
+// Crée un bouton d'onglet visuel pour le panneau de paramétrages.
     const createTabButton = (tab) => {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("tab_" + tab.id, tab.label);
         btn.width = "200px";
@@ -105,7 +103,6 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
 
     tabs.forEach(createTabButton);
 
-    // === CONTENU ONGLETS ===
     const contentScroll = new BABYLON.GUI.ScrollViewer();
     contentScroll.width = "100%";
     contentScroll.height = "60%";
@@ -123,7 +120,7 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
     contentStack.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     contentScroll.addControl(contentStack);
 
-    // Fonction pour créer un slider avec étiquette
+// Construit et relie un contrôleur curseur pour configurer des valeurs quantifiables.
     const createSliderControl = (labelText, propCategory, prop, min, max, isPercentage, color = "#3498db") => {
         const container = new BABYLON.GUI.Rectangle();
         container.width = "100%";
@@ -184,7 +181,7 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
         return container;
     };
 
-    // Fonction pour créer une case à cocher avec étiquette
+// Construit et relie une case à cocher pour basculer des paramètres booléens.
     const createCheckboxControl = (labelText, propCategory, prop, color = "#3498db", onChangeCallback = null) => {
         const container = new BABYLON.GUI.Rectangle();
         container.width = "100%";
@@ -232,7 +229,7 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
         return { panel: container, checkbox };
     };
 
-    // Fonction pour créer secteur de contenu
+// Intègre un en-tête typographique isolant visuellement plusieurs groupes de paramètres.
     const createContentSection = (sectionTitle) => {
         const title = new BABYLON.GUI.TextBlock();
         title.text = sectionTitle;
@@ -249,8 +246,8 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
         contentStack.addControl(title);
     };
     
-    // Fonction pour créer une rangée d'attribution de touche
     let currentBindingKey = null;
+// Met en place une ligne dédiée à capturer la réassignation d'une touche au clavier.
     const createKeyBindingRow = (actionName, keyProperty, color, settingsObj) => {
         const container = new BABYLON.GUI.Rectangle();
         container.background = "#252535";
@@ -304,7 +301,7 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
         return container;
     };
     
-    // Fonction pour mettre à jour le contenu selon l'onglet
+// Bascule dynamiquement les contrôles affichés en fonction de l'onglet actuellement sélectionné.
     const updateContentPanel = (tabId) => {
         contentStack.children.slice().forEach(child => contentStack.removeControl(child));
 
@@ -417,11 +414,9 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
                     btn.background = "#1abc9c";
                 
                 try {
-                    // Tente de mettre à jour le menu principal (s'il existe encore)
                     if (window.fullUpdateLanguage) window.fullUpdateLanguage();
-                } catch (e) { /* Le menu principal est détruit in-game, on ignore l'erreur */ }
+                } catch (e) {}
 
-                // Met à jour les textes de l'interface in-game
                 header.text = t("settings");
                 if (backBtn) backBtn.textBlock.text = t("back") || "RETOUR";
                 tabs.forEach(tab => {
@@ -430,12 +425,10 @@ export function buildSettingsPanel(advancedTexture, engine, settings, onCloseCal
                     }
                 });
 
-                // Met à jour le bouton Quitter du menu pause
                 if (window.currentGameData && window.currentGameData.quitButton) {
                     window.currentGameData.quitButton.textBlock.text = t("quit") || "Quitter";
                 }
 
-                // Recharge le contenu de l'onglet avec un léger délai pour éviter les conflits de clic
                 setTimeout(() => updateContentPanel(currentTab), 10);
                 });
                 langPanel.addControl(btn);

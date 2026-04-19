@@ -1,20 +1,16 @@
-// --- SYSTÈME DE TRADUCTION ---
 const translations = {
     fr: {
-        // Menu principal
         title: "Blob's Revenge",
         start: "Démarrer",
         settings: "Paramètres",
         quit: "Quitter",
         back: "RETOUR",
         
-        // Onglets
         tab_video: "Vidéo",
         tab_audio: "Audio",
         tab_controls: "Contrôles",
         tab_gameplay: "Jeu",
         
-        // Vidéo
         fullscreen: "Plein Écran",
         vsync: "V-Sync",
         fps: "FPS",
@@ -22,7 +18,6 @@ const translations = {
         fov: "FOV",
         quality: "Qualité",
         
-        // Graphismes
         graphics: "Graphismes",
         specific_details: "Détails Spécifiques",
         shadows: "Ombres",
@@ -33,13 +28,11 @@ const translations = {
         motion_blur: "Flou Mouvement",
         ambient_occlusion: "AO",
         
-        // Audio
         master_volume: "Volume Principal",
         music_volume: "Musique",
         sfx_volume: "Effets Spéciaux",
         spatial_audio: "Audio Spatial 3D",
         
-        // Contrôles
         keybindings: "Touches",
         forward: "Avancer",
         backward: "Reculer",
@@ -52,25 +45,21 @@ const translations = {
         gamepad_vibration: "Vibrations Manette",
         stick_deadzone: "Zone Morte Sticks",
         
-        // Gameplay
         language: "Langue",
         show_hud: "Afficher HUD",
     },
     en: {
-        // Main menu
         title: "Blob's Revenge",
         start: "Start",
         settings: "Settings",
         quit: "Quit",
         back: "BACK",
         
-        // Tabs
         tab_video: "Video",
         tab_audio: "Audio",
         tab_controls: "Controls",
         tab_gameplay: "Gameplay",
         
-        // Video
         fullscreen: "Fullscreen",
         vsync: "V-Sync",
         fps: "FPS",
@@ -78,7 +67,6 @@ const translations = {
         fov: "FOV",
         quality: "Quality",
         
-        // Graphics
         graphics: "Graphics",
         specific_details: "Specific Details",
         shadows: "Shadows",
@@ -89,13 +77,11 @@ const translations = {
         motion_blur: "Motion Blur",
         ambient_occlusion: "AO",
         
-        // Audio
         master_volume: "Master Volume",
         music_volume: "Music",
         sfx_volume: "Sound Effects",
         spatial_audio: "Spatial Audio 3D",
         
-        // Controls
         keybindings: "Key Bindings",
         forward: "Forward",
         backward: "Backward",
@@ -108,27 +94,28 @@ const translations = {
         gamepad_vibration: "Gamepad Vibration",
         stick_deadzone: "Stick Deadzone",
         
-        // Gameplay
         language: "Language",
         show_hud: "Show HUD",
     }
 };
 
+// Retourne la chaîne de caractères traduite pour la clé demandée selon la configuration linguistique.
 const t = (key) => {
     const lang = window.gameSettings?.gameplay?.language || "fr";
     return translations[lang]?.[key] || translations.fr[key] || key;
 };
 
-// Exposer les traductions globalement
 window.getTranslation = t;
-window.refreshUIText = null; // Sera défini dans createMenuScene
+window.refreshUIText = null;
 
+// Demande une actualisation en direct de l'affichage des textes de l'interface.
 export function updateMenuTexts() {
     if (window.refreshUIText) {
         window.refreshUIText();
     }
 }
 
+// Monte et déploie la scène entière dédiée au menu d'accueil.
 export function createMenuScene(engine, startGameCallback, settings) {
     window.gameSettings = settings;
     const scene = new BABYLON.Scene(engine);
@@ -150,9 +137,9 @@ export function createMenuScene(engine, startGameCallback, settings) {
     advancedTexture.addControl(fpsText);
     scene.fpsText = fpsText;
     
-    // Exposer fpsText globalement pour accès depuis le menu
     window.menuFpsText = fpsText;
 
+// Crée un bouton visuellement percutant et animé au passage de la souris.
     const createBtn = (text) => {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("btn" + Math.random(), text);
         btn.width = "300px";
@@ -169,22 +156,21 @@ export function createMenuScene(engine, startGameCallback, settings) {
         btn.textBlock.fontFamily = "Verdana";
         btn.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
         btn.textBlock.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        btn.transformCenterX = 0; // Le grossissement se fera à partir de la gauche
+        btn.transformCenterX = 0;
         
-        // Variables cibles pour l'animation fluide
         let targetScale = 1.0;
         let targetLeft = 0;
         let targetRotation = 0;
 
         btn.onPointerEnterObservable.add(() => {
-            btn.color = "#f1c40f"; // Nouveau jaune doré éclatant
-            btn.textBlock.outlineColor = "#d35400"; // Contour orange sombre
+            btn.color = "#f1c40f";
+            btn.textBlock.outlineColor = "#d35400";
             btn.textBlock.shadowColor = "black";
             btn.textBlock.shadowOffsetX = 3;
             btn.textBlock.shadowOffsetY = 3;
-            targetScale = 1.15; // Grossit un peu plus
-            targetLeft = 25; // Glisse plus loin
-            targetRotation = -0.04; // Se penche légèrement vers le haut
+            targetScale = 1.15;
+            targetLeft = 25;
+            targetRotation = -0.04;
         });
         btn.onPointerOutObservable.add(() => {
             btn.color = "white";
@@ -196,7 +182,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
             targetRotation = 0;
         });
 
-        // Boucle d'animation pour rendre le mouvement ultra fluide (Lerp)
         const animObserver = scene.onBeforeRenderObservable.add(() => {
             if (btn.isDisposed) {
                 scene.onBeforeRenderObservable.remove(animObserver);
@@ -205,14 +190,12 @@ export function createMenuScene(engine, startGameCallback, settings) {
             
             let currentLeft = parseFloat(btn.left) || 0;
             
-            // Continue l'animation fluidement dans les deux sens (entrée et sortie)
             if (Math.abs(targetScale - btn.scaleX) > 0.001 || Math.abs(targetLeft - currentLeft) > 0.1) {
                 btn.scaleX += (targetScale - btn.scaleX) * 0.15;
                 btn.scaleY += (targetScale - btn.scaleY) * 0.15;
                 btn.rotation += (targetRotation - btn.rotation) * 0.15;
                 btn.left = (currentLeft + (targetLeft - currentLeft) * 0.15) + "px";
             } else if (btn.scaleX !== targetScale) {
-                // Verrouille précisément les valeurs quand l'animation est presque finie pour préserver les performances
                 btn.scaleX = targetScale;
                 btn.scaleY = targetScale;
                 btn.rotation = targetRotation;
@@ -225,7 +208,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
     const mainMenuPanel = new BABYLON.GUI.StackPanel();
     mainMenuPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
     mainMenuPanel.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-    mainMenuPanel.left = "10%"; // Marge de 10% par rapport au bord gauche
+    mainMenuPanel.left = "10%";
     mainMenuPanel.width = "600px";
     advancedTexture.addControl(mainMenuPanel);
 
@@ -254,7 +237,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
     });
     mainMenuPanel.addControl(settingsBtn);
 
-    // === PANEL PARAMÈTRES AVEC ONGLETS ===
     const settingsPanel = new BABYLON.GUI.Rectangle();
     settingsPanel.isVisible = false;
     settingsPanel.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
@@ -267,14 +249,12 @@ export function createMenuScene(engine, startGameCallback, settings) {
     settingsPanel.color = "#e67e22";
     advancedTexture.addControl(settingsPanel);
 
-    // Conteneur principal (header + tabs + content + buttons)
     const mainContainer = new BABYLON.GUI.StackPanel();
     mainContainer.width = "100%";
     mainContainer.height = "100%";
     mainContainer.isVertical = true;
     settingsPanel.addControl(mainContainer);
 
-    // === EN-TÊTE ===
     const header = new BABYLON.GUI.TextBlock();
     header.text = t("settings");
     header.color = "#FFD700";
@@ -283,7 +263,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
     header.fontWeight = "bold";
     mainContainer.addControl(header);
 
-    // === ONGLETS ===
     const tabsContainer = new BABYLON.GUI.StackPanel();
     tabsContainer.isVertical = false;
     tabsContainer.height = "50px";
@@ -300,6 +279,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
     const tabButtons = {};
     let currentTab = "video";
 
+// Génère un bouton destiné à naviguer entre les onglets du panneau des paramètres.
     const createTabButton = (tab) => {
         const btn = BABYLON.GUI.Button.CreateSimpleButton("tab_" + tab.id, tab.label);
         btn.width = "200px";
@@ -326,7 +306,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
 
     tabs.forEach(createTabButton);
 
-    // === CONTENU ONGLETS ===
     const contentScroll = new BABYLON.GUI.ScrollViewer();
     contentScroll.width = "100%";
     contentScroll.height = "60%";
@@ -344,7 +323,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
     contentStack.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
     contentScroll.addControl(contentStack);
 
-    // Fonction pour créer un slider avec étiquette
+// Forme un composant de type curseur qui s'actualise avec les propriétés d'état sélectionnées.
     const createSliderControl = (labelText, propCategory, prop, min, max, isPercentage, color = "#3498db") => {
         const container = new BABYLON.GUI.Rectangle();
         container.width = "100%";
@@ -366,7 +345,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         container.addControl(panel);
 
         const lbl = new BABYLON.GUI.TextBlock();
-        // Gérer les cas spéciaux pour resolution et fov
         let currentValue = settings[propCategory]?.[prop] ?? settings[prop];
         lbl.text = labelText + " : " + Math.round(currentValue * (isPercentage ? 100 : 1)) + (isPercentage ? "%" : "");
         lbl.color = "white";
@@ -406,7 +384,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
         return container;
     };
 
-    // Fonction pour créer une case à cocher avec étiquette
+// Forme une case de sélection agissant de manière réactive sur les préférences.
     const createCheckboxControl = (labelText, propCategory, prop, color = "#3498db", onChangeCallback = null) => {
         const container = new BABYLON.GUI.Rectangle();
         container.width = "100%";
@@ -439,7 +417,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         const checkbox = new BABYLON.GUI.Checkbox();
         checkbox.width = "25px";
         checkbox.height = "25px";
-        // Gérer les cas spéciaux où la propriété est au niveau racine
         let currentChecked = propCategory ? (settings[propCategory]?.[prop] ?? false) : (settings[prop] ?? false);
         checkbox.isChecked = currentChecked;
         checkbox.color = color;
@@ -455,7 +432,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
         return { panel: container, checkbox };
     };
 
-    // Fonction pour créer secteur de contenu
+// Construit un titre démarcatif structurant les zones du menu des réglages.
     const createContentSection = (sectionTitle) => {
         const title = new BABYLON.GUI.TextBlock();
         title.text = sectionTitle;
@@ -471,8 +448,8 @@ export function createMenuScene(engine, startGameCallback, settings) {
         title.marginTop = "15px";
         contentStack.addControl(title);
     };
-    // Fonction pour créer une rangée d'attribution de touche
     let currentBindingKey = null;
+// Met en œuvre l'interface gérant l'interception et le remplacement d'un raccourci clavier.
     const createKeyBindingRow = (actionName, keyProperty, color, settingsObj) => {
         const container = new BABYLON.GUI.Rectangle();
         container.background = "#252535";
@@ -489,7 +466,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
         stackH.width = "100%";
         container.addControl(stackH);
         
-        // Bouton pour afficher/changer la touche
         const currentKey = settingsObj?.keys?.[keyProperty] ? settingsObj.keys[keyProperty].toUpperCase() : "?";
         const displayText = `${t(actionName)}: ${currentKey}`;
         const keyButton = BABYLON.GUI.Button.CreateSimpleButton(`keyBtn_${keyProperty}`, displayText);
@@ -526,7 +502,7 @@ export function createMenuScene(engine, startGameCallback, settings) {
         
         return container;
     };
-    // Fonction pour mettre à jour le contenu selon l'onglet
+// Fait basculer les vues paramétrables selon l'onglet activé par l'utilisateur.
     const updateContentPanel = (tabId) => {
         contentStack.children.slice().forEach(child => contentStack.removeControl(child));
 
@@ -563,7 +539,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
             contentStack.addControl(spatialPanel);
         }
         else if (tabId === "controls") {
-            // Section Touches
             createContentSection(t("keybindings"));
             contentStack.addControl(createKeyBindingRow("forward", "forward", "#e67e22", settings));
             contentStack.addControl(createKeyBindingRow("backward", "backward", "#e67e22", settings));
@@ -572,7 +547,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
             contentStack.addControl(createKeyBindingRow("sprint", "sprint", "#e67e22", settings));
             contentStack.addControl(createKeyBindingRow("crouch", "crouch", "#e67e22", settings));
             
-            // Section Contrôles de Souris/Manette
             createContentSection(t("mouse_sensitivity"));
             contentStack.addControl(createSliderControl(t("mouse_sensitivity"), "controls", "sensitivity", 0.1, 5.0, false, "#e67e22"));
 
@@ -638,7 +612,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
                     settings.gameplay.language = lang.toLowerCase();
                     langPanel.children.filter(c => c instanceof BABYLON.GUI.Button).forEach(b => b.background = "#555");
                     btn.background = "#1abc9c";
-                    // METTRE À JOUR TOUT LE MENU EN ANGLAIS
                     window.fullUpdateLanguage?.();
                 });
                 langPanel.addControl(btn);
@@ -658,10 +631,8 @@ export function createMenuScene(engine, startGameCallback, settings) {
         }
     };
 
-    // Initialiser le contenu
     updateContentPanel("video");
 
-    // === BOUTON RETOUR (Fixé en bas au milieu) ===
     const backBtn = BABYLON.GUI.Button.CreateSimpleButton("backBtn", t("back"));
     backBtn.width = "200px";
     backBtn.height = "50px";
@@ -676,7 +647,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
     backBtn.top = "-15px";
     backBtn.hoverCursor = "pointer";
     
-    // Hover effect propre (sans conflit avec createBtn)
     backBtn.onPointerEnterObservable.add(() => {
         backBtn.background = "#e74c3c";
         backBtn.scaleX = 1.05;
@@ -695,7 +665,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
     });
     settingsPanel.addControl(backBtn);
 
-    // Fonction pour rafraîchir les textes du menu lors du changement de langue
     window.refreshUIText = () => {
         settingsBtn.textBlock.text = t("settings");
         startBtn.textBlock.text = t("start");
@@ -709,14 +678,10 @@ export function createMenuScene(engine, startGameCallback, settings) {
         });
     };
 
-    // Fonction complète pour mettre à jour TOUT le menu quand on change de langue
     window.fullUpdateLanguage = () => {
         try {
-            // Mettre à jour les boutons principaux du menu
             window.refreshUIText?.();
-            // Rafraîchir à nouveau le tab actuel
             updateContentPanel(currentTab);
-            // Réappliquer les titres des onglets
             tabs.forEach((tab, index) => {
                 const button = tabButtons[tab.id];
                 if (button) {
@@ -724,7 +689,6 @@ export function createMenuScene(engine, startGameCallback, settings) {
                 }
             });
         } catch (e) {
-            // Sécurité au cas où la scène du menu a été détruite
         }
     };
 

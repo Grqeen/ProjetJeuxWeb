@@ -60,7 +60,6 @@ export const gameSettings = {
 };
 
 window.addEventListener('DOMContentLoaded', async function () {
-    // --- Auth Status (coin haut-droit de l'écran) ---
     let authStatusMenu = document.getElementById("authStatusMenu");
     if (!authStatusMenu) {
         authStatusMenu = document.createElement("div");
@@ -69,7 +68,6 @@ window.addEventListener('DOMContentLoaded', async function () {
         
         const style = document.createElement("style");
         style.innerHTML = `
-            /* Supprime la marge et la barre blanche par défaut du navigateur */
             body, html {
                 margin: 0;
                 padding: 0;
@@ -170,7 +168,7 @@ window.addEventListener('DOMContentLoaded', async function () {
     let isGamePaused = false;
     let renderLoop = null;
 
-    // Freeze/unfreeze helpers: pause animations, particles and physics stepping
+// Gèle l'état de la scène (animations, systèmes de particules, physique).
     const freezeScene = (s) => {
         try {
             if (!s) return;
@@ -180,6 +178,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         } catch(e) {}
     };
 
+// Dégèle l'état de la scène pour reprendre son exécution dynamique.
     const unfreezeScene = (s) => {
         try {
             if (!s) return;
@@ -189,6 +188,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         } catch(e) {}
     };
 
+// Alterne l'état de pause de la partie en cours.
     const togglePause = () => {
         isGamePaused = !isGamePaused;
         try {
@@ -197,10 +197,9 @@ window.addEventListener('DOMContentLoaded', async function () {
         } catch(e) {}
     };
 
+// Initialise et configure l'intégralité de la scène de jeu (caméra, interface, physique).
     const createGameScene = function () {
         const scene = new BABYLON.Scene(engine);
-        
-        // Active les collisions globales pour la caméra
         scene.collisionsEnabled = true;
         
         const hk = new BABYLON.HavokPlugin(true, havokInstance);
@@ -211,17 +210,15 @@ window.addEventListener('DOMContentLoaded', async function () {
         const camera = new BABYLON.ArcRotateCamera("camera1", -Math.PI / 2, 1.0, 8, BABYLON.Vector3.Zero(), scene);
         camera.attachControl(canvas, true);
         
-        // --- APPLICATION DES CONTROLES (Sensibilité et Inversion Y) ---
         const baseSensibility = 2000;
         camera.angularSensibilityX = baseSensibility / gameSettings.controls.sensitivity;
         camera.angularSensibilityY = (gameSettings.controls.invertY ? -1 : 1) * (baseSensibility / gameSettings.controls.sensitivity);
 
-        camera.checkCollisions = true; // Empêche la caméra de traverser le sol
-        camera.collisionRadius = new BABYLON.Vector3(0.5, 0.5, 0.5); // Taille de la "boîte" de la caméra
+        camera.checkCollisions = true; 
+        camera.collisionRadius = new BABYLON.Vector3(0.5, 0.5, 0.5); 
         camera.upperBetaLimit = Math.PI / 2 - 0.05;
-        camera.maxZ = 2000; // On augmente la distance de vue pour voir toute la map sans coupure
+        camera.maxZ = 2000; 
 
-        // --- GESTION DES GAMEPADS (Manettes) ---
         window.gamepadManager = {
             lastVibration: 0,
             vibrationDuration: 0,
@@ -248,7 +245,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                 let x = gamepad.axes[indices[0]] || 0;
                 let y = gamepad.axes[indices[1]] || 0;
                 
-                // Appliquer la zone morte
                 const deadzone = gameSettings.controls.deadzone;
                 const magnitude = Math.sqrt(x * x + y * y);
                 
@@ -256,7 +252,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                     return { x: 0, y: 0 };
                 }
                 
-                // Rescaler après la zone morte pour éviter un "trou" au centre
                 const normalizedMagnitude = Math.min(1, (magnitude - deadzone) / (1 - deadzone));
                 return {
                     x: (x / magnitude) * normalizedMagnitude,
@@ -265,7 +260,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         };
         
-        // Exposer les paramètres du gamepad au manager, pour qu'on puisse y accéder globalement
         window.gameAudioManager = window.gameAudioManager || {};
         window.gameAudioManager.gamepadManager = window.gamepadManager;
 
@@ -275,7 +269,6 @@ window.addEventListener('DOMContentLoaded', async function () {
         fpsText.color = "yellow";
         fpsText.fontSize = 24;
         fpsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        // Show FPS upper-left just below hp enabled
         fpsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
         fpsText.left = "10px";
         fpsText.top = "42px";
@@ -283,10 +276,9 @@ window.addEventListener('DOMContentLoaded', async function () {
         fpsText.isVisible = gameSettings.showFps;
         gameUI.addControl(fpsText);
 
-        // --- UI : KILLS AVANT LE BOSS ---
         const bossKillsText = new BABYLON.GUI.TextBlock();
         bossKillsText.text = "Kills : 300";
-        bossKillsText.color = "yellow"; // Rouge
+        bossKillsText.color = "yellow"; 
         bossKillsText.fontSize = 26;
         bossKillsText.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
         bossKillsText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_TOP;
@@ -295,7 +287,6 @@ window.addEventListener('DOMContentLoaded', async function () {
         bossKillsText.isVisible = gameSettings.gameplay.showHUD;
         gameUI.addControl(bossKillsText);
 
-        // --- UI : BARRE D'XP ---
         const xpContainer = new BABYLON.GUI.Rectangle();
         xpContainer.width = "60%";
         xpContainer.height = "26px";
@@ -314,12 +305,11 @@ window.addEventListener('DOMContentLoaded', async function () {
         xpBar.width = "0%"; 
         xpBar.height = "100%";
         xpBar.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-        xpBar.background = "#2980b9"; // Bleu
+        xpBar.background = "#2980b9"; 
         xpBar.thickness = 0;
         xpBar.cornerRadius = 10;
         xpContainer.addControl(xpBar);
 
-        // --- UI : BARRE DE VIE (TOP-LEFT) ---
         const hpContainer = new BABYLON.GUI.Rectangle();
         hpContainer.width = "220px";
         hpContainer.height = "28px";
@@ -335,7 +325,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         gameUI.addControl(hpContainer);
 
         const hpBar = new BABYLON.GUI.Rectangle();
-        hpBar.width = "100%"; // updated as percentage string when HP changes
+        hpBar.width = "100%";
         hpBar.height = "100%";
         hpBar.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
         hpBar.background = "red";
@@ -351,17 +341,15 @@ window.addEventListener('DOMContentLoaded', async function () {
         hpText.textVerticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_CENTER;
         hpContainer.addControl(hpText);
 
-        // --- EFFET DE DÉGÂT SUR LES BORDS ÉCRAN ---
         const damageVignette = new BABYLON.GUI.Rectangle("damageVignette");
         damageVignette.width = "100%";
         damageVignette.height = "100%";
-        damageVignette.thickness = 30; // Bordure rouge
+        damageVignette.thickness = 30; 
         damageVignette.color = "red";
-        damageVignette.alpha = 0; // invisible au début
+        damageVignette.alpha = 0; 
         damageVignette.isPointerBlocker = false;
         gameUI.addControl(damageVignette);
 
-        // --- UI : BOUTON DEBUG XP (Pour tester les niveaux) ---
         const debugXpBtn = BABYLON.GUI.Button.CreateSimpleButton("debugXpBtn", "+10 XP");
         debugXpBtn.width = "100px";
         debugXpBtn.height = "50px";
@@ -373,14 +361,14 @@ window.addEventListener('DOMContentLoaded', async function () {
         debugXpBtn.thickness = 2;
         debugXpBtn.cornerRadius = 10;
         debugXpBtn.onPointerUpObservable.add(() => {
-            if (!gameData || isGamePaused) return; // Désactivé si le jeu est en pause
+            if (!gameData || isGamePaused) return; 
 
-            gameData.kills += 10; // Donne 10 kills d'un coup
+            gameData.kills += 10; 
             if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
             let killsLeft = Math.max(0, gameData.nextBossThreshold - gameData.kills);
             gameData.bossKillsText.text = "Kills : " + killsLeft;
 
-            gameData.currentXp += 50; // Donne 50 XP pour le test
+            gameData.currentXp += 50; 
 
             let progress = Math.min(100, (gameData.currentXp / gameData.xpRequiredForLevel) * 100);
             gameData.xpBar.width = progress + "%";
@@ -391,7 +379,6 @@ window.addEventListener('DOMContentLoaded', async function () {
         });
         gameUI.addControl(debugXpBtn);
 
-        // --- BOUTONS DEBUG BOSS ---
         const bossFactories = {
             goliath: (sc) => createBoss(sc),
             amalgame: (sc) => createAmalgame(sc, 1),
@@ -399,9 +386,9 @@ window.addEventListener('DOMContentLoaded', async function () {
             nuee: (sc) => createNuee(sc),
             mimic: (sc) => createMimic(sc)
         };
-        // Ordre de rotation naturelle des boss (progressif)
         const bossRotation = ['goliath', 'amalgame', 'kraken', 'nuee', 'mimic'];
 
+// Force l'apparition d'un boss de manière ciblée.
         const spawnBossLogic = (bossType) => {
             if (!gameData || isGamePaused || gameData.bossSpawned) return;
             if (!gameData.nextBossThreshold) gameData.nextBossThreshold = 300;
@@ -446,11 +433,10 @@ window.addEventListener('DOMContentLoaded', async function () {
             gameUI.addControl(btn);
         });
 
-        // --- UI : MENU D'AMÉLIORATION (LEVEL UP) ---
         const upgradePanel = new BABYLON.GUI.Rectangle();
         upgradePanel.width = 1;
         upgradePanel.height = 1;
-        upgradePanel.background = "rgba(0, 0, 0, 0.4)"; // Plus transparent pour voir le jeu
+        upgradePanel.background = "rgba(0, 0, 0, 0.4)";
         upgradePanel.isVisible = false;
         upgradePanel.zIndex = 100;
         gameUI.addControl(upgradePanel);
@@ -462,10 +448,11 @@ window.addEventListener('DOMContentLoaded', async function () {
         upgradeGrid.height = "50%";
         upgradePanel.addControl(upgradeGrid);
 
+// Construit l'interface et le comportement d'une carte d'amélioration au gain de niveau.
         const createUpgradeCard = (titleText, col) => {
             const card = BABYLON.GUI.Button.CreateSimpleButton("card" + col, titleText);
-            card.width = "250px"; // Forme rectangulaire (style carte)
-            card.height = "380px"; // Hauteur plus importante
+            card.width = "250px";
+            card.height = "380px";
             card.color = "white";
             card.background = "#2c3e50";
             card.cornerRadius = 20;
@@ -473,7 +460,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             card.textBlock.textWrapping = true;
             card.textBlock.fontSize = 24;
 
-            // Animation au survol (utilise des valeurs dynamiques définies par showUpgradeMenu)
             card._baseBackground = "#2c3e50";
             card._hoverBackground = "#34495e";
             card.onPointerEnterObservable.add(() => { card.background = card._hoverBackground || card._baseBackground; card.scaleX = 1.05; card.scaleY = 1.05; });
@@ -488,11 +474,10 @@ window.addEventListener('DOMContentLoaded', async function () {
         const card3 = createUpgradeCard("Bonus 3\n(À venir)", 2);
 
         const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-        light.intensity = 0.4; // Baissée pour donner plus d'impact aux ombres du soleil
+        light.intensity = 0.4; 
 
-        // --- Audio (files must exist in assets/sounds/) ---
         let fireSound = null, explosionSound = null, hitSound = null;
-        const soundReferences = []; // Garder une trace de tous les sons pour l'audio spatial
+        const soundReferences = []; 
         try {
             fireSound = new BABYLON.Sound("fire", "assets/sounds/fireball.wav", scene, null, { volume: 0.6, spatialSound: gameSettings.audio.spatial });
             explosionSound = new BABYLON.Sound("explosion", "assets/sounds/explosion.wav", scene, null, { volume: 0.7, spatialSound: gameSettings.audio.spatial });
@@ -500,19 +485,17 @@ window.addEventListener('DOMContentLoaded', async function () {
             soundReferences.push(fireSound, explosionSound, hitSound);
         } catch (e) {}
 
-        // Fonction pour mettre à jour les volumes de tous les sons selon les paramètres audio
+// Ajuste dynamiquement le volume et la spatialisation des effets sonores.
         const updateAudioVolumes = () => {
             const master = gameSettings.audio.master;
             const musicVol = gameSettings.audio.music;
             const sfxVol = gameSettings.audio.sfx;
             const spatial = gameSettings.audio.spatial;
             
-            // Mettre à jour les volumes des SFX
             if (fireSound) fireSound.setVolume(0.6 * master * sfxVol);
             if (explosionSound) explosionSound.setVolume(0.7 * master * sfxVol);
             if (hitSound) hitSound.setVolume(0.5 * master * sfxVol);
             
-            // Mettre à jour l'audio spatial
             soundReferences.forEach(sound => {
                 if (sound) {
                     sound.spatialSound = spatial;
@@ -523,29 +506,23 @@ window.addEventListener('DOMContentLoaded', async function () {
             });
         };
 
-        // Appliquer les paramètres audio initiaux
         updateAudioVolumes();
         
-        // Exposer les sons et la fonction pour que menu.js puisse y accéder
         window.gameAudioManager = { fireSound, explosionSound, hitSound, soundReferences, updateAudioVolumes };
 
-        // --- AJOUT DE LA LUMIÈRE DIRECTIONNELLE ET DES OMBRES ---
         const dirLight = new BABYLON.DirectionalLight("dirLight", new BABYLON.Vector3(-1, -2, -0.5), scene);
         dirLight.position = new BABYLON.Vector3(100, 100, 50);
         dirLight.intensity = 0.8;
-        scene.dirLight = dirLight; // Stocké pour pouvoir réactiver les ombres plus tard
+        scene.dirLight = dirLight; 
 
         if (gameSettings.shadows) {
-            // Optimisation dynamique des ombres (Cascades) : 
-            // HD de près, basse qualité de loin, ignoré derrière la caméra
             const shadowGenerator = new BABYLON.CascadedShadowGenerator(512, dirLight);
-            shadowGenerator.lambda = 0.7; // Priorité à la zone proche du joueur
-            shadowGenerator.shadowMaxZ = 120; // Ne calcule plus les ombres au-delà de 120m
-            shadowGenerator.usePercentageCloserFiltering = true; // Flou performant
-            scene.shadowGenerator = shadowGenerator; // Expose globalement au niveau de la scène
+            shadowGenerator.lambda = 0.7;
+            shadowGenerator.shadowMaxZ = 120;
+            shadowGenerator.usePercentageCloserFiltering = true;
+            scene.shadowGenerator = shadowGenerator;
         }
 
-        // --- POST-PROCESSING: Bloom + FXAA + Motion Blur + AO ---
         try {
             const pipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene, [camera]);
             pipeline.bloomEnabled = gameSettings.bloom;
@@ -565,11 +542,9 @@ window.addEventListener('DOMContentLoaded', async function () {
                 const ssao = new BABYLON.SSAORenderingPipeline("ssao", scene, { ssaoRatio: 0.5, combineRatio: 1.0 }, [camera]);
             }
         } catch (e) {
-            // DefaultRenderingPipeline may be unavailable depending on included scripts
             console.warn("DefaultRenderingPipeline unavailable:", e);
         }
 
-        // --- Fog for depth ---
         scene.fogMode = BABYLON.Scene.FOGMODE_EXP;
         scene.fogDensity = 0.0015;
         scene.fogColor = new BABYLON.Color3(0.08, 0.09, 0.12);
@@ -577,22 +552,20 @@ window.addEventListener('DOMContentLoaded', async function () {
         createTerrain(scene);
 
         const stickman = createPlayer(scene);
-        stickman.position = new BABYLON.Vector3(0, 3.0, 0); // Positionne le joueur directement au-dessus de l'égout
+        stickman.position = new BABYLON.Vector3(0, 3.0, 0);
         
         const playerAgg = new BABYLON.PhysicsAggregate(stickman, BABYLON.PhysicsShapeType.CAPSULE, { mass: 1, friction: 0, restitution: 0 }, scene);
         playerAgg.body.setMassProperties({ inertia: new BABYLON.Vector3(0, 0, 0) });
         stickman.physicsBody = playerAgg.body;
 
         camera.lockedTarget = stickman;
-        camera.radius = 15; // Ajuste le rayon de la caméra
+        camera.radius = 15; 
         camera.fov = gameSettings.fov * (Math.PI / 180);
-        // store base radius and sprint zoom params for dynamic camera effects
         camera._baseRadius = camera.radius;
-        camera._sprintZoom = 0.0; // how much the camera zooms in when sprinting (désactivé)
-        camera._sprintLerp = 0.12; // smoothing
+        camera._sprintZoom = 0.0; 
+        camera._sprintLerp = 0.12; 
         
-        // --- INITIALISATION DES VAGUES DE MONSTRES ---
-        const monsters = createMonsters(scene, 25); // Vague 1 initiale plus nerveuse
+        const monsters = createMonsters(scene, 25);
 
         const waveData = {
             elapsedTime: 0,
@@ -600,16 +573,16 @@ window.addEventListener('DOMContentLoaded', async function () {
             wavesSurvived: 0,
             waves: [
                 { time: 0, count: 20 },
-                { time: 10, count: 30 },   // 10 sec
-                { time: 25, count: 45 },   // 25 sec
-                { time: 50, count: 70 }    // 50 sec
+                { time: 10, count: 30 },   
+                { time: 25, count: 45 },   
+                { time: 50, count: 70 }   
             ],
             last2MinTick: 120,
             last5MinTick: 120,
             currentBaseCount: 70
         };
 
-        createTrees(scene, 300, gameSettings.quality); // Augmentation massive du nombre d'arbres
+        createTrees(scene, 300, gameSettings.quality); 
 
         const { cover } = createSewer(scene);
 
@@ -658,7 +631,6 @@ window.addEventListener('DOMContentLoaded', async function () {
         });
         const pausePanel = settingsPanelData.panel;
 
-        // --- BOUTON QUITTER (POUR LE MENU PAUSE) ---
         const t = window.getTranslation || ((k) => k);
         const quitButton = BABYLON.GUI.Button.CreateSimpleButton("quitBtn", t("quit") || "Quitter la partie");
         quitButton.width = "200px";
@@ -698,7 +670,6 @@ window.addEventListener('DOMContentLoaded', async function () {
         });
         pauseTexture.addControl(quitButton);
 
-        // --- UI : ECRAN DE FIN (MASQUÉ PAR DÉFAUT) ---
         const endPanel = new BABYLON.GUI.Rectangle();
         endPanel.width = 0.6;
         endPanel.height = 0.5;
@@ -793,13 +764,12 @@ window.addEventListener('DOMContentLoaded', async function () {
             restartBtn.scaleY = 1.0;
         });
         restartBtn.onPointerUpObservable.add(() => {
-            // Redémarre la partie
             startGame();
         });
         btnRow.addControl(restartBtn);
 
 
-        // --- Utility: screen shake (exposed on sceneData below)
+// Exécute un effet de secousse (shake) sur la caméra pour appuyer un impact.
         const shakeCamera = (intensity = 0.3, duration = 300) => {
             const cam = camera;
             const start = Date.now();
@@ -820,7 +790,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             shake();
         };
 
-        // Center hit marker (brief UI feedback when player damages a monster)
         let hitMarker = null;
         try {
             hitMarker = new BABYLON.GUI.TextBlock();
@@ -835,6 +804,7 @@ window.addEventListener('DOMContentLoaded', async function () {
             gameUI.addControl(hitMarker);
         } catch(e) {}
 
+// Affiche brièvement à l'écran un indicateur de dégâts causés.
         const showHitMarker = () => {
             try {
                 if (!hitMarker) return;
@@ -857,7 +827,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             } catch(e) {}
         };
 
-        // --- OBJECT POOLING ---
         const fireballPool = [];
         try {
             const fireMat = new BABYLON.StandardMaterial("fireMat", scene);
@@ -880,7 +849,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                 trail.direction1 = new BABYLON.Vector3(-0.5, -0.1, -0.5);
                 trail.direction2 = new BABYLON.Vector3(0.5, 0.1, 0.5);
                 trail.gravity = new BABYLON.Vector3(0, -1, 0);
-                trail.disposeOnStop = false; // Important : pas de destruction automatique
+                trail.disposeOnStop = false;
                 
                 fireballPool.push({ mesh: fireball, trail: trail, inUse: false });
             }
@@ -901,21 +870,21 @@ window.addEventListener('DOMContentLoaded', async function () {
                 ps.direction1 = new BABYLON.Vector3(-1, -1, -1);
                 ps.direction2 = new BABYLON.Vector3(1, 1, 1);
                 ps.gravity = new BABYLON.Vector3(0, -9.8, 0);
-                ps.disposeOnStop = false; // Important
+                ps.disposeOnStop = false; 
                 
                 hitSparkPool.push({ ps: ps, inUse: false });
             }
         } catch(e) {}
 
+// Récupère un projectile inactif dans la réserve d'objets pour éviter une nouvelle instanciation.
         const getFireball = () => fireballPool.find(p => !p.inUse) || null;
+// Récupère un système de particules d'impact inactif dans la réserve.
         const getHitSpark = () => hitSparkPool.find(p => !p.inUse) || null;
 
         const sceneData = { scene, stickman, monsters, inputMap, camera, cover, birds, fpsText, bossKillsText, pausePanel, quitButton, upgradePanel, xpBar, xpContainer, hpBar, hpContainer, waveData, card1, card2, card3, kills: 0, currentXp: 0, xpRequiredForLevel: 100, prevUpgradeKillCount: 0, nextUpgradeKillCount: 20, bossCount: 0, health: 100, maxHealth: 100, hpText, fireSound, explosionSound, hitSound, pickups: [], timeScale: 1, showHitMarker, damageVignette, getFireball, getHitSpark };
 
-        // attach shake function to sceneData so caller gets it
         sceneData.shakeCamera = shakeCamera;
 
-        // Fast-forward button next to debug XP for accelerating game time (waves, projectiles, pickups...)
         try {
             const fastForwardBtn = BABYLON.GUI.Button.CreateSimpleButton("fastFwdBtn", "x1");
             fastForwardBtn.width = "100px"; fastForwardBtn.height = "50px"; fastForwardBtn.color = "white";
@@ -935,8 +904,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             gameUI.addControl(fastForwardBtn);
         } catch (e) {}
 
-        // Méthode pour afficher l'écran de fin depuis l'extérieur
         sceneData.isDead = false;
+// Affiche l'écran de fin et prend en charge l'enregistrement éventuel du score de survie.
         sceneData.showDeathScreen = async () => {
             if (sceneData.isDead) return;
             sceneData.isDead = true;
@@ -978,19 +947,19 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         };
 
+// Place artificiellement la scène de jeu en pause.
         sceneData.pauseGame = () => { 
             isGamePaused = true; 
             try { freezeScene(scene); } catch(e) {}
         };
 
+// Résout le choix du joueur, déduit l'expérience correspondante et reprend la partie.
         sceneData.selectUpgrade = () => {
             sceneData.upgradePanel.isVisible = false;
             isGamePaused = false;
-            // unfreeze player when leaving upgrade menu
             try { sceneData._playerFrozen = false; } catch(e) {}
             try { unfreezeScene(currentScene); } catch(e) {}
             
-            // Conserve le surplus d'XP et augmente le palier de 20%
             sceneData.currentXp = Math.max(0, sceneData.currentXp - sceneData.xpRequiredForLevel);
             sceneData.xpRequiredForLevel = Math.floor(sceneData.xpRequiredForLevel * 1.8);
             
@@ -998,7 +967,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             sceneData.xpBar.width = progress + "%";
         };
 
-        // expose shake for other modules (assigned after function declaration)
         return sceneData;
     };
 
@@ -1007,6 +975,7 @@ window.addEventListener('DOMContentLoaded', async function () {
     let projectiles = [];
     let lastFireTime = 0;
 
+// Lance la partie après nettoyage de l'ancienne scène.
     const startGame = () => {
         if (currentScene) currentScene.dispose();
         
@@ -1014,7 +983,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         const data = createGameScene();
         currentScene = data.scene;
         gameData = data;
-        window.currentGameData = data; // Exposer les données du jeu globalement pour le menu
+        window.currentGameData = data;
         isGamePaused = false;
         projectiles = [];
         lastFireTime = 0;
@@ -1022,12 +991,12 @@ window.addEventListener('DOMContentLoaded', async function () {
             if (authMenu) authMenu.style.display = "none";
     };
 
-    currentScene = createMenuScene(engine, startGame, gameSettings); // Initialise la scène du menu
+    currentScene = createMenuScene(engine, startGame, gameSettings);
 
     window.addEventListener("keydown", (evt) => {
         if (evt.key === "Escape" && gameData) {
-            if (gameData.isDead) return; // Empêche de montrer la pause si on est mort
-            if (gameData.upgradePanel && gameData.upgradePanel.isVisible) return; // Empêche de quitter le menu d'amélioration avec Echap
+            if (gameData.isDead) return; 
+            if (gameData.upgradePanel && gameData.upgradePanel.isVisible) return;
             togglePause();
             if (gameData.pausePanel) {
                 gameData.pausePanel.isVisible = isGamePaused;
@@ -1040,6 +1009,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         }
     });
 
+// Boucle de traitement principale mise à jour à la vitesse d'affichage du moniteur.
     renderLoop = function () {
         try {
             if (!currentScene) return;
@@ -1067,10 +1037,8 @@ window.addEventListener('DOMContentLoaded', async function () {
                 return;
             }
         } catch(e) {
-            // continue to main loop body
         }
 
-        // main loop body
         if (!currentScene) return;
 
         if (engine.getHardwareScalingLevel() !== gameSettings.resolution) {
@@ -1096,14 +1064,12 @@ window.addEventListener('DOMContentLoaded', async function () {
             return;
         }
 
-        // Mettre à jour l'audio spatial 3D en temps réel
         try {
             if (gameSettings.audio.spatial && window.gameAudioManager && window.gameAudioManager.soundReferences) {
                 const camera = gameData?.camera;
                 window.gameAudioManager.soundReferences.forEach(sound => {
                     if (sound && camera) {
                         sound.spatialSound = true;
-                        // Positionner le son relative à la caméra
                         const camDirection = camera.getDirection(BABYLON.Axis.Z);
                         const camPosition = camera.position.clone();
                         sound.setLocalDirectionToMesh(camDirection);
@@ -1114,14 +1080,12 @@ window.addEventListener('DOMContentLoaded', async function () {
 
         const { stickman, monsters, inputMap, camera, cover, birds, scene, waveData } = gameData;
 
-        // ---- LOGIQUE GLOBALE DE MORT ET D'EFFET DE DÉGÂTS ----
-        if (gameData.health <= 0 && !gameData.isDead) { // Vérification de mort globale
+        if (gameData.health <= 0 && !gameData.isDead) {
             if (bonusState && bonusState.reviveLevel > 0 && !bonusState._reviveUsed) {
                 bonusState._reviveUsed = true;
                 gameData.health = Math.max(1, Math.floor(gameData.maxHealth * 0.5));
                 if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
                 if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
-                // Popup visuel du revive
                 try {
                     const popup = new BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("reviveUI");
                     const txt = new BABYLON.GUI.TextBlock();
@@ -1134,7 +1098,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         }
 
-        // Effet de sang / vignette sur les bords si HP <= 50%
         if (gameData.damageVignette && !gameData.isDead) {
             if (gameData.health <= gameData.maxHealth * 0.5 && gameData.health > 0) {
                 const ratio = (gameData.maxHealth * 0.5 - gameData.health) / (gameData.maxHealth * 0.5);
@@ -1144,7 +1107,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         }
 
-        // Dynamic camera: slight zoom-in when sprinting for speed impression
         try {
             const sprintPressed = !!inputMap[gameSettings.keys.sprint];
             const base = (camera && camera._baseRadius !== undefined) ? camera._baseRadius : 15;
@@ -1154,22 +1116,19 @@ window.addEventListener('DOMContentLoaded', async function () {
             if (camera && sprintZoom > 0) {
                 camera.radius += (targetRadius - camera.radius) * lerp;
             } else if (camera && camera.radius !== base) {
-                // Reset progressif si pas de zoom sprint
                 camera.radius += (base - camera.radius) * lerp;
             }
         } catch(e) {}
         if (birds && birds.length > 0) {
-            updateBirds(birds, stickman.position); // Les oiseaux réagissent à la position du joueur
+            updateBirds(birds, stickman.position);
         }
         
-        // Culling pour l'herbe (l'animation de vent est maintenant gérée sur le GPU via les Custom Shaders)
         try {
             if (scene._swayGrass && stickman) {
-                const grassMaxDistSq = 150 * 150; // 150 mètres max (l'herbe est invisible au-delà de toute façon)
+                const grassMaxDistSq = 150 * 150; 
                 scene._swayGrass.forEach(g => {
                     const distSq = BABYLON.Vector3.DistanceSquared(stickman.position, g.position);
                     
-                    // Culling : Désactivation totale de l'herbe lointaine
                     if (distSq > grassMaxDistSq) {
                         if (g.isEnabled()) g.setEnabled(false);
                     } else {
@@ -1195,8 +1154,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                     try { m.physicsProxy.dispose(); } catch(e) {}
                     m.physicsProxy = null;
                 }
-            
-            // Nettoyage des bonus copiés si c'était un Mimic
             if (m._type === 'mimic') {
                 try { if (m._auraMesh) m._auraMesh.dispose(); } catch(e){}
                 try { if (m._sawsMeshes) m._sawsMeshes.forEach(s => s.dispose()); } catch(e){}
@@ -1206,9 +1163,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             
             } catch(e) {}
 
-            // Very small chance to spawn a heal pack (+10 HP) at the monster position before disposing
             try {
-                const DROP_CHANCE = 0.0005; // 0.05% chance
+                const DROP_CHANCE = 0.0005;
                 if (m && m.position && Math.random() < DROP_CHANCE) {
                     try {
                         const dropPos = m.position.clone();
@@ -1227,7 +1183,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                 }
             } catch(e) {}
             try { monsters[j].dispose(); } catch(e) {}
-            // remove from registered list if present
             try {
                 if (scene._registeredMonsters) {
                     const idx = scene._registeredMonsters.indexOf(monsters[j]);
@@ -1238,7 +1193,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             
             gameData.kills++;
             
-            // --- SYSTÈME D'XP ---
             let xpGain = 10;
             if (m._type === 'tank' || m._type === 'ranged') {
                 xpGain = 25;
@@ -1247,7 +1201,7 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
             
             if (bonusState.xpBoostLevel > 0) {
-                xpGain += xpGain * (bonusState.xpBoostLevel * 0.15); // +15% d'XP par niveau
+                xpGain += xpGain * (bonusState.xpBoostLevel * 0.15);
             }
             
             gameData.currentXp += Math.floor(xpGain);
@@ -1259,7 +1213,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                 showUpgradeMenu(gameData);
             }
 
-            // Magnet: small heal on kill if magnetLevel present
             try {
                 if (bonusState.magnetLevel > 0 && typeof gameData.health === 'number') {
                     const heal = Math.floor(2 * bonusState.magnetLevel);
@@ -1275,7 +1228,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             const isBossType = m && bossTypes.includes(m._type);
 
             if (isBossType) {
-                // Pour l'Amalgame, on ne valide que si c'était le DERNIER morceau
                 let bossPartsLeft = 0;
                 if (m._type === 'amalgame') {
                     bossPartsLeft = monsters.filter(x => x._type === 'amalgame').length;
@@ -1287,11 +1239,10 @@ window.addEventListener('DOMContentLoaded', async function () {
                     
                     let nextStep = 300;
                     if (gameData.bossCount >= 2) {
-                        nextStep = 300 + (gameData.bossCount - 1) * 100; // +400 pour le 3ème, +500 pour le 4ème, etc.
+                        nextStep = 300 + (gameData.bossCount - 1) * 100;
                     }
                     gameData.nextBossThreshold += nextStep;
                     
-                    // Nettoyer les effets du Kraken (remettre l'eau)
                     if (m._type === 'kraken' && gameData.currentWaterLevel !== undefined) {
                         gameData.currentWaterLevel = waterLevel;
                         try { if (scene.getMeshByName("water")) scene.getMeshByName("water").position.y = waterLevel; } catch(e){}
@@ -1316,7 +1267,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                         });
                         monsters.length = 0;
                         
-                        // Rotation sur 5 boss
                         const bossRotationOrder = ['goliath', 'amalgame', 'kraken', 'nuee', 'mimic'];
                         const bossFactoriesLocal = {
                             goliath: () => createBoss(scene),
@@ -1337,32 +1287,26 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         };
 
-        // expose shake for other modules (already attached to returned sceneData)
-
-        // time scaling: use gameData.timeScale to accelerate dt for fast-forward
         const timeScale = (gameData && gameData.timeScale) ? gameData.timeScale : 1;
         const deltaMs = engine.getDeltaTime() * timeScale;
         const dt = deltaMs / 1000;
 
         updateBonuses(gameData, dt, handleMonsterKill);
 
-        // --- GESTION DU BROUILLARD DYNAMIQUE ET DE LA NUIT (POUR LE MIMIC) ---
         const isMimicAlive = monsters.some(m => m._type === 'mimic');
-        const targetFogDensity = isMimicAlive ? 0.015 : 0.0015; // Réduit pour qu'on puisse quand même voir
+        const targetFogDensity = isMimicAlive ? 0.015 : 0.0015; 
         const targetFogColor = isMimicAlive ? new BABYLON.Color3(0, 0, 0) : new BABYLON.Color3(0.08, 0.09, 0.12);
-        const targetLightIntensity = isMimicAlive ? 0.1 : 0.8; // Baisse la lumière pour simuler la nuit profonde
+        const targetLightIntensity = isMimicAlive ? 0.1 : 0.8; 
         
         if (Math.abs(scene.fogDensity - targetFogDensity) > 0.00001) {
-            // Transition en douceur du brouillard (opacité et couleur)
             scene.fogDensity += (targetFogDensity - scene.fogDensity) * (dt * 0.5);
             scene.fogColor = BABYLON.Color3.Lerp(scene.fogColor, targetFogColor, dt * 0.5);
-            scene.clearColor = new BABYLON.Color4(scene.fogColor.r, scene.fogColor.g, scene.fogColor.b, 1.0); // Le ciel s'assombrit
+            scene.clearColor = new BABYLON.Color4(scene.fogColor.r, scene.fogColor.g, scene.fogColor.b, 1.0); 
             if (scene.dirLight) {
                 scene.dirLight.intensity += (targetLightIntensity - scene.dirLight.intensity) * (dt * 0.5);
             }
         }
 
-        // --- GESTION DES VAGUES ---
         waveData.elapsedTime += dt;
         const timeInSeconds = waveData.elapsedTime;
 
@@ -1375,7 +1319,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                 waveData.nextWaveIndex++;
             }
         } else if (!gameData.bossSpawned) {
-            // Cycle infini : Chaque 1 min (60s) au lieu de 2 min
             if (timeInSeconds - waveData.last2MinTick >= 60) {
                 waveData.last2MinTick += 60;
                 waveData.wavesSurvived++;
@@ -1383,18 +1326,16 @@ window.addEventListener('DOMContentLoaded', async function () {
                 const newMobs = createMonsters(scene, waveData.currentBaseCount);
                 monsters.push(...newMobs);
             }
-            // Cycle infini : Chaque 2.5 min (150s) au lieu de 5 min
             if (timeInSeconds - waveData.last5MinTick >= 150) {
                 waveData.last5MinTick += 150;
                 waveData.wavesSurvived++;
-                waveData.currentBaseCount += 40; // Bonus de difficulté massif
+                waveData.currentBaseCount += 40;
                 const newMobs = createMonsters(scene, waveData.currentBaseCount);
                 monsters.push(...newMobs);
             }
         }
-        // --------------------------
 
-        let speed = 8.0; // Vitesse réajustée pour les vélocités physiques
+        let speed = 8.0;
         if (stickman.isCrouched) {
             speed = 3.0;
         } else if (inputMap[gameSettings.keys.sprint]) {
@@ -1405,7 +1346,6 @@ window.addEventListener('DOMContentLoaded', async function () {
             speed *= 0.3;
         }
 
-        // Boots: increase movement speed
         if (bonusState.speedBootsLevel && bonusState.speedBootsLevel > 0) {
             speed *= 1 + 0.12 * bonusState.speedBootsLevel;
         }
@@ -1441,9 +1381,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             moveVector.normalize().scaleInPlace(speed);
         }
 
-        // Remplacement du Raycast par une vérification mathématique pure
         const terrainHeight = getHeight(stickman.position.x, stickman.position.z);
-        const isGrounded = stickman.position.y <= terrainHeight + 1.3; // 1.1 (centre de la capsule) + 0.2 de tolérance
+        const isGrounded = stickman.position.y <= terrainHeight + 1.3;
 
         if (!stickman.physicsBody) {
             scene.render();
@@ -1451,43 +1390,32 @@ window.addEventListener('DOMContentLoaded', async function () {
         }
         const currentVel = stickman.physicsBody.getLinearVelocity();
 
-        // --- ANIMATION DYNAMIQUE (PAS STATIQUE) ET ADAPTATION À LA CAMÉRA ---
         if (stickman.limbs) {
-            // Inclinaison de la caméra (pitch)
             const targetPitch = Math.PI / 2 - camera.beta; 
             
-            // Limite de l'inclinaison pour éviter que le personnage ne se retrouve la tête en bas
-            // On limite le pitch entre -60° et +60° (Math.PI / 3)
             const maxPitch = Math.PI / 3;
             const clampedPitch = Math.max(-maxPitch, Math.min(maxPitch, targetPitch));
 
-            // La tête regarde exactement là où la caméra pointe (avec la limite)
             stickman.limbs.head.rotation.x = clampedPitch; 
             
-            // Le corps (torse) s'incline pour accompagner le mouvement
             if (stickman.limbs.torso) {
-                stickman.limbs.torso.rotation.x = clampedPitch * 0.5; // On l'incline à moitié pour un effet naturel
+                stickman.limbs.torso.rotation.x = clampedPitch * 0.5;
             }
 
-            // Vitesse de déplacement horizontale
             const horizSpeed = Math.sqrt(currentVel.x * currentVel.x + currentVel.z * currentVel.z);
             const walkCycle = Date.now() * 0.015;
 
             if (horizSpeed > 1) {
-                // Animation de marche : balancement des jambes
                 const swingAnim = Math.sin(walkCycle) * 0.8;
                 stickman.limbs.leftLeg.rotation.x = swingAnim;
                 stickman.limbs.rightLeg.rotation.x = -swingAnim;
                 
-                // Les bras pointent vers la cible (clampedPitch) MAIS se balancent aussi en marchant
                 stickman.limbs.leftArm.rotation.x = -swingAnim * 0.5 + clampedPitch;
                 stickman.limbs.rightArm.rotation.x = swingAnim * 0.5 + clampedPitch;
             } else {
-                // Arrêt : retour amorti à la position neutre pour les jambes
                 stickman.limbs.leftLeg.rotation.x *= 0.8;
                 stickman.limbs.rightLeg.rotation.x *= 0.8;
                 
-                // Les bras pointent précisément dans l'axe de visée de la caméra (prêt à tirer)
                 stickman.limbs.leftArm.rotation.x = clampedPitch;
                 stickman.limbs.rightArm.rotation.x = clampedPitch;
             }
@@ -1546,11 +1474,10 @@ window.addEventListener('DOMContentLoaded', async function () {
                 velY = 14; 
                 inputMap[" "] = false;
             } else if (!stickman.hasDoubleJumped) {
-                velY = 12; // Impulsion du double saut (un peu moins forte que le saut initial)
+                velY = 12;
                 stickman.hasDoubleJumped = true;
                 inputMap[" "] = false;
                 
-                // Petit effet visuel pour le double saut (nuage de poussière sous les pieds)
                 try {
                     const ps = new BABYLON.ParticleSystem("djSpark", 30, scene);
                     ps.particleTexture = new BABYLON.Texture("assets/particles/spark.png", scene); // Utilisation de spark car smoke n'existe peut-être pas
@@ -1573,7 +1500,7 @@ window.addEventListener('DOMContentLoaded', async function () {
         }
 
         if (!isGrounded) {
-            velY -= 25 * dt; // Gravité artificielle pour annuler le flottement
+            velY -= 25 * dt;
         }
 
         if (stickman.position.y < waterLevel && velY < -2) {
@@ -1603,27 +1530,22 @@ window.addEventListener('DOMContentLoaded', async function () {
                 return;
             }
 
-            // Handle stun
             if (monster.stunTime && nowMs < monster.stunTime) {
                 if (monster.physicsAgg && monster.physicsAgg.body) {
                     const mVel = monster.physicsAgg.body.getLinearVelocity ? monster.physicsAgg.body.getLinearVelocity() : {x:0,y:0,z:0};
                     try { monster.physicsAgg.body.setLinearVelocity(new BABYLON.Vector3(0, mVel.y, 0)); } catch(e) {}
                 }
-                // update stun glow position if present
                 try { if (monster._stunGlow) monster._stunGlow.position.copyFrom(monster.position); } catch(e) {}
                 return;
             } else if (monster.stunTime && nowMs >= monster.stunTime) {
                 monster.stunTime = 0;
-                // remove stun glow if present
                 try { if (monster._stunGlow) { monster._stunGlow.dispose(); monster._stunGlow = null; } } catch(e) {}
             }
 
-            // Dynamically create/dispose physics for close monsters
             try {
                 const createDist = 25;
                 const removeDist = 40;
                 if (!monster.physicsAgg && distToPlayer <= createDist) {
-                    // create invisible proxy for physics
                     const proxy = BABYLON.MeshBuilder.CreateSphere("monsterProxy_" + monster.name, {diameter: 1}, scene);
                     proxy.position = monster.position.clone();
                     proxy.isVisible = false;
@@ -1640,43 +1562,34 @@ window.addEventListener('DOMContentLoaded', async function () {
                 }
             } catch(e) {}
 
-            // Movement
             if (monster.physicsAgg && monster.physicsAgg.body) {
-                // use physics proxy to set velocity and sync visual
                 const dir = stickman.position.subtract(monster.physicsProxy.position).normalize();
                 const mVel = monster.physicsAgg.body.getLinearVelocity ? monster.physicsAgg.body.getLinearVelocity() : new BABYLON.Vector3(0,0,0);
                 try { monster.physicsAgg.body.setLinearVelocity(new BABYLON.Vector3(dir.x * 5.5, mVel.y, dir.z * 5.5)); } catch(e) {}
-                // sync visual to proxy
                 try { monster.position.copyFrom(monster.physicsProxy.position); } catch(e) {}
             } else {
-                // kinematic simple AI movement
                 const dirVec = stickman.position.subtract(monster.position);
                 dirVec.y = 0;
                     if (dirVec.length() > 0.1) {
                     dirVec.normalize();
                     const spd = monster.ai && monster.ai.speed ? monster.ai.speed : 3.0;
                     monster.position.addInPlace(dirVec.scale(spd * dt));
-                    // follow terrain
                     try { monster.position.y = getHeight(monster.position.x, monster.position.z) + 0.5; } catch(e) {}
                 }
             }
 
-            // Ranged + Flying AI: maintain preferred range and shoot
             try {
                 if (monster._type === 'ranged' || monster._type === 'flying') {
                     const preferred = monster._preferredRange || (monster._type === 'flying' ? 12 : 10);
                     const gap = 2.0;
 
-                    // movement: handle flying vs ground ranged differently
                     if (monster._type === 'flying') {
-                        // flying monsters keep an altitude and move in 3D space
                         const flightH = monster._flightHeight || 5;
                         if (monster.physicsAgg && monster.physicsAgg.body) {
                             const pv = monster.physicsProxy.position;
                             const targetPos = stickman.position.clone();
                             try { targetPos.y = getHeight(pv.x, pv.z) + flightH; } catch(e) { targetPos.y = pv.y; }
                             const toT = targetPos.subtract(pv);
-                            // consider horizontal distance for range behavior
                             const horiz = Math.sqrt(toT.x * toT.x + toT.z * toT.z);
                             let vx = 0, vy = 0, vz = 0;
                             if (horiz > preferred + gap) {
@@ -1690,7 +1603,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                             } else {
                                 vx = 0; vz = 0;
                             }
-                            // vertical PID-ish
                             vy = (targetPos.y - pv.y) * 0.6;
                             try { monster.physicsAgg.body.setLinearVelocity(new BABYLON.Vector3(vx, vy, vz)); } catch(e) {}
                             try { monster.position.copyFrom(monster.physicsProxy.position); } catch(e) {}
@@ -1706,11 +1618,9 @@ window.addEventListener('DOMContentLoaded', async function () {
                                     toP.normalize();
                                     monster.position.addInPlace(toP.scale(-monster.ai.speed * 0.6 * dt));
                                 }
-                            // float towards desired Y
                             try { monster.position.y += (targetPos.y - monster.position.y) * 0.06; } catch(e) {}
                         }
                     } else {
-                        // ground ranged movement
                         if (monster.physicsAgg && monster.physicsAgg.body) {
                             const pv = monster.physicsProxy.position;
                             const toPlayer = stickman.position.subtract(pv);
@@ -1740,11 +1650,9 @@ window.addEventListener('DOMContentLoaded', async function () {
                         }
                     }
 
-                    // Shooting (both ranged and flying can shoot)
                     const nowShot = Date.now();
                     if (!monster._lastShotTime) monster._lastShotTime = 0;
                     if (nowShot - monster._lastShotTime > (monster._shotCooldown || (monster._type === 'flying' ? 900 : 1200))) {
-                        // only shoot when roughly within range
                         if (distToPlayer <= ((monster._preferredRange || preferred) + 3)) {
                             monster._lastShotTime = nowShot;
                             try {
@@ -1766,13 +1674,11 @@ window.addEventListener('DOMContentLoaded', async function () {
                 }
             } catch(e) {}
 
-            // Player contact damage (respects bonuses: shield, armor, reflect, revive)
             if (distToPlayer < 2.2) {
                 if (!monster.lastHitTime || nowMs - monster.lastHitTime > 1000) {
                     monster.lastHitTime = nowMs;
                     try {
                         if (gameData && typeof gameData.health === 'number') {
-                            // Shield absorbs hits first
                             if (bonusState._shieldActive && bonusState._shieldHits > 0) {
                                 bonusState._shieldHits = Math.max(0, bonusState._shieldHits - 1);
                                 if (gameData.scene && gameData.scene._shieldMesh) {
@@ -1783,20 +1689,17 @@ window.addEventListener('DOMContentLoaded', async function () {
                                     try { if (gameData.scene && gameData.scene._shieldMesh) { gameData.scene._shieldMesh.dispose(); gameData.scene._shieldMesh = null; } } catch(e) {}
                                 }
                             } else {
-                                // Armor reduces damage by a percentage per level (with caps)
                                 const baseDamage = 1;
-                                const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0))); // Rendement dégressif, max 75%
+                                const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0)));
                                 const damageFloat = baseDamage * (1 - reduction);
-                                const damage = Math.max(0.25, damageFloat); // always some minimum damage so player can die
+                                const damage = Math.max(0.25, damageFloat);
                                 gameData.health = Math.max(0, gameData.health - damage);
                                 if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
                                 if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
 
-                                // Armor reflect chance
                                 if (bonusState.armorReflectLevel > 0) {
-                                    const chance = 0.12 * bonusState.armorReflectLevel; // 12% per level
+                                    const chance = 0.12 * bonusState.armorReflectLevel;
                                     if (Math.random() < chance) {
-                                        // Try to reflect: damage nearest monster within 4 units
                                         try {
                                             let nearestIdx = -1; let nd = 99999;
                                             for (let mi = 0; mi < monsters.length; mi++) {
@@ -1817,7 +1720,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                                 }
 
                                 try { if (gameData.shakeCamera) gameData.shakeCamera(0.18, 250); } catch(e) {}
-                                // La logique de mort / revive est mainteneant gérée globalement en haut de la boucle de rendu
                             }
                         }
                     } catch(e) {}
@@ -1825,10 +1727,9 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         });
 
-        // --- Dynamic shadow caster management: only nearest monsters cast shadows ---
         try {
             if (scene.shadowGenerator && scene._registeredMonsters && scene._registeredMonsters.length > 0) {
-                const shadowRadius = 60; // only monsters within 60 units cast shadows
+                const shadowRadius = 60;
                 scene._registeredMonsters.forEach(m => {
                     if (!m || m.isDisposed()) return;
                     const d = BABYLON.Vector3.DistanceSquared(m.position, stickman.position);
@@ -1851,12 +1752,11 @@ window.addEventListener('DOMContentLoaded', async function () {
         const cooldownMultiplier = Math.max(0.25, 1 - 0.08 * (bonusState.cooldownReductionLevel || 0));
         const fireCooldown = Math.floor(Math.max(100, 2500 - (bonusState.fireRateLevel * 600)) * cooldownMultiplier);
         
-        // --- 1. CRÉATION DES TIRS ---
         if (now - lastFireTime > fireCooldown) { 
             lastFireTime = now;
 
             let nearestMonster = null;
-            let minDistance = 30; // Visée automatique étendue à 30 mètres (360°)
+            let minDistance = 30;
 
             monsters.forEach(m => {
                 const dist = BABYLON.Vector3.Distance(stickman.position, m.position);
@@ -1868,12 +1768,11 @@ window.addEventListener('DOMContentLoaded', async function () {
 
             let targetDir;
             if (nearestMonster) {
-                // Amélioration de la visée automatique
                 const targetPos = nearestMonster.position.clone();
-                targetPos.y += 1.2; // On tire à l'horizontale (à la même hauteur que le bras) pour ne plus plonger dans le sol
+                targetPos.y += 1.2;
                 
                 const startPos = stickman.position.clone();
-                startPos.y += 1.2; // Le point de départ réel de la boule de feu
+                startPos.y += 1.2;
                 
                 const dir = targetPos.subtract(startPos);
                 if (dir.length() < 0.1) {
@@ -1882,7 +1781,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                     targetDir = dir.normalize();
                 }
             } else {
-                targetDir = camera.getForwardRay().direction; // Le tir prend l'angle vertical de la caméra
+                targetDir = camera.getForwardRay().direction;
             }
 
             let numProjectiles = 1 + (bonusState.extraProjectilesLevel || 0);
@@ -1891,7 +1790,7 @@ window.addEventListener('DOMContentLoaded', async function () {
             for (let i = 0; i < numProjectiles; i++) {
                 let currentDir = targetDir;
                 if (numProjectiles > 1) {
-                    let angleOffset = (i - (numProjectiles - 1) / 2) * 0.2; // Écart de 0.2 radians entre chaque tir
+                    let angleOffset = (i - (numProjectiles - 1) / 2) * 0.2;
                     let rotMat = BABYLON.Matrix.RotationY(angleOffset);
                     currentDir = BABYLON.Vector3.TransformNormal(targetDir, rotMat);
                 }
@@ -1921,7 +1820,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                     projectiles.push(proj);
                     try { if (fireSound) fireSound.play(); } catch(e) {}
                 } else {
-                    // Fallback de sécurité si le pool est vide
                     const fireball = BABYLON.MeshBuilder.CreateSphere("fireball", {diameter: 0.6}, scene);
                     fireball.position = stickman.position.clone();
                     fireball.position.y += 1.2;
@@ -1953,21 +1851,17 @@ window.addEventListener('DOMContentLoaded', async function () {
             }
         }
 
-            // --- 2. DÉPLACEMENT ET COLLISIONS DES TIRS ---
         for (let i = 0; i < projectiles.length; i++) {
             const p = projectiles[i];
             p.life--;
 
-            // Déplacement manuel de la boule basé sur le temps et les bonus
             let speed = 20 * (p.speedMult || 1) * dt;
             p.mesh.position.addInPlace(p.direction.scale(speed));
 
-            // Update particle trail if exists
             if (p._trail && !p._trail.isStopped) {
                 p._trail.emitter = p.mesh;
             }
 
-            // projectile from player: hit monsters; from monster: hit player
             if (p.owner === 'player') {
                 for (let j = 0; j < monsters.length; j++) {
                     if (BABYLON.Vector3.Distance(p.mesh.position, monsters[j].position) < 2.8) {
@@ -1982,7 +1876,6 @@ window.addEventListener('DOMContentLoaded', async function () {
                         } catch (e) {}
 
 
-                        // Small particle explosion at hit
                         try {
                             let pooledSpark = gameData.getHitSpark && gameData.getHitSpark();
                             if (pooledSpark) {
@@ -1995,7 +1888,6 @@ window.addEventListener('DOMContentLoaded', async function () {
 
                         try { if (gameData.hitSound) gameData.hitSound.play(); } catch(e) {}
 
-                        // Flash overlay on the hit monster: a very brief white emissive mesh
                         try {
                             const m = monsters[j];
                             if (m && !m.isDisposed()) {
@@ -2015,15 +1907,13 @@ window.addEventListener('DOMContentLoaded', async function () {
                             }
                         } catch (e) {}
 
-                        // Damage monster by projectile.damage (default 1)
                         try {
                             let dmg = p.damage || 1;
-                            if (monsters[j]._type === 'boss' && monsters[j]._isAttracting) dmg = 0; // Boss est invulnérable s'il attire
+                            if (monsters[j]._type === 'boss' && monsters[j]._isAttracting) dmg = 0;
                             monsters[j]._hp = (monsters[j]._hp || 1) - dmg;
                             try { if (gameData && gameData.showHitMarker && dmg > 0) gameData.showHitMarker(); } catch(e) {}
                         } catch (e) {}
 
-                        // Show small damage popup
                         try {
                             const dmgTxt = new BABYLON.GUI.TextBlock();
                             dmgTxt.text = `-${p.damage || 1}`;
@@ -2046,10 +1936,8 @@ window.addEventListener('DOMContentLoaded', async function () {
                     }
                 }
             } else if (p.owner === 'monster') {
-                // enemy projectile hits player
                 try {
                     if (BABYLON.Vector3.Distance(p.mesh.position, stickman.position) < 1.6) {
-                        // apply damage to player (simple, respects shield/armor)
                         const baseDamage = p.damage || 1;
                         try {
                             if (gameData && typeof gameData.health === 'number') {
@@ -2064,7 +1952,7 @@ window.addEventListener('DOMContentLoaded', async function () {
                                         try { if (gameData.scene && gameData.scene._shieldMesh) { gameData.scene._shieldMesh.dispose(); gameData.scene._shieldMesh = null; } } catch(e) {}
                                     }
                                 } else {
-                                    const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0))); // Rendement dégressif, max 75%
+                                    const reduction = 0.75 * (1 - Math.exp(-0.2 * (bonusState.armorLevel || 0)));
                                     const damageFloat = baseDamage * (1 - reduction);
                                     const damage = Math.max(0.25, damageFloat);
                                     gameData.health = Math.max(0, gameData.health - damage);
@@ -2088,14 +1976,13 @@ window.addEventListener('DOMContentLoaded', async function () {
                         p.pooledObj.trail.stop();
                     }
                 } else {
-                    p.mesh.dispose(); // S'applique toujours pour les tirs ennemis / fallback
+                    p.mesh.dispose();
                 }
                 projectiles.splice(i, 1);
                 i--;
             }
         }
 
-        // --- Pickups (heal packs) update ---
         try {
             if (gameData.pickups && gameData.pickups.length > 0) {
             const dtSec = dt;
@@ -2107,14 +1994,12 @@ window.addEventListener('DOMContentLoaded', async function () {
                     if (pk.mesh && !pk.mesh.isDisposed()) {
                         const d = BABYLON.Vector3.Distance(pk.mesh.position, stickman.position);
                         if (d < 2.0) {
-                            // pickup collected
                             try {
                                 const heal = 10;
                                 gameData.health = Math.min(gameData.maxHealth, gameData.health + heal);
                                 if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
                                 if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
 
-                                // popup
                                 try {
                                     const pop = new BABYLON.GUI.TextBlock();
                                     pop.text = "+10 HP";
@@ -2146,19 +2031,16 @@ window.addEventListener('DOMContentLoaded', async function () {
         currentScene.render();
     };
 
-    // start render loop
     engine.runRenderLoop(() => { try { renderLoop && renderLoop(); } catch(e) {} });
 
     window.addEventListener("resize", function () {
         engine.resize();
     });
 
-    // Synchronise la résolution et l'affichage lorsqu'on quitte le plein écran (ex: touche Echap)
     document.addEventListener("fullscreenchange", () => {
         const isFullscreen = !!document.fullscreenElement;
         if (gameSettings && gameSettings.display) {
             gameSettings.display.fullscreen = isFullscreen;
-            // Rafraîchit l'UI (la case à cocher plein écran) si le menu est ouvert
             if (window.fullUpdateLanguage) {
                 window.fullUpdateLanguage();
             }

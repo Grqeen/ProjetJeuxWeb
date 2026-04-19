@@ -1,5 +1,6 @@
 import { limitRadius, getHeight, waterLevel } from "./utils.js";
 
+// Génère des ponts en bois de manière procédurale au-dessus des zones basses.
 export function createBridges(scene, count) {
     const woodMat = new BABYLON.StandardMaterial("woodMat", scene);
     woodMat.diffuseColor = new BABYLON.Color3(0.4, 0.25, 0.1);

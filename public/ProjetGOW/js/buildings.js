@@ -1,5 +1,6 @@
 import { limitRadius, getHeight, waterLevel } from "./utils.js";
 
+// Distribue les maillages architecturaux d'arrière-plan et opère leur concaténation (optimisation).
 export function createBuildings(scene, count) {
     const buildingMat = new BABYLON.StandardMaterial("buildingMat", scene);
     buildingMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.45);
@@ -35,7 +36,7 @@ export function createBuildings(scene, count) {
     if (buildings.length > 0) {
         const mergedBuildings = BABYLON.Mesh.MergeMeshes(buildings, true, true, undefined, false, true);
         mergedBuildings.freezeWorldMatrix();
-        mergedBuildings.receiveShadows = true; // Les bâtiments reçoivent les ombres des autres
+        mergedBuildings.receiveShadows = true;
         if (scene.shadowGenerator) {
             scene.shadowGenerator.addShadowCaster(mergedBuildings);
         }

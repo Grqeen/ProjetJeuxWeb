@@ -1,5 +1,6 @@
 import { mapSize, waterLevel } from "./utils.js";
 
+// Génère la surface d'eau de la carte.
 export function createWater(scene) {
     const waterMesh = BABYLON.MeshBuilder.CreateGround("water", {width: mapSize, height: mapSize}, scene);
     waterMesh.position.y = waterLevel;

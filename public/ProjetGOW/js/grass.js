@@ -1,7 +1,7 @@
 import { limitRadius, getHeight, waterLevel } from "./utils.js";
 
+// Gère l'instanciation de grands volumes d'herbe à la surface non immergée de la scène.
 export function createGrass(scene, count, quality = "high") {
-    // Nettoyage de l'herbe existante pour le rechargement dynamique (hot-swap)
     if (scene._swayGrass) {
         scene._swayGrass.forEach(g => g.dispose());
     }
@@ -12,7 +12,7 @@ export function createGrass(scene, count, quality = "high") {
         scene._grassTuftBase = null;
     }
 
-    if (quality === "low") return; // Désactive totalement l'herbe en qualité basse
+    if (quality === "low") return;
 
     const grassBlade = BABYLON.MeshBuilder.CreatePlane("grassBlade", {width: 1, height: 1}, scene);
     grassBlade.material = new BABYLON.StandardMaterial("grassMat", scene);
@@ -26,14 +26,12 @@ export function createGrass(scene, count, quality = "high") {
 
     const grassTuft = BABYLON.Mesh.MergeMeshes([grassBlade, grass2, grass3], true, true, undefined, false, true);
     grassTuft.name = "grassTuft";
-    // Le mesh de base est centré à l'origine pour que les Thin Instances soient correctement positionnées
     grassTuft.position = BABYLON.Vector3.Zero();
-    scene._grassTuftBase = grassTuft; // Stocké pour pouvoir le nettoyer plus tard
+    scene._grassTuftBase = grassTuft;
 
     const buffer = new Float32Array(count * 16);
     let validCount = 0;
 
-    // Pré-allocation pour éviter de saturer le Garbage Collector dans la boucle
     const scaleVec = new BABYLON.Vector3();
     const posVec = new BABYLON.Vector3();
     const rotQuat = BABYLON.Quaternion.Identity();
@@ -64,10 +62,8 @@ export function createGrass(scene, count, quality = "high") {
         validCount++;
     }
 
-    // Application du buffer de matrices en une seule fois (1 seul Draw Call pour toute l'herbe)
     const finalBuffer = buffer.subarray(0, validCount * 16);
     grassTuft.thinInstanceSetBuffer('matrix', finalBuffer);
     
-    // Rafraîchit la Bounding Box pour que le Frustum Culling de Babylon traite toute la zone d'herbe
     grassTuft.thinInstanceRefreshBoundingInfo(true);
 }

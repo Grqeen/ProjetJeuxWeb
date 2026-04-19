@@ -2,7 +2,7 @@ import { createNoise2D } from 'https://esm.sh/simplex-noise';
 
 export const mapSize = 1000;
 export const limitRadius = 400;
-export const waterLevel = -2.5; // On remonte légèrement pour ajouter quelques lacs
+export const waterLevel = -2.5;
 
 const noise2D = createNoise2D(Math.random);
 
@@ -10,6 +10,7 @@ const mountainSlope = 0.6 + Math.random() * 1.4;
 const mountainScale = 5 + Math.random() * 25;
 const mountainFreq = 0.01 + Math.random() * 0.06;
 
+// Génère l'élévation procédurale d'un point pour accorder le terrain et le positionnement du monde.
 export function getHeight(x, z) {
     const distanceFromCenter = Math.sqrt(x * x + z * z);
     

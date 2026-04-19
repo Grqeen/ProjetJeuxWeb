@@ -1,8 +1,8 @@
 import { createAmalgame } from "./monsters.js";
 
+// Gère le comportement de combat et l'intelligence artificielle spécifique à chaque boss.
 export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, distToPlayer, engine, waterLevel, bonusState, projectiles, getHeight, monsters) {
             if (monster._type === 'amalgame') {
-                // --- Barre de vie globale en haut de l'écran (partagée entre tous les morceaux) ---
                 if (!gameData._amalgameHpBarUI) {
                     try {
                         const advTex = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("AmalgameUI");
@@ -30,26 +30,21 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         gameData._amalgameHpBarUI = { root: advTex, bar: hpBar, container: bgRect };
                     } catch(e){}
                 }
-                // Mise à jour de la barre globale : somme des HP de tous les morceaux
                 if (gameData._amalgameHpBarUI) {
                     let totalHp = 0;
-                    let totalMaxHp = 1000; // HP max de référence (le boss entier)
+                    let totalMaxHp = 1000;
                     monsters.forEach(m => { if (m._type === 'amalgame') totalHp += m._hp; });
                     gameData._amalgameHpBarUI.bar.width = Math.max(0, (totalHp / totalMaxHp) * 100) + "%";
                     
-                    // Nettoyage si plus aucun amalgame
                     let anyAlive = monsters.some(m => m._type === 'amalgame');
                     if (!anyAlive) {
                         try { gameData._amalgameHpBarUI.root.dispose(); } catch(e){}
                         gameData._amalgameHpBarUI = null;
                     }
                 }
-                // Pulsation animation
                 monster._pulsePhase += 3 * dt;
                 const scale = 1 + Math.sin(monster._pulsePhase) * 0.1;
                 monster.scaling.set(scale, scale, scale);
-
-                // Surbrillance permanente (visible à travers les murs)
                 if (!monster._bossHighlight) {
                     try {
                         const hl = new BABYLON.HighlightLayer("amalgameHL_" + monster.uniqueId, scene);
@@ -57,14 +52,13 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         hl.outerGlow = true;
                         hl.blurHorizontalSize = 0.5;
                         hl.blurVerticalSize = 0.5;
-                        hl.addMesh(monster, new BABYLON.Color3(0.6, 0.1, 0.9)); // Violet
+                        hl.addMesh(monster, new BABYLON.Color3(0.6, 0.1, 0.9));
                         monster._bossHighlight = hl;
-                        monster.renderingGroupId = 1; // Rendu au-dessus
+                        monster.renderingGroupId = 1;
                         monster.onDisposeObservable.add(() => { try { hl.dispose(); } catch(e){} });
                     } catch(e){}
                 }
 
-                // Mouvement simple vers le joueur
                 const dir = stickman.position.subtract(monster.position);
                 dir.y = 0;
                 if (dir.length() > 0.1) {
@@ -73,7 +67,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                 }
                 monster.position.y = getHeight(monster.position.x, monster.position.z) + (monster._baseDiameter / 2) * scale;
 
-                // Logique de division
                 if (!monster._isSplitting) {
                     let splitThreshold = 0;
                     if (monster._sizeMode === 1) splitThreshold = 666;
@@ -89,17 +82,15 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                             sub.position.z += (Math.random() - 0.5) * 4;
                             monsters.push(sub);
                         }
-                        // Marquer pour suppression sans déclencher de kill
                         setTimeout(() => {
                             try { monster.dispose(); } catch(e){}
                             const idx = monsters.indexOf(monster);
                             if (idx > -1) monsters.splice(idx, 1);
                         }, 0);
-                        return true; // Stoppe l'update
+                        return true;
                     }
                 }
 
-                // Aspiration des Pickups
                 if (gameData.pickups) {
                     for (let p = gameData.pickups.length - 1; p >= 0; p--) {
                         let pu = gameData.pickups[p];
@@ -124,7 +115,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // Fusion logic (seulement pour tailles 2 et 4)
                 if (Math.random() < 0.05 && monster._sizeMode > 1 && !monster._isSplitting && !monster._isMerging) { 
                     for (let m2 of monsters) {
                         if (m2 !== monster && m2._type === 'amalgame' && m2._sizeMode === monster._sizeMode && !m2._isSplitting && !m2._isMerging) {
@@ -158,7 +148,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // UI flottante (petite barre de vie)
                 if (!monster._miniHpUI) {
                     try {
                         const advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("miniBossUI");
@@ -184,7 +173,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     monster._miniHpUI.bar.width = Math.max(0, (monster._hp / monster.maxHp) * 100) + "%";
                 }
 
-                // Dégâts de contact de l'Amalgame
                 const amalgameHitRadius = (monster._baseDiameter / 2) + 1.5;
                 if (distToPlayer < amalgameHitRadius) {
                     if (!monster._lastContactHit || nowMs - monster._lastContactHit > 800) {
@@ -200,9 +188,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                 return true;
             }
 
-            // ===================== KRAKEN DES TERRES =====================
             if (monster._type === 'kraken') {
-                // Highlight
                 if (!monster._bossHighlight) {
                     try {
                         const hl = new BABYLON.HighlightLayer("krakenHL_" + monster.uniqueId, scene);
@@ -219,17 +205,14 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     } catch(e){}
                 }
 
-                // Position fixe au sol
                 monster.position.y = getHeight(monster.position.x, monster.position.z) + 1;
 
-                // Animation tentacules (ondulation)
                 if (monster._tentacles) {
                     monster._tentacles.forEach((t, i) => {
                         t.rotation.y = Math.sin(nowMs * 0.002 + i * 1.5) * 0.3;
                     });
                 }
 
-                // Inondation (toutes les 15s)
                 if (nowMs - monster._lastFloodTime > 15000) {
                     monster._lastFloodTime = nowMs;
                     monster._isFlooding = true;
@@ -242,7 +225,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }, 100);
                     setTimeout(() => {
                         clearInterval(floodInterval);
-                        // Redescente progressive
                         const drainInterval = setInterval(() => {
                             if (monster.isDisposed()) { clearInterval(drainInterval); gameData.currentWaterLevel = waterLevel; return true; }
                             gameData.currentWaterLevel = Math.max(waterLevel, gameData.currentWaterLevel - 0.1);
@@ -253,10 +235,8 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }, 8000);
                 }
 
-                // Balayage tentacules (toutes les 6s) — dégâts si proche
                 if (nowMs - monster._lastTentacleSwipe > 6000) {
                     monster._lastTentacleSwipe = nowMs;
-                    // Rotation rapide des tentacules
                     if (monster._tentacles) {
                         monster._tentacles.forEach(t => {
                             t.rotation.y += Math.PI;
@@ -267,7 +247,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
                         if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
                         try { if (gameData.shakeCamera) gameData.shakeCamera(0.5, 400); } catch(e){}
-                        // Knockback
                         try {
                             const kb = stickman.position.subtract(monster.position).normalize().scale(15);
                             kb.y = 5;
@@ -276,11 +255,9 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // Projectiles de boue (toutes les 10s) — le boss est vulnérable pendant cette phase
                 if (nowMs - monster._lastMudShot > 10000) {
                     monster._lastMudShot = nowMs;
                     monster._isVulnerable = true;
-                    // Tire 3 projectiles de boue
                     for (let i = 0; i < 3; i++) {
                         setTimeout(() => {
                             if (monster.isDisposed()) return true;
@@ -312,7 +289,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     setTimeout(() => { monster._isVulnerable = false; }, 3000);
                 }
 
-                // Barre de vie
                 if (!monster._hpBarUI) {
                     try {
                         const advTex = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("KrakenUI");
@@ -337,9 +313,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                 return true;
             }
 
-            // ===================== SEIGNEUR DE LA NUÉE =====================
             if (monster._type === 'nuee') {
-                // Highlight
                 if (!monster._bossHighlight) {
                     try {
                         const hl = new BABYLON.HighlightLayer("nueeHL_" + monster.uniqueId, scene);
@@ -356,18 +330,15 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     } catch(e){}
                 }
 
-                // Vortex rotation
                 if (monster._vortex) monster._vortex.rotation.y += 4 * dt;
 
                 if (monster._isStunned) {
-                    // Stun : immobile au sol
                     if (nowMs > monster._stunEndTime) {
                         monster._isStunned = false;
                         monster._lastDiveTime = nowMs;
                     }
                     monster.position.y = getHeight(monster.position.x, monster.position.z) + 2;
                 } else if (monster._isDiving) {
-                    // Piqué vers le joueur
                     const diveDir = monster._diveTarget.subtract(monster.position).normalize();
                     monster.position.addInPlace(diveDir.scale(35 * dt));
                     monster.position.y -= 20 * dt;
@@ -377,19 +348,16 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         monster._isDiving = false;
                         
                         if (distToPlayer < 5) {
-                            // Touché !
                             gameData.health = Math.max(0, gameData.health - 35);
                             if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
                             if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
                             try { if (gameData.shakeCamera) gameData.shakeCamera(0.8, 500); } catch(e){}
                         } else {
-                            // Raté → stun
                             monster._isStunned = true;
                             monster._stunEndTime = nowMs + 4000;
                         }
                     }
                 } else {
-                    // Vol orbital autour du joueur
                     if (!monster._isPreparingDive) {
                         monster._orbitAngle += 0.8 * dt;
                         const orbitRadius = 25;
@@ -399,11 +367,9 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         monster.position.z += (targetZ - monster.position.z) * 2 * dt;
                         monster.position.y = getHeight(monster.position.x, monster.position.z) + 15;
                     } else {
-                        // S'immobilise et s'élève légèrement pendant la préparation de l'attaque
                         monster.position.y += (getHeight(monster.position.x, monster.position.z) + 18 - monster.position.y) * 2 * dt;
                     }
 
-                    // Vent (pousse le joueur vers le bord)
                     try {
                         const windDir = stickman.position.subtract(new BABYLON.Vector3(0, stickman.position.y, 0)).normalize();
                         const windForce = 3;
@@ -413,37 +379,32 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         ));
                     } catch(e){}
 
-                    // Piqué (toutes les 10s)
                     if (nowMs - monster._lastDiveTime > 10000 && !monster._isPreparingDive) {
                         monster._isPreparingDive = true;
                         monster._diveTarget = stickman.position.clone();
                         
-                        // Création de l'indicateur visuel au sol
                         try {
-                            // Un diamètre de 10 correspond au rayon de collision de l'impact (< 5)
                             const indicator = BABYLON.MeshBuilder.CreateTorus("diveIndicator", { diameter: 10, thickness: 0.3 }, scene);
                             indicator.position = monster._diveTarget.clone();
                             indicator.position.y = getHeight(indicator.position.x, indicator.position.z) + 0.5;
                             
                             const indMat = new BABYLON.StandardMaterial("indMat", scene);
-                            indMat.emissiveColor = new BABYLON.Color3(1, 0, 0); // Rouge vif
+                            indMat.emissiveColor = new BABYLON.Color3(1, 0, 0);
                             indMat.alpha = 0.8;
                             indicator.material = indMat;
 
                             setTimeout(() => { try { indicator.dispose(); } catch(e){} }, 1000);
                         } catch(e) {}
 
-                        // Lance le véritable piqué après 1 seconde
                         setTimeout(() => {
                             if (!monster.isDisposed()) {
                                 monster._isPreparingDive = false;
                                 monster._isDiving = true;
-                                monster._lastDiveTime = Date.now(); // Réinitialise le délai à partir du début du piqué
+                                monster._lastDiveTime = Date.now();
                             }
                         }, 1000);
                     }
 
-                    // Invocation gardes volants (toutes les 12s)
                     if (nowMs - monster._lastSummonTime > 12000) {
                         monster._lastSummonTime = nowMs;
                         for (let g = 0; g < 4; g++) {
@@ -466,7 +427,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // Dégâts contact
                 if (distToPlayer < 4 && !monster._isStunned) {
                     if (!monster.lastHitTime || nowMs - monster.lastHitTime > 1000) {
                         monster.lastHitTime = nowMs;
@@ -476,7 +436,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // Barre de vie
                 if (!monster._hpBarUI) {
                     try {
                         const advTex = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("NueeUI");
@@ -501,9 +460,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                 return true;
             }
 
-            // ===================== LE MIMIC =====================
             if (monster._type === 'mimic') {
-                // Highlight
                 if (!monster._bossHighlight) {
                     try {
                         const hl = new BABYLON.HighlightLayer("mimicHL_" + monster.uniqueId, scene);
@@ -516,14 +473,12 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     } catch(e){}
                 }
 
-                // Saut corrompu
                 if (monster._isJumping) {
                     monster.position.y -= 30 * dt;
                     if (monster.position.y <= getHeight(monster.position.x, monster.position.z) + 1.5) {
                         monster.position.y = getHeight(monster.position.x, monster.position.z) + 1.5;
                         monster._isJumping = false;
                         monster._lastJumpTime = nowMs;
-                        // Onde de choc à l'atterrissage
                         try { if (gameData.shakeCamera) gameData.shakeCamera(0.5, 400); } catch(e){}
                         if (distToPlayer < 8) {
                             let playerGroundH = getHeight(stickman.position.x, stickman.position.z);
@@ -533,7 +488,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                                 if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
                             }
                         }
-                        // Onde de choc visuelle
                         try {
                             const sw = BABYLON.MeshBuilder.CreateTorus("mimic_sw", { diameter: 4, thickness: 0.5 }, scene);
                             sw.position = monster.position.clone();
@@ -553,33 +507,28 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         } catch(e){}
                     }
                 } else {
-                    // Mouvement en zigzag
                     monster._zigzagPhase += 4 * dt;
                     const dir = stickman.position.subtract(monster.position);
                     dir.y = 0;
                     if (dir.length() > 0.1) {
                         dir.normalize();
-                        // Zigzag perpendiculaire
                         const perp = new BABYLON.Vector3(-dir.z, 0, dir.x);
                         const zigzag = perp.scale(Math.sin(monster._zigzagPhase) * 3);
                         monster.position.addInPlace(dir.scale(monster.ai.speed * dt).add(zigzag.scale(dt)));
                     }
                     monster.position.y = getHeight(monster.position.x, monster.position.z) + 1.5;
 
-                    // Double saut corrompu (toutes les 6s)
                     if (nowMs - monster._lastJumpTime > 6000) {
                         monster._isJumping = true;
                         monster.position.y += 15;
                     }
                 }
 
-                // ================= COPIE EXACTE DES BONUS DU JOUEUR =================
-                // 1. Aura
                 if (bonusState.auraLevel > 0) {
                     if (!monster._auraMesh) {
                         monster._auraMesh = BABYLON.MeshBuilder.CreateTorus("mimicAura", { diameter: 8, thickness: 0.3, tessellation: 40 }, scene);
                         const mat = new BABYLON.StandardMaterial("mAuraMat", scene);
-                        mat.emissiveColor = new BABYLON.Color3(0.5, 0, 0.5); // Aura sombre/violacée
+                        mat.emissiveColor = new BABYLON.Color3(0.5, 0, 0.5);
                         mat.alpha = 0.6;
                         monster._auraMesh.material = mat;
                         monster._auraMesh.parent = monster;
@@ -588,7 +537,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                     const newScale = 1 + (bonusState.auraLevel - 1) * 0.3;
                     monster._auraMesh.scaling.set(newScale, 1, newScale);
-                    monster._auraMesh.rotation.y -= 2 * dt; // tourne dans l'autre sens
+                    monster._auraMesh.rotation.y -= 2 * dt;
                     
                     const radius = (8 * newScale) / 2;
                     if (distToPlayer < radius + 0.5) {
@@ -601,7 +550,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // 2. Scies
                 if (bonusState.sawsLevel > 0) {
                     if (!monster._sawsMeshes || monster._sawsMeshes.length !== bonusState.sawsLevel) {
                         if (monster._sawsMeshes) monster._sawsMeshes.forEach(s => s.dispose());
@@ -611,13 +559,13 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                             const saw = BABYLON.MeshBuilder.CreateCylinder("msaw" + i, { diameter: 2, height: 0.1, tessellation: 24 }, scene);
                             const mat = new BABYLON.StandardMaterial("msawMat", scene);
                             mat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-                            mat.emissiveColor = new BABYLON.Color3(0.8, 0, 0); // Scies rouges sombres
+                            mat.emissiveColor = new BABYLON.Color3(0.8, 0, 0);
                             saw.material = mat;
                             saw.checkCollisions = false;
                             monster._sawsMeshes.push(saw);
                         }
                     }
-                    monster._sawsAngle -= 3 * dt; // tourne dans l'autre sens
+                    monster._sawsAngle -= 3 * dt;
                     monster._sawsMeshes.forEach((saw, index) => {
                         const angleOffset = (Math.PI * 2 / monster._sawsMeshes.length) * index;
                         const currentAngle = monster._sawsAngle + angleOffset;
@@ -637,7 +585,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     });
                 }
 
-                // 3. Missiles
                 if (bonusState.missileLevel > 0) {
                     const baseMissileCooldown = Math.max(500, 3000 - (bonusState.missileLevel * 400));
                     if (!monster._lastMissileTime) monster._lastMissileTime = nowMs;
@@ -685,7 +632,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // 4. Foudre
                 if (bonusState.lightningLevel > 0) {
                     const lightningCooldown = Math.max(1000, 4000 - bonusState.lightningLevel * 500);
                     if (!monster._lastLightningTime) monster._lastLightningTime = nowMs;
@@ -715,7 +661,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // 5. Zone de frappe
                 if (bonusState.zoneLevel > 0) {
                     const zoneCooldown = 10000;
                     if (!monster._lastZoneTime) monster._lastZoneTime = nowMs;
@@ -727,7 +672,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         zone.position.y -= 0.4;
                         zone.checkCollisions = false;
                         const mat = new BABYLON.StandardMaterial("mZoneMat", scene);
-                        mat.emissiveColor = new BABYLON.Color3(0.6, 0, 0); // Rouge foncé
+                        mat.emissiveColor = new BABYLON.Color3(0.6, 0, 0);
                         mat.alpha = 0.5;
                         zone.material = mat;
                         if (!monster._activeZones) monster._activeZones = [];
@@ -740,7 +685,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                             z.life -= dt;
                             z.mesh.material.alpha = 0.3 + Math.sin(nowMs * 0.01) * 0.2;
                             if (BABYLON.Vector3.Distance(z.mesh.position, stickman.position) <= z.radius) {
-                                gameData.health = Math.max(0, gameData.health - 0.5); // Degats continus
+                                gameData.health = Math.max(0, gameData.health - 0.5);
                                 if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
                                 if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
                             }
@@ -753,7 +698,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // Dégâts contact
                 if (distToPlayer < 3 && !monster._isJumping) {
                     if (!monster.lastHitTime || nowMs - monster.lastHitTime > 800) {
                         monster.lastHitTime = nowMs;
@@ -763,11 +707,9 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     }
                 }
 
-                // Pulsation de taille
                 const mimicScale = 1 + Math.sin(nowMs * 0.003) * 0.15;
                 monster.scaling.set(mimicScale, mimicScale, mimicScale);
 
-                // Barre de vie
                 if (!monster._hpBarUI) {
                     try {
                         const advTex = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("MimicUI");
@@ -793,7 +735,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
             }
 
             if (monster._type === 'boss') {
-                // Surbrillance permanente (visible à travers les murs)
                 if (!monster._bossHighlight) {
                     try {
                         const hl = new BABYLON.HighlightLayer("goliathHL_" + monster.uniqueId, scene);
@@ -801,11 +742,10 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         hl.outerGlow = true;
                         hl.blurHorizontalSize = 0.5;
                         hl.blurVerticalSize = 0.5;
-                        hl.addMesh(monster, new BABYLON.Color3(1, 0.15, 0.1)); // Rouge
+                        hl.addMesh(monster, new BABYLON.Color3(1, 0.15, 0.1));
                         monster._bossHighlight = hl;
                         monster.renderingGroupId = 1;
                         monster.onDisposeObservable.add(() => { try { hl.dispose(); } catch(e){} });
-                        // Aussi les enfants (tête, bras)
                         monster.getChildMeshes().forEach(child => {
                             hl.addMesh(child, new BABYLON.Color3(1, 0.15, 0.1));
                             child.renderingGroupId = 1;
@@ -813,25 +753,23 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     } catch(e){}
                 }
                 if (monster._isJumping) {
-                    monster.position.y -= 25 * dt; // Chute rapide
+                    monster.position.y -= 25 * dt;
                     const dir = stickman.position.subtract(monster.position);
                     dir.y = 0;
                     if (dir.length() > 0.1) {
                         dir.normalize();
-                        monster.position.addInPlace(dir.scale(8 * dt)); // Ajuste sa chute vers le joueur
+                        monster.position.addInPlace(dir.scale(8 * dt));
                     }
                     if (monster.position.y <= getHeight(monster.position.x, monster.position.z) + 3) {
                         monster.position.y = getHeight(monster.position.x, monster.position.z) + 3;
                         monster._isJumping = false;
                         monster._lastJumpTime = nowMs;
                         
-                        // Le boss s'immobilise un moment pour récupérer de son écrasement
                         monster._stunnedUntil = nowMs + 4000;
                         
                         try { if (gameData.shakeCamera) gameData.shakeCamera(0.6, 600); } catch(e){}
                         try { if (gameData.explosionSound) gameData.explosionSound.play(); } catch(e){}
                         
-                        // 3 Ondes de choc
                         for(let w = 0; w < 3; w++) {
                             setTimeout(() => {
                                 if (monster.isDisposed()) return true;
@@ -848,12 +786,11 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                                 scene.onBeforeRenderObservable.add(function expandSW() {
                                     const sdt = engine.getDeltaTime() / 1000;
                                     swAge += sdt;
-                                    sw.scaling.scaleInPlace(1 + 4.5 * sdt); // Expansion ralentie pour laisser le temps de sauter
-                                    sw.material.alpha -= 0.5 * sdt; // Disparaît plus lentement
+                                    sw.scaling.scaleInPlace(1 + 4.5 * sdt);
+                                    sw.material.alpha -= 0.5 * sdt;
                                     
                                     if (!sw._hitPlayer && BABYLON.Vector3.Distance(stickman.position, sw.position) < (sw.scaling.x * (3 + w))) {
                                         sw._hitPlayer = true;
-                                        // Ne fait des dégâts que si le joueur est proche du sol (hauteur relative < 2.5)
                                         let playerGroundHeight = getHeight(stickman.position.x, stickman.position.z);
                                         if (stickman.position.y - playerGroundHeight < 2.5) {
                                             gameData.health = Math.max(0, gameData.health - 20);
@@ -867,7 +804,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                                         scene.onBeforeRenderObservable.removeCallback(expandSW);
                                     }
                                 });
-                            }, w * 650); // 650ms d'intervalle entre chaque vague (plus d'espace)
+                            }, w * 650);
                         }
                     }
                 } else {
@@ -886,13 +823,11 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     const isRaging = monster._hp < monster.maxHp * 0.3;
                     const jumpCooldown = isRaging ? 4000 : 8000;
                     
-                    // Saut
                     if (!isRecovering && nowMs - monster._lastJumpTime > jumpCooldown) {
                         monster._isJumping = true;
                         monster.position.y += 20; 
                     }
                     
-                    // Jet de Gravats
                     if (!monster._lastThrowTime) monster._lastThrowTime = nowMs;
                     if (nowMs - monster._lastThrowTime > 5000 && !monster._isJumping) {
                         monster._lastThrowTime = nowMs;
@@ -916,7 +851,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                                 }
                                 if (!debris._hasHitPlayer && BABYLON.Vector3.Distance(debris.position, stickman.position) < 2.0) {
                                     debris._hasHitPlayer = true;
-                                    gameData.health = Math.max(0, gameData.health - 30); // 30 dommages
+                                    gameData.health = Math.max(0, gameData.health - 30);
                                     if (gameData.hpBar) gameData.hpBar.width = (gameData.health / gameData.maxHealth * 100) + "%";
                                     if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
                                     try { if (gameData.shakeCamera) gameData.shakeCamera(0.5, 300); } catch(e){}
@@ -932,7 +867,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                             };
                             scene.onBeforeRenderObservable.add(checkHit);
                             
-                            // Disparait après 8 secondes
                             setTimeout(() => {
                                 try {
                                     scene.onBeforeRenderObservable.removeCallback(checkHit);
@@ -949,11 +883,10 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     if (nowMs - monster._lastAttractTime > 12000) {
                         monster._isAttracting = true;
                         monster._lastAttractTime = nowMs;
-                        setTimeout(() => { monster._isAttracting = false; }, 3000); // 3 sec de bouclier
+                        setTimeout(() => { monster._isAttracting = false; }, 3000); 
                     }
                     
                     if (monster._isAttracting) {
-                        // Effet visuel d'attraction
                         try {
                             if (!monster._shieldGlow) {
                                 monster._shieldGlow = BABYLON.MeshBuilder.CreateSphere("bossGlow", {diameter: 6}, scene);
@@ -966,7 +899,6 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                             monster._shieldGlow.rotation.y += 2 * dt;
                         } catch(e){}
                         
-                        // Attirer les projectiles
                         if (projectiles) {
                             projectiles.forEach(p => {
                                 if (p.owner === 'player') {
@@ -1007,7 +939,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                         const hpBar = new BABYLON.GUI.Rectangle();
                         hpBar.width = "100%"; hpBar.height = "100%";
                         hpBar.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_LEFT;
-                        hpBar.background = "#c0392b"; // Rouge sombre
+                        hpBar.background = "#c0392b"; 
                         hpBar.thickness = 0;
                         bgRect.addControl(hpBar);
                         
@@ -1025,7 +957,7 @@ export function updateBossAI(monster, stickman, scene, gameData, dt, nowMs, dist
                     monster._hpBarUI.bar.width = Math.max(0, (monster._hp / monster.maxHp) * 100) + "%";
                 }
                 
-                return true; // Skips generic AI for the boss
+                return true;
             }
     return false;
 }

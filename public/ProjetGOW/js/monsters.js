@@ -1,7 +1,7 @@
 import { mapSize, getHeight } from "./utils.js";
 
+// Invoque une quantité d'instances d'ennemis hétérogènes réparties sur le décor.
 export function createMonsters(scene, count) {
-    // Augmente le nombre total de monstres à générer par vague (+50%)
     count = Math.floor(count * 1.5);
 
     const monsters = [];
@@ -9,7 +9,6 @@ export function createMonsters(scene, count) {
     const monsterMat = new BABYLON.StandardMaterial("monsterMat", scene);
     monsterMat.diffuseColor = new BABYLON.Color3(1, 0, 0);
 
-    // Create templates (hidden) of different shapes for instancing
     let template = scene.getMeshByName("_monsterTemplate");
     if (!template) {
         template = BABYLON.MeshBuilder.CreateBox("_monsterTemplate", { size: 1 }, scene);
@@ -26,7 +25,6 @@ export function createMonsters(scene, count) {
 
     let stalkerTemplate = scene.getMeshByName("_monsterStalkerTemplate");
     if (!stalkerTemplate) {
-        // low-profile rectangle close to the ground
         stalkerTemplate = BABYLON.MeshBuilder.CreateBox("_monsterStalkerTemplate", { width: 0.9, height: 0.45, depth: 1.2 }, scene);
         stalkerTemplate.isVisible = false;
     }
@@ -34,13 +32,11 @@ export function createMonsters(scene, count) {
 
     let rangedTemplate = scene.getMeshByName("_monsterRangedTemplate");
     if (!rangedTemplate) {
-        // archers are circular (sphere)
         rangedTemplate = BABYLON.MeshBuilder.CreateSphere("_monsterRangedTemplate", { diameter: 0.9 }, scene);
         rangedTemplate.isVisible = false;
     }
     rangedTemplate.material = monsterMat;
 
-    // flying template (small sphere with slight elevation)
     let flyingTemplate = scene.getMeshByName("_monsterFlyingTemplate");
     if (!flyingTemplate) {
         flyingTemplate = BABYLON.MeshBuilder.CreateSphere("_monsterFlyingTemplate", { diameter: 0.8 }, scene);
@@ -59,16 +55,13 @@ export function createMonsters(scene, count) {
         }
 
         const y = getHeight(x, z) + 0.5;
-        // Logique d'apparition modifiée
         const r = Math.random();
         let type = 'standard';
-        if (r < 0.03) type = 'tank'; // 3% de chance d'être un tank
-        else if (r < 0.43) type = 'stalker'; // 40% stalker
-        else if (r < 0.53) type = 'ranged'; // 10% ranged
-        else if (r < 0.63) type = 'flying'; // 10% flying
-        // Les 37% restants sont 'standard'
+        if (r < 0.03) type = 'tank';
+        else if (r < 0.43) type = 'stalker';
+        else if (r < 0.53) type = 'ranged';
+        else if (r < 0.63) type = 'flying';
 
-        // choose template by type
         let templateRef = template;
         if (type === 'tank') templateRef = tankTemplate;
         else if (type === 'stalker') templateRef = stalkerTemplate;
@@ -81,49 +74,45 @@ export function createMonsters(scene, count) {
 
         instance._type = type;
 
-        // set AI stats & HP based on type (visual shape comes from template)
         if (type === 'tank') {
             instance.ai = { speed: 1.2 };
-            instance._hp = 6; // Garde les monstres tank avec plus de PV
+            instance._hp = 6;
         } else if (type === 'stalker') {
             instance.ai = { speed: 8.5 };
-            instance._hp = 1; // PV limités à 1 pour être éliminés en masse
+            instance._hp = 1;
         } else if (type === 'ranged') {
             instance.ai = { speed: 2.0 };
             instance._hp = 1;
-            instance._shotCooldown = 1300 + Math.floor(Math.random() * 900); // ms
+            instance._shotCooldown = 1300 + Math.floor(Math.random() * 900);
             instance._lastShotTime = 0;
-            instance._preferredRange = 10; // meters
+            instance._preferredRange = 10;
         } else {
             instance.ai = { speed: 2.5 + Math.random() * 1.5 };
-            instance._hp = 1; // PV limités à 1 pour être éliminés en masse
+            instance._hp = 1;
         }
 
-        // Avoid adding all monsters as shadow casters: we'll manage dynamically in main loop
         instance._castsShadow = false;
-        instance.physicsAgg = null; // store PhysicsAggregate when created dynamically
-        instance.physicsBody = null; // legacy field some code checks
+        instance.physicsAgg = null;
+        instance.physicsBody = null;
         monsters.push(instance);
     }
 
-    // keep a registry for shadow management
     if (!scene._registeredMonsters) scene._registeredMonsters = [];
     scene._registeredMonsters.push(...monsters);
 
     return monsters;
 }
 
+// Initialise la structure et la mécanique de boss pour le "Goliath des Ruines".
 export function createBoss(scene) {
     const bossMat = new BABYLON.StandardMaterial("bossMat", scene);
-    bossMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.35); // Gris urbain
-    bossMat.emissiveColor = new BABYLON.Color3(0.1, 0.05, 0.05); // Légère teinte rougeâtre
+    bossMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.35);
+    bossMat.emissiveColor = new BABYLON.Color3(0.1, 0.05, 0.05);
 
-    // Torso central ("Goliath des Ruines")
     const boss = BABYLON.MeshBuilder.CreateBox("boss_torso", { height: 4, width: 3.5, depth: 3 }, scene);
     boss.material = bossMat;
     boss.isVisible = true;
 
-    // Membres asymétriques
     const head = BABYLON.MeshBuilder.CreateBox("boss_head", { size: 1.5 }, scene);
     head.parent = boss;
     head.position.y = 2.75;
@@ -135,36 +124,34 @@ export function createBoss(scene) {
     leftArm.position.y = 0.5;
     leftArm.material = bossMat;
 
-    const rightArm = BABYLON.MeshBuilder.CreateBox("boss_rArm", { height: 4.5, width: 1.8, depth: 1.5 }, scene); // Bras droit massif
+    const rightArm = BABYLON.MeshBuilder.CreateBox("boss_rArm", { height: 4.5, width: 1.8, depth: 1.5 }, scene);
     rightArm.parent = boss;
     rightArm.position.x = 2.65;
     rightArm.position.y = 0.25;
     rightArm.material = bossMat;
 
     boss._type = 'boss';
-    boss._hp = 500; // Tank
+    boss._hp = 500;
     boss.maxHp = 500;
-    boss.ai = { speed: 1.0 }; // Très lent
+    boss.ai = { speed: 1.0 };
     boss._castsShadow = false;
 
-    // Pattern parameters
     boss._lastJumpTime = 0;
     boss._isJumping = false;
-    boss._shockwaveStep = 0; // Pour les 3 ondes successives
+    boss._shockwaveStep = 0;
 
     boss._lastThrowTime = 0;
     boss._isAttracting = false;
     boss._lastAttractTime = 0;
 
-    // Ajouter à la liste pour les ombres potentiellement
     if (!scene._registeredMonsters) scene._registeredMonsters = [];
     scene._registeredMonsters.push(boss);
 
     return boss;
 }
 
+// Initialise l'apparition du boss "Amalgame" et gère son mode proportionnel.
 export function createAmalgame(scene, sizeMode = 1) {
-    // sizeMode : 1 = Mère (1000 PV), 2 = Moitié (333 PV), 4 = Quart (83 PV)
     let diameter = 6;
     let hp = 1000;
     let speed = 2.5;
@@ -180,9 +167,9 @@ export function createAmalgame(scene, sizeMode = 1) {
     }
 
     const mat = new BABYLON.StandardMaterial("amalgameMat", scene);
-    mat.diffuseColor = new BABYLON.Color3(0.5, 0.1, 0.9); // Violet magique
+    mat.diffuseColor = new BABYLON.Color3(0.5, 0.1, 0.9);
     mat.emissiveColor = new BABYLON.Color3(0.3, 0.0, 0.5);
-    mat.alpha = 0.8; // Translucide
+    mat.alpha = 0.8;
 
     const amalgame = BABYLON.MeshBuilder.CreateSphere("amalgame_" + sizeMode + "_" + Date.now(), { diameter: diameter, segments: 16 }, scene);
     amalgame.material = mat;
@@ -195,7 +182,6 @@ export function createAmalgame(scene, sizeMode = 1) {
     amalgame.ai = { speed: speed };
     amalgame._castsShadow = false;
 
-    // Pour l'animation de pulsation
     amalgame._pulsePhase = Math.random() * Math.PI * 2;
     amalgame._baseDiameter = diameter;
 
@@ -205,13 +191,12 @@ export function createAmalgame(scene, sizeMode = 1) {
     return amalgame;
 }
 
-// ===================== KRAKEN DES TERRES =====================
+// Définit le boss stationnaire "Kraken des Terres", incluant son animation organique basique.
 export function createKraken(scene) {
     const krakenMat = new BABYLON.StandardMaterial("krakenMat", scene);
     krakenMat.diffuseColor = new BABYLON.Color3(0.1, 0.3, 0.35);
     krakenMat.emissiveColor = new BABYLON.Color3(0.0, 0.15, 0.2);
 
-    // Corps central aplati (ellipsoïde enfoncé dans le sol)
     const body = BABYLON.MeshBuilder.CreateSphere("kraken_body", { diameterX: 8, diameterY: 4, diameterZ: 8, segments: 12 }, scene);
     body.material = krakenMat;
     body.isVisible = true;
@@ -220,7 +205,6 @@ export function createKraken(scene) {
     tentacleMat.diffuseColor = new BABYLON.Color3(0.15, 0.35, 0.3);
     tentacleMat.emissiveColor = new BABYLON.Color3(0.0, 0.1, 0.15);
 
-    // 4 tentacules
     const tentacles = [];
     for (let i = 0; i < 4; i++) {
         const t = BABYLON.MeshBuilder.CreateCylinder("kraken_tentacle_" + i, { height: 12, diameterTop: 0.4, diameterBottom: 1.5, tessellation: 8 }, scene);
@@ -238,7 +222,7 @@ export function createKraken(scene) {
     body._type = 'kraken';
     body._hp = 1500;
     body.maxHp = 1500;
-    body.ai = { speed: 0 }; // Immobile
+    body.ai = { speed: 0 };
     body._castsShadow = false;
     body._tentacles = tentacles;
     body._isVulnerable = false;
@@ -253,18 +237,16 @@ export function createKraken(scene) {
     return body;
 }
 
-// ===================== SEIGNEUR DE LA NUÉE =====================
+// Compose le Seigneur de la Nuée et matérialise le vortex atmosphérique qui l'entoure.
 export function createNuee(scene) {
     const nueeMat = new BABYLON.StandardMaterial("nueeMat", scene);
     nueeMat.diffuseColor = new BABYLON.Color3(0.6, 0.7, 0.8);
     nueeMat.emissiveColor = new BABYLON.Color3(0.2, 0.4, 0.6);
     nueeMat.alpha = 0.9;
 
-    // Corps principal
     const body = BABYLON.MeshBuilder.CreateSphere("nuee_body", { diameter: 4, segments: 12 }, scene);
     body.material = nueeMat;
 
-    // Vortex de débris (torus géant autour du corps)
     const vortexMat = new BABYLON.StandardMaterial("vortexMat", scene);
     vortexMat.diffuseColor = new BABYLON.Color3(0.4, 0.5, 0.6);
     vortexMat.emissiveColor = new BABYLON.Color3(0.1, 0.3, 0.5);
@@ -295,7 +277,7 @@ export function createNuee(scene) {
     return body;
 }
 
-// ===================== LE MIMIC =====================
+// Forme le boss "Mimic", configuré pour imiter les propres compétences du joueur.
 export function createMimic(scene) {
     const mimicMat = new BABYLON.StandardMaterial("mimicMat", scene);
     mimicMat.diffuseColor = new BABYLON.Color3(0.05, 0.05, 0.08);

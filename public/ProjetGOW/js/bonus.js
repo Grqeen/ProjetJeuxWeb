@@ -8,22 +8,20 @@ export const bonusState = {
     extraProjectilesLevel: 0
 };
 
-import { getHeight } from "./utils.js"; // Indispensable pour les météorites
+import { getHeight } from "./utils.js";
 
-// Defensive and utility bonuses
-bonusState.armorLevel = 0; // Plate armor: reduces fixed damage per hit (2 per level)
-bonusState.armorReflectLevel = 0; // chance to reflect some damage
-bonusState.regenLevel = 0; bonusState._lastRegenTime = 0; // regen every 5s base
-bonusState.shieldLevel = 0; bonusState._shieldActive = false; bonusState._shieldHits = 0; bonusState._lastShieldTime = 0; // shield bubble
-bonusState.speedBootsLevel = 0; // movement speed percent per level
-bonusState.maxHpLevel = 0; // increases max HP
+bonusState.armorLevel = 0;
+bonusState.armorReflectLevel = 0;
+bonusState.regenLevel = 0; bonusState._lastRegenTime = 0;
+bonusState.shieldLevel = 0; bonusState._shieldActive = false; bonusState._shieldHits = 0; bonusState._lastShieldTime = 0;
+bonusState.speedBootsLevel = 0;
+bonusState.maxHpLevel = 0;
 bonusState.reviveLevel = 0; bonusState._reviveUsed = false;
 
-// Utility / economy
-bonusState.magnetLevel = 0; // pickup radius
-bonusState.xpBoostLevel = 0; // percent XP gain per level (0.15 per level)
-bonusState.cooldownReductionLevel = 0; // reduces cooldowns
-bonusState.aoeSizeLevel = 0; // increases area sizes
+bonusState.magnetLevel = 0;
+bonusState.xpBoostLevel = 0;
+bonusState.cooldownReductionLevel = 0;
+bonusState.aoeSizeLevel = 0;
 
 const availableUpgrades = [
     { id: "aura", name: "Aura de Feu" },
@@ -35,7 +33,6 @@ const availableUpgrades = [
     { id: "extraProjectiles", name: "Projectiles Supplémentaires" }
 ];
 
-// Add defensive / utility upgrades
 availableUpgrades.push({ id: "armor", name: "Armure de Plates" });
 availableUpgrades.push({ id: "armorReflect", name: "Reflet de Dégâts" });
 availableUpgrades.push({ id: "regen", name: "Régénération de Vie" });
@@ -48,7 +45,6 @@ availableUpgrades.push({ id: "cooldown", name: "Réduction de Cooldown" });
 availableUpgrades.push({ id: "aoeSize", name: "Taille des Effets" });
 availableUpgrades.push({ id: "revive", name: "Seconde Chance (Revive)" });
 
-// --- Styles & color themes for upgrades and effects ---
 const upgradeStyles = {
     aura: { bg: "#4e1f0f", text: "#fff", accent: "#ff8a50", color: "#ff6b00" },
     saws: { bg: "#2c3e50", text: "#fff", accent: "#bdc3c7", color: "#c7c7c7" },
@@ -70,6 +66,7 @@ const upgradeStyles = {
     revive: { bg: "#17221f", text: "#f7fff6", accent: "#9effb6", color: "#6ff08a" }
 };
 
+// Convertit un code couleur hexadécimal en objet Color3.
 function hexToColor3(hex) {
     if (!hex) return new BABYLON.Color3(1, 1, 1);
     const h = hex.replace('#','');
@@ -79,11 +76,13 @@ function hexToColor3(hex) {
     return new BABYLON.Color3(r,g,b);
 }
 
+// Convertit un code couleur hexadécimal en objet Color4.
 function hexToColor4(hex, a=1) {
     const c = hexToColor3(hex);
     return new BABYLON.Color4(c.r, c.g, c.b, a);
 }
 
+// Éclaircit une couleur hexadécimale d'un pourcentage donné.
 function lightenHex(hex, amount) {
     try {
         const h = hex.replace('#','');
@@ -98,7 +97,7 @@ function lightenHex(hex, amount) {
     } catch(e) { return hex; }
 }
 
-// Réinitialise les bonus en cas de redémarrage de partie
+// Réinitialise l'état de tous les bonus et objets 3D associés.
 export function resetBonuses() {
     if (bonusState.auraMesh) {
         bonusState.auraMesh.dispose();
@@ -126,23 +125,20 @@ export function resetBonuses() {
     bonusState.extraProjectilesLevel = 0;
 }
 
-// Affiche le menu avec 3 cartes aléatoires
+// Met le jeu en pause et affiche l'interface de choix d'amélioration.
 export function showUpgradeMenu(gameData) {
     gameData.pauseGame();
     gameData.upgradePanel.isVisible = true;
 
-    // Stop player movement immediately to avoid sliding while menu is open
     try {
         if (gameData && gameData.stickman) {
             const body = gameData.stickman.physicsBody || gameData.stickman.physicsAgg && gameData.stickman.physicsAgg.body;
             if (body && body.setLinearVelocity) {
                 try { body.setLinearVelocity(new BABYLON.Vector3(0, 0, 0)); } catch(e) {}
             }
-            // As extra precaution, zero position velocity on the mesh as well
             try { if (gameData.stickman.physicsProxy) gameData.stickman.physicsProxy.setLinearVelocity && gameData.stickman.physicsProxy.setLinearVelocity(new BABYLON.Vector3(0,0,0)); } catch(e) {}
         }
     } catch(e) {}
-    // mark player frozen so main loop skips applying physics/controls
     try { gameData._playerFrozen = true; } catch(e) {}
 
     let shuffled = [...availableUpgrades].sort(() => 0.5 - Math.random());
@@ -157,10 +153,8 @@ export function showUpgradeMenu(gameData) {
         card.textBlock.text = `${upg.name}\nNiveau ${currentLevel + 1}`;
             card.background = style.bg;
             card.color = style.text;
-            // store base/hover so createUpgradeCard's hover doesn't override chosen color
             try { card._baseBackground = style.bg; card._hoverBackground = lightenHex(style.bg, 0.12); } catch(e) {}
         card.thickness = 4;
-        // highlight cards for higher levels
             if (currentLevel + 1 >= 2) {
                 card.shadowBlur = 20;
                 card.shadowColor = style.accent || '#ffffff';
@@ -172,12 +166,12 @@ export function showUpgradeMenu(gameData) {
         card.onPointerUpObservable.clear();
         card.onPointerUpObservable.add(() => {
             applyUpgrade(upg.id, gameData);
-            gameData.selectUpgrade(); // Relance le jeu et gère l'UI d'XP
+            gameData.selectUpgrade();
         });
     });
 }
 
-// Applique visuellement et fonctionnellement le bonus choisi
+// Applique l'amélioration sélectionnée au personnage joueur.
 function applyUpgrade(id, gameData) {
     bonusState[id + "Level"]++;
     const level = bonusState[id + "Level"];
@@ -197,7 +191,6 @@ function applyUpgrade(id, gameData) {
         const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
         const newScale = (1 + (level - 1) * 0.3) * aoeMultiplier;
         bonusState.auraMesh.scaling = new BABYLON.Vector3(newScale, 1, newScale);
-        // color
         try { bonusState.auraMesh.material.emissiveColor = hexToColor3(upgradeStyles.aura.color); } catch(e) {}
     }
     else if (id === "saws") {
@@ -212,22 +205,16 @@ function applyUpgrade(id, gameData) {
     }
 
     else if (id === "armor") {
-        // Plate armor: reduces fixed damage per hit (2 per level)
-        // No immediate visual, handled during damage application in main.js
     }
     else if (id === "armorReflect") {
-        // Chance to reflect some damage back (handled in main.js on hit)
     }
     else if (id === "regen") {
-        // Increase regen frequency / amount
         bonusState._lastRegenTime = Date.now();
     }
     else if (id === "shield") {
-        // Create initial shield if none
-        bonusState._shieldHits = 1 + (level - 1); // each level adds one hit
+        bonusState._shieldHits = 1 + (level - 1);
         bonusState._shieldActive = true;
         bonusState._lastShieldTime = Date.now();
-        // visual
         if (gameData && gameData.stickman) {
             try {
                 if (!gameData.scene._shieldMesh) {
@@ -245,11 +232,10 @@ function applyUpgrade(id, gameData) {
         }
     }
     else if (id === "boots") {
-        // Increase movement speed multiplicatively in main.js
     }
     else if (id === "maxHp") {
         if (gameData) {
-            const add = 20 * level; // each level +20 HP
+            const add = 20 * level;
             gameData.maxHealth += add;
             gameData.health = Math.min(gameData.maxHealth, gameData.health + add);
             if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
@@ -257,16 +243,12 @@ function applyUpgrade(id, gameData) {
         }
     }
     else if (id === "magnet") {
-        // Increase pickup radius: handled elsewhere
     }
     else if (id === "xpBoost") {
-        // XP boost applies automatically in main.js kill handler
     }
     else if (id === "cooldown") {
-        // Reduces cooldowns globally; used where cooldowns are computed
     }
     else if (id === "aoeSize") {
-        // Met à jour la taille de l'aura immédiatement si elle existe
         if (bonusState.auraMesh) {
             const baseScale = 1 + (bonusState.auraLevel - 1) * 0.3;
             const aoeMultiplier = 1 + (level * 0.25);
@@ -275,19 +257,19 @@ function applyUpgrade(id, gameData) {
         }
     }
     else if (id === "revive") {
-        bonusState._reviveUsed = false; // allow revive when acquired
+        bonusState._reviveUsed = false;
     }
 }
 
-// Met à jour le comportement physique des bonus en temps réel
+// Met à jour le comportement et les effets des bonus actifs à chaque frame.
 export function updateBonuses(gameData, dt, handleMonsterKill) {
     const now = Date.now();
 
-    // --- Passive-kill throttle: avoid too many automatic kills from passives
     if (!bonusState._passiveKillWindowStart) bonusState._passiveKillWindowStart = now;
     if (!bonusState._passiveKillsInWindow) bonusState._passiveKillsInWindow = 0;
-    const passiveWindowMs = 1000; // 1 second window
-    const passiveLimit = 3; // max passive kills per second
+    const passiveWindowMs = 1000;
+    const passiveLimit = 3;
+// Gère l'application de dégâts ou l'élimination liés à une compétence passive.
     function tryPassiveKill(m, damage = 10, cooldownId = null) {
         if (!m || m.isDisposed()) return false;
         const tnow = Date.now();
@@ -297,7 +279,7 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             if (m._passiveCooldowns[cooldownId] && tnow < m._passiveCooldowns[cooldownId]) {
                 return false;
             }
-            m._passiveCooldowns[cooldownId] = tnow + 500; // 0.5s ICD
+            m._passiveCooldowns[cooldownId] = tnow + 500;
         }
 
         if (m._type === 'boss' || m._type === 'amalgame' || m._type === 'kraken' || m._type === 'nuee' || m._type === 'mimic') {
@@ -322,14 +304,13 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
         return false;
     }
 
-    // --- Regeneration passive ---
     if (bonusState.regenLevel > 0 && gameData && typeof gameData.health === 'number') {
-        const baseInterval = 5000; // 5s
-        const interval = Math.max(1000, baseInterval - (bonusState.regenLevel - 1) * 500); // faster with levels
+        const baseInterval = 5000;
+        const interval = Math.max(1000, baseInterval - (bonusState.regenLevel - 1) * 500);
         if (!bonusState._lastRegenTime) bonusState._lastRegenTime = now;
         if (now - bonusState._lastRegenTime >= interval) {
             bonusState._lastRegenTime = now;
-            const healAmount = 3 + bonusState.regenLevel * 2; // heal amount per tick
+            const healAmount = 3 + bonusState.regenLevel * 2;
             gameData.health = Math.min(gameData.maxHealth, gameData.health + healAmount);
             if (gameData.hpBar) gameData.hpBar.width = Math.max(0, (gameData.health / gameData.maxHealth) * 100) + "%";
             if (gameData.hpText) gameData.hpText.text = `HP: ${Math.floor(gameData.health)}/${gameData.maxHealth}`;
@@ -378,7 +359,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
         });
     }
 
-    // --- 4) MISSILES EXPLOSIFS (AoE) ---
     if (bonusState.missileLevel > 0) {
         const baseMissileCooldown = Math.max(500, 3000 - (bonusState.missileLevel * 400));
         const cooldownMultiplier = Math.max(0.25, 1 - 0.08 * (bonusState.cooldownReductionLevel || 0));
@@ -397,7 +377,7 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                 missile.checkCollisions = false;
                 
                 const mat = new BABYLON.StandardMaterial("missileMat", gameData.scene);
-                mat.emissiveColor = new BABYLON.Color3(1, 0.8, 0); // Jaune/Orange
+                mat.emissiveColor = new BABYLON.Color3(1, 0.8, 0);
                 missile.material = mat;
                 
                 missile.position = gameData.stickman.position.clone();
@@ -415,7 +395,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             let m = bonusState.missiles[i];
             m.life -= dt;
             
-            // Ralenti des missiles téléguidés pour être moins rapides
             let speed = 6 * (m.speedMult || 1) * dt;
             if (m.target && !m.target.isDisposed()) {
                 let dir = m.target.position.subtract(m.mesh.position).normalize();
@@ -437,7 +416,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                 const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
                 let radius = (3 + bonusState.missileLevel * 1) * aoeMultiplier;
                 
-                // Visuel de l'explosion via ParticleSystem, colorisé selon le style missile
                 try {
                     const style = upgradeStyles.missile || { color: '#ff8a00' };
                     const ps = new BABYLON.ParticleSystem("missileExp", 500, gameData.scene);
@@ -458,11 +436,9 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                     setTimeout(() => ps.stop(), 250);
                 } catch (e) {}
 
-                // small camera shake on explosion if available
                 try { if (gameData && gameData.shakeCamera) gameData.shakeCamera(0.35, 400); } catch(e) {}
                 try { if (gameData && gameData.explosionSound) gameData.explosionSound.play(); } catch(e) {}
                 
-                // Dégâts de zone (AoE)
                 for (let j = 0; j < gameData.monsters.length; j++) {
                     if (BABYLON.Vector3.Distance(m.mesh.position, gameData.monsters[j].position) <= radius) {
                         if (tryPassiveKill(gameData.monsters[j])) { j--; }
@@ -488,7 +464,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
         }
     }
 
-    // --- 5) MÉTÉORITES ALÉATOIRES (CUBES DE PIERRE) ---
     if (bonusState.zoneLevel > 0) {
         const meteorCooldown = Math.max(1000, 6000 - bonusState.zoneLevel * 800);
         const cooldownMultiplier = Math.max(0.25, 1 - 0.08 * (bonusState.cooldownReductionLevel || 0));
@@ -499,7 +474,7 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             bonusState.lastZoneTime = now;
 
             let numMeteors = 1 + Math.floor(bonusState.zoneLevel / 2);
-            let meteorRadius = 25; // Zone un peu plus large pour favoriser le luring
+            let meteorRadius = 25;
 
             for (let i = 0; i < numMeteors; i++) {
                 setTimeout(() => {
@@ -512,19 +487,16 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                     const targetY = getHeight(targetX, targetZ);
                     const targetPos = new BABYLON.Vector3(targetX, targetY, targetZ);
 
-                    // 1. Création du Cube Gris Foncé
                     const meteor = BABYLON.MeshBuilder.CreateBox("meteor", { size: 2.5 }, gameData.scene);
-                    meteor.position = new BABYLON.Vector3(targetX, targetY + 40, targetZ); // Plus haut pour la durée
+                    meteor.position = new BABYLON.Vector3(targetX, targetY + 40, targetZ);
                     
                     const metMat = new BABYLON.StandardMaterial("metMat", gameData.scene);
-                    metMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1); // Gris foncé
-                    metMat.emissiveColor = new BABYLON.Color3(0.05, 0.05, 0.05); // Légère visibilité
+                    metMat.diffuseColor = new BABYLON.Color3(0.1, 0.1, 0.1);
+                    metMat.emissiveColor = new BABYLON.Color3(0.05, 0.05, 0.05);
                     meteor.material = metMat;
                     
-                    // Rotation aléatoire pour le style "débris"
                     meteor.rotation = new BABYLON.Vector3(Math.random(), Math.random(), Math.random());
 
-                    // 2. Indicateur d'impact (Indispensable pour le luring)
                     const aoeMultiplier = 1 + (bonusState.aoeSizeLevel || 0) * 0.25;
                     const explosionRadius = (5 + bonusState.zoneLevel * 1.2) * aoeMultiplier;
                     
@@ -536,28 +508,25 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                     shadMat.alpha = 0.4;
                     shadow.material = shadMat;
 
-                    // 3. Animation de chute ralentie
                     let fallProgress = 0;
-                    const fallSpeed = 0.008; // Vitesse très réduite (environ 2-3 secondes de chute)
+                    const fallSpeed = 0.008;
                     
                     const observer = gameData.scene.onBeforeRenderObservable.add(() => {
                         fallProgress += fallSpeed;
                         
                         if (meteor && !meteor.isDisposed()) {
                             meteor.position.y = BABYLON.Scalar.Lerp(targetY + 40, targetY, fallProgress);
-                            meteor.rotation.x += 0.02; // Rotation lente pendant la chute
+                            meteor.rotation.x += 0.02;
                         }
                         
                         if (fallProgress >= 1) {
                             gameData.scene.onBeforeRenderObservable.remove(observer);
                             
-                            // IMPACT !
                             try {
                                 if (gameData.explosionSound) gameData.explosionSound.play();
                                 if (gameData.shakeCamera) gameData.shakeCamera(0.5, 400);
                             } catch(e) {}
 
-                            // Dégâts massifs à l'impact
                             const damage = 60 + bonusState.zoneLevel * 30;
                             for (let j = 0; j < gameData.monsters.length; j++) {
                                 const m = gameData.monsters[j];
@@ -585,7 +554,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
         }
     }
 
-    // --- 6) FOUDRE ALÉATOIRE ---
     if (bonusState.lightningLevel > 0) {
         const lightningCooldown = Math.max(1000, 4000 - bonusState.lightningLevel * 500);
         if (now - bonusState.lastLightningTime > lightningCooldown && gameData.monsters.length > 0) {
@@ -594,7 +562,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
             let numStrikes = 1 + Math.floor((bonusState.lightningLevel - 1) / 2);
             let stunDuration = bonusState.lightningLevel > 1 ? 2.0 : 0;
 
-            // Dégâts divisés encore par 2 : 50 au niveau 1, puis +25 par niveau supplémentaire
             let lightningDamage = 25 + (bonusState.lightningLevel * 25);
 
             let sortedMonsters = [...gameData.monsters].sort((a, b) => {
@@ -608,7 +575,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                 if (target && !target.isDisposed()) {
                     let targetPos = target.position.clone();
                     
-                    // Création visuelle (identique à ton code actuel)
                     const lightning = BABYLON.MeshBuilder.CreateCylinder("lightning", { diameterTop: 0.5, diameterBottom: 0.1, height: 40 }, gameData.scene);
                     lightning.position = targetPos.clone();
                     lightning.position.y += 20;
@@ -619,7 +585,6 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
 
                     setTimeout(() => { if(lightning) lightning.dispose(); }, 200);
 
-                    // Effet de zone (Stun)
                     if (stunDuration > 0) {
                         if (!gameData.scene.stunMat) {
                             gameData.scene.stunMat = new BABYLON.StandardMaterial("stunMat", gameData.scene);
@@ -644,11 +609,10 @@ export function updateBonuses(gameData, dt, handleMonsterKill) {
                         }
                     }
 
-                    // Application des nouveaux dégâts réduits
                     try {
                         const bossTypes = ['boss', 'amalgame', 'kraken', 'nuee', 'mimic'];
                         if (target._type && bossTypes.includes(target._type)) {
-                            target._hp -= lightningDamage; // Utilise la valeur réduite (25 + 25*lvl)
+                            target._hp -= lightningDamage;
                             if (gameData.showHitMarker) gameData.showHitMarker();
                             if (target._hp <= 0) handleMonsterKill(target);
                         } else {

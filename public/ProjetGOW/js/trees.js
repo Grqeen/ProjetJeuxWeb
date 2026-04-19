@@ -1,7 +1,7 @@
 import { limitRadius, getHeight, waterLevel } from "./utils.js";
 
+// Positionne les décors arborés en tenant compte de l'élévation et des spécificités du LOD retenu.
 export function createTrees(scene, count, quality = "high") {
-    // Nettoyage des anciens arbres s'ils existent (pour le hot-swap in-game)
     if (scene._treeObjects) {
         scene._treeObjects.forEach(obj => {
             if (obj.mesh) obj.mesh.dispose();
@@ -12,13 +12,10 @@ export function createTrees(scene, count, quality = "high") {
         });
     }
     scene._treeObjects = [];
-    scene._swayTrees = []; // Réinitialise l'animation du vent
-
-    // Sécurité pour éviter que plusieurs chargements asynchrones ne se chevauchent
+    scene._swayTrees = [];
     scene._treeCreationId = (scene._treeCreationId || 0) + 1;
     const currentCreationId = scene._treeCreationId;
 
-    // Sauvegarde globale des positions générées pour éviter que les arbres ne se déplacent quand on change les graphismes
     if (!scene._treeData) {
         scene._treeData = [];
         for (let i = 0; i < count; i++) {
@@ -54,7 +51,6 @@ export function createTrees(scene, count, quality = "high") {
         }
     }
 
-    // Les matériaux et le modèle "low-poly" sont créés dans tous les cas pour servir de LOD lointain
     const trunkMat = new BABYLON.StandardMaterial("trunkMat", scene);
     trunkMat.diffuseColor = new BABYLON.Color3(0.4, 0.2, 0.0);
     
@@ -63,15 +59,13 @@ export function createTrees(scene, count, quality = "high") {
 
     const simpleTreeModel = new BABYLON.Mesh("simpleTreeModel", scene);
 
-    // Tronc super léger (encore plus court et fin)
     const trunk = BABYLON.MeshBuilder.CreateCylinder("trunk", { height: 0.8, diameter: 0.1, tessellation: 6 }, scene);
-    trunk.position.y = 0.4; // La base du tronc est à Y=0
+    trunk.position.y = 0.4;
     trunk.material = trunkMat;
     trunk.parent = simpleTreeModel;
     
-    // Feuilles en forme de "triangle" 3D (rétrécies au maximum)
     const leaves = BABYLON.MeshBuilder.CreateCylinder("leaves", { height: 1.5, diameterTop: 0, diameterBottom: 1.0, tessellation: 4 }, scene);
-    leaves.position.y = 0.9; // Ajusté pour rester bien bas sur le tronc
+    leaves.position.y = 0.9;
     leaves.material = leavesMat;
     leaves.parent = simpleTreeModel;
 
@@ -84,19 +78,15 @@ export function createTrees(scene, count, quality = "high") {
             
             instance.setEnabled(true);
             
-            // Même échelle que la qualité haute pour garantir que la hitbox reste identique
             const scale = 4.0 + data.randomScale * 3.0;
             instance.scaling = new BABYLON.Vector3(scale, scale, scale);
 
-            // Base de l'arbre au sol (s'aligne avec la position de la hitbox)
             instance.position = new BABYLON.Vector3(data.x, data.y, data.z);
             
-            // Application des mêmes rotations que pour l'arbre détaillé
             instance.rotation.x = data.rotX;
             instance.rotation.z = data.rotZ;
             instance.rotation.y = data.randomRotY;
             
-            // Add light sway data for wind animation
             instance.swayData = {
                 phase: data.swayData.phase,
                 speed: data.swayData.speed,
@@ -106,13 +96,11 @@ export function createTrees(scene, count, quality = "high") {
             if (!scene._swayTrees) scene._swayTrees = [];
             scene._swayTrees.push(instance);
             
-            // --- AJOUT DES COLLISIONS POUR L'ARBRE (Hitbox cylindrique invisible sur le tronc) ---
             const trunkCollider = BABYLON.MeshBuilder.CreateCylinder("trunkCollider" + i, { height: scale * 2.5, diameter: scale * 0.35 }, scene);
             trunkCollider.position = new BABYLON.Vector3(data.x, data.y + (scale * 1.25), data.z);
             trunkCollider.isVisible = false;
             const agg = new BABYLON.PhysicsAggregate(trunkCollider, BABYLON.PhysicsShapeType.CYLINDER, { mass: 0, friction: 0.8 }, scene);
             
-            // Ajout des ombres (le "true" inclut les branches et le tronc)
             if (scene.shadowGenerator) {
                 scene.shadowGenerator.addShadowCaster(instance, true);
             }
@@ -146,7 +134,6 @@ export function createTrees(scene, count, quality = "high") {
                 instance.rotation.z = data.rotZ;
                 instance.rotation.y = data.randomRotY;
                 
-                // Add light sway data for wind animation
                 instance.swayData = {
                     phase: data.swayData.phase,
                     speed: data.swayData.speed,
@@ -156,7 +143,6 @@ export function createTrees(scene, count, quality = "high") {
                 if (!scene._swayTrees) scene._swayTrees = [];
                 scene._swayTrees.push(instance);
                 
-                // --- CRÉATION DE LA VERSION LOW-POLY POUR LE LOD (Level Of Detail) ---
                 const lowInstance = simpleTreeModel.instantiateHierarchy();
                 lowInstance.scaling = new BABYLON.Vector3(scale, scale, scale);
                 lowInstance.position = new BABYLON.Vector3(data.x, data.y, data.z);
@@ -168,17 +154,14 @@ export function createTrees(scene, count, quality = "high") {
                 };
                 scene._swayTrees.push(lowInstance);
 
-                // Application du système LOD natif
                 instance.addLODLevel(150, lowInstance);
                 instance.addLODLevel(300, null);
 
-                // --- AJOUT DES COLLISIONS POUR L'ARBRE (Hitbox cylindrique invisible sur le tronc) ---
                 const trunkCollider = BABYLON.MeshBuilder.CreateCylinder("trunkCollider" + i, { height: scale * 2.5, diameter: scale * 0.35 }, scene);
                 trunkCollider.position = new BABYLON.Vector3(data.x, data.y + (scale * 1.25), data.z);
                 trunkCollider.isVisible = false;
                 const agg = new BABYLON.PhysicsAggregate(trunkCollider, BABYLON.PhysicsShapeType.CYLINDER, { mass: 0, friction: 0.8 }, scene);
 
-                // Ajout des ombres
                 if (scene.shadowGenerator) {
                     scene.shadowGenerator.addShadowCaster(instance, true);
                 }

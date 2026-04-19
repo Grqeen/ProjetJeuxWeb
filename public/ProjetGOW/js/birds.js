@@ -1,5 +1,6 @@
 import { limitRadius } from "./utils.js";
 
+// Instancie une nuée d'oiseaux dans le ciel en s'appuyant sur des modèles virtuels optimisés.
 export function createBirds(scene, count) {
     const birds = [];
 
@@ -30,22 +31,20 @@ export function createBirds(scene, count) {
     return birds;
 }
 
+// Réajuste en permanence les trajectoires des oiseaux, y compris les réactions de dispersion au joueur.
 export function updateBirds(birds, playerPosition = null) {
     birds.forEach(bird => {
         const data = bird.flightData;
 
-        // If player is near, birds flee
         if (playerPosition) {
             const d = BABYLON.Vector3.Distance(bird.position, playerPosition);
             if (d < 20) {
-                // angle away from player
                 const away = bird.position.subtract(playerPosition).normalize();
                 data.angle = Math.atan2(away.z, away.x);
-                data.speed = 0.05 + Math.random() * 0.04; // faster when fleeing
+                data.speed = 0.05 + Math.random() * 0.04;
                 data.radius = Math.min(limitRadius, data.radius + 0.8);
                 data.height = Math.min(80, data.height + 0.5);
             } else {
-                // relax to normal
                 data.speed = Math.max(0.005, data.speed * 0.98);
                 data.height = Math.max(20, data.height - 0.01);
             }

@@ -1,3 +1,4 @@
+// Crée la structure 3D des égouts et son couvercle dans la scène.
 export function createSewer(scene) {
     const sewerGroup = new BABYLON.TransformNode("sewer", scene);
 
