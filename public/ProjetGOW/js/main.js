@@ -69,6 +69,18 @@ window.addEventListener('DOMContentLoaded', async function () {
         
         const style = document.createElement("style");
         style.innerHTML = `
+            /* Supprime la marge et la barre blanche par défaut du navigateur */
+            body, html {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                background-color: #000;
+            }
+            canvas {
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
             #authStatusMenu {
                 position: fixed;
                 top: 20px;
@@ -641,27 +653,48 @@ window.addEventListener('DOMContentLoaded', async function () {
             if (gameData && gameData.pausePanel) gameData.pausePanel.isVisible = false;
             if (gameData && gameData.quitButton) gameData.quitButton.isVisible = false;
             try { unfreezeScene(currentScene); } catch(e) {}
+            const authMenu = document.getElementById("authStatusMenu");
+            if (authMenu) authMenu.style.display = "none";
         });
         const pausePanel = settingsPanelData.panel;
 
         // --- BOUTON QUITTER (POUR LE MENU PAUSE) ---
-        const quitButton = BABYLON.GUI.Button.CreateSimpleButton("quitBtn", "Quitter la partie");
+        const t = window.getTranslation || ((k) => k);
+        const quitButton = BABYLON.GUI.Button.CreateSimpleButton("quitBtn", t("quit") || "Quitter la partie");
         quitButton.width = "200px";
         quitButton.height = "50px";
         quitButton.color = "white";
-        quitButton.background = "#e74c3c";
+        quitButton.background = "#c0392b";
         quitButton.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_RIGHT;
         quitButton.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
         quitButton.left = "-20px";
         quitButton.top = "-20px";
-        quitButton.thickness = 2;
+        quitButton.thickness = 0;
         quitButton.cornerRadius = 10;
+        quitButton.fontSize = 18;
+        quitButton.fontWeight = "bold";
+        quitButton.hoverCursor = "pointer";
         quitButton.isVisible = false;
+        
+        quitButton.onPointerEnterObservable.add(() => {
+            quitButton.background = "#e74c3c";
+            quitButton.scaleX = 1.05;
+            quitButton.scaleY = 1.05;
+        });
+        
+        quitButton.onPointerOutObservable.add(() => {
+            quitButton.background = "#c0392b";
+            quitButton.scaleX = 1.0;
+            quitButton.scaleY = 1.0;
+        });
+
         quitButton.onPointerUpObservable.add(() => {
             try { if (currentScene) currentScene.dispose(); } catch (e) {}
             currentScene = createMenuScene(engine, startGame, gameSettings);
             gameData = null;
             isGamePaused = false;
+            const authMenu = document.getElementById("authStatusMenu");
+            if (authMenu) authMenu.style.display = "block";
         });
         pauseTexture.addControl(quitButton);
 
@@ -710,7 +743,22 @@ window.addEventListener('DOMContentLoaded', async function () {
         toLobbyBtn.width = "200px";
         toLobbyBtn.height = "50px";
         toLobbyBtn.color = "white";
-        toLobbyBtn.background = "#2ecc71";
+        toLobbyBtn.background = "#27ae60";
+        toLobbyBtn.thickness = 0;
+        toLobbyBtn.cornerRadius = 10;
+        toLobbyBtn.fontSize = 18;
+        toLobbyBtn.fontWeight = "bold";
+        toLobbyBtn.hoverCursor = "pointer";
+        toLobbyBtn.onPointerEnterObservable.add(() => {
+            toLobbyBtn.background = "#2ecc71";
+            toLobbyBtn.scaleX = 1.05;
+            toLobbyBtn.scaleY = 1.05;
+        });
+        toLobbyBtn.onPointerOutObservable.add(() => {
+            toLobbyBtn.background = "#27ae60";
+            toLobbyBtn.scaleX = 1.0;
+            toLobbyBtn.scaleY = 1.0;
+        });
         toLobbyBtn.onPointerUpObservable.add(() => {
             try {
                 if (currentScene) currentScene.dispose();
@@ -718,6 +766,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             currentScene = createMenuScene(engine, startGame, gameSettings);
             gameData = null;
             isGamePaused = false;
+            const authMenu = document.getElementById("authStatusMenu");
+            if (authMenu) authMenu.style.display = "block";
         });
         btnRow.addControl(toLobbyBtn);
 
@@ -725,8 +775,23 @@ window.addEventListener('DOMContentLoaded', async function () {
         restartBtn.width = "200px";
         restartBtn.height = "50px";
         restartBtn.color = "white";
-        restartBtn.background = "#e67e22";
+        restartBtn.background = "#d35400";
+        restartBtn.thickness = 0;
+        restartBtn.cornerRadius = 10;
+        restartBtn.fontSize = 18;
+        restartBtn.fontWeight = "bold";
+        restartBtn.hoverCursor = "pointer";
         restartBtn.left = "20px";
+        restartBtn.onPointerEnterObservable.add(() => {
+            restartBtn.background = "#e67e22";
+            restartBtn.scaleX = 1.05;
+            restartBtn.scaleY = 1.05;
+        });
+        restartBtn.onPointerOutObservable.add(() => {
+            restartBtn.background = "#d35400";
+            restartBtn.scaleX = 1.0;
+            restartBtn.scaleY = 1.0;
+        });
         restartBtn.onPointerUpObservable.add(() => {
             // Redémarre la partie
             startGame();
@@ -878,6 +943,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             endPanel.isVisible = true;
             isGamePaused = true;
             try { freezeScene(scene); } catch(e) {}
+            const authMenu = document.getElementById("authStatusMenu");
+            if (authMenu) authMenu.style.display = "block";
 
             const vagues = sceneData.waveData.wavesSurvived;
             endScoreMsg.text = `Vagues survécues : ${vagues} | Sauvegarde...`;
@@ -951,6 +1018,8 @@ window.addEventListener('DOMContentLoaded', async function () {
         isGamePaused = false;
         projectiles = [];
         lastFireTime = 0;
+            const authMenu = document.getElementById("authStatusMenu");
+            if (authMenu) authMenu.style.display = "none";
     };
 
     currentScene = createMenuScene(engine, startGame, gameSettings); // Initialise la scène du menu
@@ -966,6 +1035,8 @@ window.addEventListener('DOMContentLoaded', async function () {
             if (gameData.quitButton) {
                 gameData.quitButton.isVisible = isGamePaused;
             }
+                const authMenu = document.getElementById("authStatusMenu");
+                if (authMenu) authMenu.style.display = isGamePaused ? "block" : "none";
         }
     });
 
@@ -2080,5 +2151,18 @@ window.addEventListener('DOMContentLoaded', async function () {
 
     window.addEventListener("resize", function () {
         engine.resize();
+    });
+
+    // Synchronise la résolution et l'affichage lorsqu'on quitte le plein écran (ex: touche Echap)
+    document.addEventListener("fullscreenchange", () => {
+        const isFullscreen = !!document.fullscreenElement;
+        if (gameSettings && gameSettings.display) {
+            gameSettings.display.fullscreen = isFullscreen;
+            // Rafraîchit l'UI (la case à cocher plein écran) si le menu est ouvert
+            if (window.fullUpdateLanguage) {
+                window.fullUpdateLanguage();
+            }
+        }
+        setTimeout(() => engine.resize(), 100);
     });
 });
