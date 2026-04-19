@@ -5,21 +5,21 @@ Bienvenue sur notre plateforme multi-jeux développée dans le cadre de notre mo
 ## 1. Qui a fait quoi ? (Répartition des tâches)
 
 - **Enzo JUNGERS** : 
-  - Développement du jeux canvas (ajout de tous les bonus, obstacle, création des niveaux (10 à 18), etc ...)
-  - Développement du jeux GOW (Optimisation du jeu, équilibrages du jeux(enemies, bonus ...))
-  - Création des modèles 3D pour le jeux GOW
+  - Développement du jeu Canvas (ajout de tous les bonus, obstacles, création des niveaux (10 à 18), etc.)
+  - Développement du jeu GOW (optimisation du jeu, équilibrage du jeu (ennemis, bonus...))
+  - Création des modèles 3D pour le jeu GOW
 
 - **Logan CHARRIER** :
-  - Développement du jeux DOM
+  - Développement du jeu DOM
   - Développement du site regroupant les 3 jeux
-  - Développement du jeux Canvas(ajouts des appara,ce et du skin global du jeu (background, skin etc ...))
+  - Développement du jeu Canvas (ajouts des apparences et du skin global du jeu (background, skin, etc.))
 
 
 - **Dylan AIT-ELDJOUDI** :
-  - Développement du jeux canvas (ajout d'obstacle, création des niveaux (0 à 10), gestion du jeux(déplacement du joueur, UI ...) etc ...)
-  - Développement du jeux GOW (ajout du moteur de jeux, des différentes mécaniques de gameplay, les boss ...)
+  - Développement du jeu Canvas (ajout d'obstacles, création des niveaux (0 à 10), gestion du jeu (déplacement du joueur, UI...), etc.)
+  - Développement du jeu GOW (ajout du moteur de jeu, des différentes mécaniques de gameplay, des boss...)
 
-*(Note : L'intégration globale et le débuggage final ont été par toutes l'équipe).*
+*(Note : L'intégration globale et le débogage final ont été réalisés par toute l'équipe).*
 
 ## 2. Pourcentage de travail fourni
 
@@ -28,12 +28,12 @@ Bienvenue sur notre plateforme multi-jeux développée dans le cadre de notre mo
 - **Dylan AIT-ELDJOUDI** : 33%
 - **IA** : 1%
 
-L'investissement a été globalement équitable. Chacun a pris les devants sur un des trois projets de jeu (DOM, Canvas, GOW) mais aussi au site les regroupants.
+L'investissement a été globalement équitable. Chacun a pris les devants sur un des trois projets de jeu (DOM, Canvas, GOW), mais aussi sur le site les regroupant.
 
 ## 3. Difficultés rencontrées et Résolutions
 
 ### A. Optimisation des performances 3D et Moteur Physique (Blob's Revenge)
-**Difficulté** : L'utilisation de Havok Physics avec un grand nombre d'entités (vagues de 70+ monstres) faisait perdre enormément de FPS. De plus, l'instanciation continue de projectiles saturait la mémoire.
+**Difficulté** : L'utilisation de Havok Physics avec un grand nombre d'entités (vagues de 70+ monstres) faisait perdre énormément de FPS. De plus, l'instanciation continue de projectiles saturait la mémoire.
 **Résolution** : 
 - Nous avons mis en place un système d'**Object Pooling** pour recycler les boules de feu et les effets de particules au lieu de les détruire/recréer.
 - **Culling Physique** : Les "proxys physiques" des monstres ne sont activés que s'ils sont à une certaine distance du joueur. S'ils sont loin, ils utilisent un simple déplacement cinématique (sans Havok).
@@ -49,13 +49,13 @@ L'investissement a été globalement équitable. Chacun a pris les devants sur u
 ## 4. Justification des choix
 
 ### Pourquoi le thème de "Blob" ?
-Le choix du personnage du "Blob" (que ce soit en tant qu'ennemi ou héros) permet d'avoir **un fil rouge visuel et narratif**, la contrainte d'avoir un lien entre les 3 jeux est donc respecter de par ce lien narratif. C'est également une forme simple à animer et à gérer techniquement (hitbox sphérique), ce qui nous a permis de nous concentrer sur le code et les mécaniques de gameplay plutôt que sur la modélisation ou le dessin d'assets complexes.
+Le choix du personnage du "Blob" (que ce soit en tant qu'ennemi ou héros) permet d'avoir **un fil rouge visuel et narratif**, la contrainte d'avoir un lien entre les 3 jeux est donc respectée de par ce lien narratif. C'est également une forme simple à animer et à gérer techniquement (hitbox sphérique), ce qui nous a permis de nous concentrer sur le code et les mécaniques de gameplay plutôt que sur la modélisation ou le dessin d'assets complexes.
 
-### Pourquoi Blob escape ?
-L'idée initial de blob escape nous a été donné par Mr Buffa lors de notre 1er cours, en manque d'idée celle ci nous a parru inspirantes.
+### Pourquoi Blob Escape ?
+L'idée initiale de Blob Escape nous a été donnée par M. Buffa lors de notre 1er cours. En manque d'idées, celle-ci nous a paru inspirante.
 
 ### Pourquoi Blob's Revenge?
-L'idée nous est venues grâce a la sortie trionphante de MegaBonk, un jeu survivor, c'est en partant de cette inspiration que nou avons choisi de faire un survivor.
+L'idée nous est venue grâce à la sortie triomphante de MegaBonk, un jeu survivor. C'est en partant de cette inspiration que nous avons choisi de faire un survivor.
 
 ### Pourquoi Blob Defense?
-L'idée initial était de faire un jeu flsh comme dans notre enfance, nous avons donc hésité pius nous avons choisi de fire un mixe de plusieurs jeu : tycoon, tower defence, clicker, et un Typing Game.
+L'idée initiale était de faire un jeu flash comme dans notre enfance. Nous avons donc hésité puis nous avons choisi de faire un mix de plusieurs jeux : tycoon, tower defense, clicker et Typing Game.
