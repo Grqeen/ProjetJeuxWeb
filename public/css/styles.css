@@ -308,11 +308,15 @@ body {
 }
 
 .blob-escape {
-  background-image: linear-gradient(45deg, #2e7d32, #81c784);
+  background-image: url('../ProjetCanvas1/assets/images/PhotoEscape.png');
 }
 
 .blobs-revenge {
   background-image: url('../images/blobrevenge.png');
+}
+
+.blob-defense {
+  background-image: url('../ProjetDOM/assets/PhotoDom.png');
 }
 
 .blob-legends {
