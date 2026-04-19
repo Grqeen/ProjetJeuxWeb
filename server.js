@@ -19,6 +19,11 @@ app.use('/api/scores', require('./routes/scores'));
 
 // Redirection globale vers l'accueil si on tape une URL non gérée par l'API
 app.use((req, res) => {
+    // Sur Vercel, server.js ne gère que les requêtes /api/. On renvoie donc une 404 proprement.
+    if (req.originalUrl.startsWith('/api')) {
+        return res.status(404).json({ message: "Route API introuvable" });
+    }
+    // Pour le développement local (sur Vercel, le fichier vercel.json s'en occupe)
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
